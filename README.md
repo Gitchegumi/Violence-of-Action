@@ -10,12 +10,26 @@ For detailed game rules, mechanics, and design specifications, please refer to t
 
 ## Setup and Installation
 
-(Instructions on how to set up the development environment and install dependencies will go here.)
+This project uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the official installation instructions: [Poetry Installation Guide](https://python-poetry.org/docs/#installation).
+
+Once Poetry is installed, navigate to the project root directory and run the following command to install all dependencies:
+
+```bash
+poetry install
+```
+
+This will create a virtual environment and install all required packages.
 
 ## How to Run the Game
 
-(Instructions on how to run the game will go here.)
+After setting up the project with Poetry (as described in the 'Setup and Installation' section), you can run the game using the following command from the project root directory:
+
+```bash
+poetry run python gitchpygame/main.py
+```
+
+This command activates the Poetry virtual environment and executes the main game script.
 
 ## Development
 
-(Information for developers, such as coding conventions, testing, and contribution guidelines, will go here.)
+This project encourages a Test-Driven Development (TDD) approach for core game logic. For detailed development guidelines, including coding conventions, testing procedures, and contribution workflow, please refer to the [CONTRIBUTIONS.md](CONTRIBUTIONS.md) file.
