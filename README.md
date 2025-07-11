@@ -1,38 +1,35 @@
-# GithPygame Hex Battle
+# GitchPygame Hex Battle
 
 A turn-based tactical battle game built with Pygame.
 
-## Game Overview
+## Project Overview
 
-This is a turn-based strategy game played on a 15x15 hexagonal grid. The game board is randomly generated at the start of each match, creating a unique battlefield every time. Players will command their units to move across the map, engage in combat, and complete objectives.
+This repository contains the source code for GitchPygame Hex Battle (working title), a turn-based strategy game. This README focuses on setting up the development environment and running the game.
 
-## Map and Terrain
+For detailed game rules, mechanics, and design specifications, please refer to the [Game Rules documentation](docs/GAME_RULES.md).
 
-The battlefield is a 15x15 hex grid, composed of 225 randomly placed tiles built around a central Objective tile. The terrain type of each tile affects unit movement.
+## Setup and Installation
 
-### Tile Types and Distribution
+This project uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the official installation instructions: [Poetry Installation Guide](https://python-poetry.org/docs/#installation).
 
-There are four types of terrain tiles:
+Once Poetry is installed, navigate to the project root directory and run the following command to install all dependencies:
 
-*   **Grass:** 57 tiles
-*   **Tall Grass:** 56 tiles
-*   **Water:** 56 tiles
-*   **Mountain:** 55 tiles
-*   **Objective:** 1 Tile
+```bash
+poetry install
+```
 
-### Movement Costs
+This will create a virtual environment and install all required packages.
 
-*   **Grass:** Costs 1 movement point to enter.
-*   **Tall Grass:** Costs 2 movement points to enter.
-*   **Water:** Can only be traversed by units with water-crossing capabilities.
-*   **Mountain:** Costs 5 movement points to enter.
+## How to Run the Game
 
-## Units and Stats
+After setting up the project with Poetry (as described in the 'Setup and Installation' section), you can run the game using the following command from the project root directory:
 
-(This section is under development.)
+```bash
+poetry run python gitchpygame/main.py
+```
 
-Details about the different units, their stats, abilities, and combat mechanics will be added here.
+This command activates the Poetry virtual environment and executes the main game script.
 
-## How to Play
+## Development
 
-(Instructions on how to play will be added once the core mechanics are implemented.)
+This project encourages a Test-Driven Development (TDD) approach for core game logic. For detailed development guidelines, including coding conventions, testing procedures, and contribution workflow, please refer to the [CONTRIBUTIONS.md](CONTRIBUTIONS.md) file.
