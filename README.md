@@ -4,7 +4,7 @@ A turn-based tactical battle game built with Pygame.
 
 ## Project Overview
 
-This repository contains the source code for GicthPygame Hex Battle, a turn-based strategy game. This README focuses on setting up the development environment and running the game.
+This repository contains the source code for GitchPygame Hex Battle (working title), a turn-based strategy game. This README focuses on setting up the development environment and running the game.
 
 For detailed game rules, mechanics, and design specifications, please refer to the [Game Rules documentation](docs/GAME_RULES.md).
 
