@@ -1,0 +1,19 @@
+{
+  "grid_size": {
+    "width": 15,
+    "height": 15
+  },
+  "players": {
+    "min": 2,
+    "max": 3
+  },
+  "win_conditions": {
+    "elimination": {
+      "enabled": true
+    },
+    "objective_control": {
+      "enabled": true,
+      "turns_to_win": 3
+    }
+  }
+}

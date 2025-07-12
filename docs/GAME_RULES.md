@@ -53,9 +53,61 @@ Players can achieve victory through one of the following conditions:
 
 ## Units and Stats
 
-(This section is under development.)
+Here are the details about the different units, their stats, abilities, and terrain movement costs:
 
-Details about the different units, their stats, abilities, and combat mechanics will be added here.
+### Fluxsmith
+*   **Role:** Engineer / Support
+*   **Tier:** 1
+*   **Description:** Support unit with healing and terrain-altering abilities.
+*   **Cost:** 2
+*   **Stats:** HP: 2, Attack: 1, Range: 1, Armor: 0, Speed: 3
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
+*   **Special:** Heals adjacent allies; can construct temporary barriers
+
+### Ghostthorn
+*   **Role:** Special Forces
+*   **Tier:** 1
+*   **Description:** Stealthy infiltrators using teleportation tech.
+*   **Cost:** 3
+*   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 5
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: N/A, Mountain: N/A
+*   **Special:** Can teleport up to 3 hexes once per game
+
+### Golemancer Hull
+*   **Role:** Heavy Armor
+*   **Tier:** 1
+*   **Description:** Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.
+*   **Cost:** 3
+*   **Stats:** HP: 5, Attack: 3, Range: 1, Armor: 2, Speed: 2
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: 10
+*   **Special:** Splash damage in adjacent hexes
+
+### Shardwalker
+*   **Role:** Core Infantry
+*   **Tier:** 1
+*   **Description:** Light troops augmented with crystal tech for standard mobility.
+*   **Cost:** 1
+*   **Stats:** HP: 3, Attack: 1, Range: 1, Armor: 0, Speed: 4
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
+*   **Special:** None
+
+### Skyrender
+*   **Role:** All-Terrain Flanker
+*   **Tier:** 1
+*   **Description:** Hovering drone-rider capable of crossing all terrain types.
+*   **Cost:** 4
+*   **Stats:** HP: 3, Attack: 2, Range: 2, Armor: 1, Speed: 6
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: 1, Mountain: 1
+*   **Special:** Ignores terrain penalties; may move again after combat once per game
+
+### Tideborn
+*   **Role:** Amphibious Unit
+*   **Tier:** 1
+*   **Description:** Bio-engineered aquatic troopers with amphibious mobility.
+*   **Cost:** 2
+*   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 3
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: 1, Mountain: N/A
+*   **Special:** None
 
 ## How to Play
 
