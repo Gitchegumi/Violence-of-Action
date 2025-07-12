@@ -30,6 +30,46 @@ poetry run python gitchpygame/main.py
 
 This command activates the Poetry virtual environment and executes the main game script.
 
+## Project Structure
+
+```
+E:/GitHub/GitchPygame/
+├───.git/                      # Git version control directory (managed by Git).
+├───.venv/                     # Python virtual environment (managed by Poetry).
+├───.gitignore                 # Specifies intentionally untracked files to ignore.
+├───CONTRIBUTIONS.md           # Guidelines for contributing to the project.
+├───poetry.lock                # Locks the exact versions of dependencies used by Poetry.
+├───poetry.toml                # Poetry configuration file.
+├───pyproject.toml             # Project configuration, including Poetry dependencies and project metadata.
+├───README.md                  # This file.
+├───docs/                      # Documentation directory.
+│   └───GAME_RULES.md          # Detailed game rules and mechanics.
+└───gitchpygame/               # Main source code directory for the game.
+    ├───__init__.py            # Marks the gitchpygame directory as a Python package.
+    ├───main.py                # The main entry point for running the game.
+    ├───assets/                # Contains game assets and data.
+    │   └───data/              # Data files for game configuration.
+    │       ├───config.json    # Game configuration settings.
+    │       ├───settings.json  # User settings or game specific settings.
+    │       ├───terrain.json   # Defines terrain types and properties.
+    │       └───units/         # Directory containing individual unit data files.
+    │           ├───fluxsmith.json     # Data for the Fluxsmith unit.
+    │           ├───ghostthorn.json    # Data for the Ghostthorn unit.
+    │           ├───golemancer_hull.json # Data for the Golemancer Hull unit.
+    │           ├───shardwalker.json   # Data for the Shardwalker unit.
+    │           ├───skyrender.json     # Data for the Skyrender unit.
+    │           └───tideborn.json      # Data for the Tideborn unit.
+    ├───core/                  # Core game logic and components.
+    │   ├───__init__.py        # Marks the core directory as a Python package.
+    │   ├───board.py           # Handles game board generation and manipulation.
+    │   ├───game.py            # Manages overall game state and flow.
+    │   ├───tiles.py           # Defines tile properties and interactions.
+    │   └───units.py           # Manages unit properties, actions, and interactions.
+    └───tests/                 # Unit and integration tests for the game.
+        ├───__init__.py        # Marks the tests directory as a Python package.
+        └───unit_tests.py      # Python code unit tests.
+```
+
 ## Development
 
 This project encourages a Test-Driven Development (TDD) approach for core game logic. For detailed development guidelines, including coding conventions, testing procedures, and contribution workflow, please refer to the [CONTRIBUTIONS.md](CONTRIBUTIONS.md) file.

@@ -1,0 +1,24 @@
+{
+  "id": "ghostthorn",
+  "name": "Ghostthorn",
+  "role": "Special Forces",
+  "tier": 1,
+  "can_upgrade": true,
+  "upgrades_to": null,
+  "description": "Stealthy infiltrators using teleportation tech.",
+  "cost": 3,
+  "stats": {
+    "hp": 2,
+    "attack": 2,
+    "range": 1,
+    "armor": 0,
+    "speed": 5
+  },
+  "terrain": {
+    "grass": 1,
+    "tall_grass": 1,
+    "water": null,
+    "mountain": null
+  },
+  "special": "Can teleport up to 3 hexes once per game"
+}

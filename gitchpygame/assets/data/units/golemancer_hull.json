@@ -1,0 +1,24 @@
+{
+  "id": "golemancer_hull",
+  "name": "Golemancer Hull",
+  "role": "Heavy Armor",
+  "tier": 1,
+  "can_upgrade": true,
+  "upgrades_to": null,
+  "description": "Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.",
+  "cost": 3,
+  "stats": {
+    "hp": 5,
+    "attack": 3,
+    "range": 1,
+    "armor": 2,
+    "speed": 2
+  },
+  "terrain": {
+    "grass": 1,
+    "tall_grass": 2,
+    "water": null,
+    "mountain": 10
+  },
+  "special": "Splash damage in adjacent hexes"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "shardwalker",
+  "name": "Shardwalker",
+  "role": "Core Infantry",
+  "tier": 1,
+  "can_upgrade": true,
+  "upgrades_to": null,
+  "description": "Light troops augmented with crystal tech for standard mobility.",
+  "cost": 1,
+  "stats": {
+    "hp": 3,
+    "attack": 1,
+    "range": 1,
+    "armor": 0,
+    "speed": 4
+  },
+  "terrain": {
+    "grass": 1,
+    "tall_grass": 2,
+    "water": null,
+    "mountain": null
+  },
+  "special": null
+}
