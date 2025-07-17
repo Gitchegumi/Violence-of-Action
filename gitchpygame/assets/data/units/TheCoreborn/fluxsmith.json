@@ -6,7 +6,7 @@
   "can_upgrade": true,
   "upgrades_to": null,
   "description": "Support unit with healing and terrain-altering abilities.",
-  "cost": 4,
+  "cost": 2,
   "stats": {
     "hp": 2,
     "attack": 1,

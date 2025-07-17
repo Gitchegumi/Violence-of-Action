@@ -53,12 +53,7 @@ E:/GitHub/GitchPygame/
     │       ├───settings.json  # User settings or game specific settings.
     │       ├───terrain.json   # Defines terrain types and properties.
     │       └───units/         # Directory containing individual unit data files.
-    │           ├───fluxsmith.json     # Data for the Fluxsmith unit.
-    │           ├───ghostthorn.json    # Data for the Ghostthorn unit.
-    │           ├───golemancer_hull.json # Data for the Golemancer Hull unit.
-    │           ├───shardwalker.json   # Data for the Shardwalker unit.
-    │           ├───skyrender.json     # Data for the Skyrender unit.
-    │           └───tideborn.json      # Data for the Tideborn unit.
+    │           └───The_Coreborn/ # Data for The Coreborn army.
     ├───core/                  # Core game logic and components.
     │   ├───__init__.py        # Marks the core directory as a Python package.
     │   ├───board.py           # Handles game board generation and manipulation.

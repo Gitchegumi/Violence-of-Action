@@ -67,11 +67,26 @@ Players can achieve victory through one of the following conditions:
 *   **Elimination:** Eliminate all enemy units belonging to opposing players.
 *   **Objective Control:** Occupy the central Objective tile for 3 consecutive turns. An 'occupation token' will be used to signify control of the Objective tile, persisting even if the occupying unit moves off the tile, until an opposing unit occupies it.
 
+## Armies
+
+This game features different armies, each with their own unique units and playstyles. The first army available is **The Coreborn**.
+
 ## Units and Stats
 
 Here are the details about the different units, their stats, abilities, and terrain movement costs:
 
-### Fluxsmith
+### The Coreborn
+
+#### Battlefield Scavenger
+*   **Role:** Scavenger
+*   **Tier:** 1
+*   **Description:** A unit that profits from destruction on the battlefield.
+*   **Cost:** 1
+*   **Stats:** HP: 1, Attack: 1, Range: 1, Armor: 0, Speed: 3
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
+*   **Special:** Gains 3 essence for each unit (friendly or enemy) destroyed during combat since the owning player's last turn.
+
+#### Fluxsmith
 *   **Role:** Engineer / Support
 *   **Tier:** 1
 *   **Description:** Support unit with healing and terrain-altering abilities.
@@ -80,7 +95,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
 *   **Special:** Heals adjacent allies; can construct temporary barriers
 
-### Ghostthorn
+#### Ghostthorn
 *   **Role:** Special Forces
 *   **Tier:** 1
 *   **Description:** Stealthy infiltrators using teleportation tech.
@@ -89,7 +104,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: N/A, Mountain: N/A
 *   **Special:** Can teleport up to 3 hexes once per game
 
-### Golemancer Hull
+#### Golemancer Hull
 *   **Role:** Heavy Armor
 *   **Tier:** 1
 *   **Description:** Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.
@@ -98,7 +113,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: 10
 *   **Special:** Splash damage in adjacent hexes
 
-### Shardwalker
+#### Shardwalker
 *   **Role:** Core Infantry
 *   **Tier:** 1
 *   **Description:** Light troops augmented with crystal tech for standard mobility.
@@ -107,7 +122,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
 *   **Special:** None
 
-### Skyrender
+#### Skyrender
 *   **Role:** All-Terrain Flanker
 *   **Tier:** 1
 *   **Description:** Hovering drone-rider capable of crossing all terrain types.
@@ -116,7 +131,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: 1, Mountain: 1
 *   **Special:** Ignores terrain penalties; may move again after combat once per game
 
-### Tideborn
+#### Tideborn
 *   **Role:** Amphibious Unit
 *   **Tier:** 1
 *   **Description:** Bio-engineered aquatic troopers with amphibious mobility.
