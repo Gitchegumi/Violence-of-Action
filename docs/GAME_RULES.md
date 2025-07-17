@@ -1,4 +1,4 @@
-# GitchPygame Hex Battle - Game Rules
+# Violence of Action - Game Rules
 
 ## Game Overview
 
