@@ -20,5 +20,5 @@
     "water": null,
     "mountain": null
   },
-  "special": "Gains 3 essence for each unit (friendly or enemy) destroyed during combat since the owning player's last turn."
+  "special": "Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."
 }
