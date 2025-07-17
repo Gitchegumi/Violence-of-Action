@@ -1,0 +1,24 @@
+{
+  "id": "battlefield_scavenger",
+  "name": "Battlefield Scavenger",
+  "role": "Scavenger",
+  "tier": 1,
+  "can_upgrade": false,
+  "upgrades_to": null,
+  "description": "A unit that profits from destruction on the battlefield.",
+  "cost": "fibonacci",
+  "stats": {
+    "hp": 1,
+    "attack": 1,
+    "range": 1,
+    "armor": 0,
+    "speed": 3
+  },
+  "terrain": {
+    "grass": 1,
+    "tall_grass": 2,
+    "water": null,
+    "mountain": null
+  },
+  "special": "This unit's only method of generating essence. See GAME_RULES.md for scaling cost. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."
+}

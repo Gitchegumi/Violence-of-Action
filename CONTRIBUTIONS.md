@@ -1,10 +1,14 @@
-# Contributing to GitchPygame Hex Battle
+# Contributing to Violence of Action
 
-Thank you for your interest in contributing to GitchPygame Hex Battle! This document outlines the guidelines and best practices for contributing to this project.
+Thank you for your interest in contributing to Violence of Action! This document outlines the guidelines and best practices for contributing to this project.
+
+## Technology Stack
+
+Violence of Action is developed using the Godot Engine (primarily GDScript). All previous Python-based code has been or will be removed. Future development will focus solely on Godot for game logic, rendering, and UI/UX.
 
 ## Getting Started
 
-Refer to the [README.md](README.md) for basic project setup. More detailed development environment setup may be added here in the future.
+Refer to the [README.md](README.md) for basic project setup.
 
 ## Development Workflow
 
