@@ -1,53 +1,28 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.egg-info/
-*.so
+# Godot 4+ specific ignores
+.godot/
 
-# Virtual Environment
-.venv/
-venv/
-ENV/
-env/
-env.bak/
-venv.bak/
+# Mono/.NET specific ignores
+.mono/
+bin/
+obj/
 
-# Poetry
-# poetry.lock is often committed to lock dependencies, but can be ignored.
-# poetry.lock
-.poetry/
-dist/
-build/
-
-# IDEs and Editors
-.idea/
+# Editor-specific files
+.editor/
 .vscode/
-*.swp
-*.swo
+project.godot.bck
+*.translation
 
-# OS-specific
-.DS_Store
-Thumbs.db
-ehthumbs.db
+# Asset import files
+*.import
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-nosetests.xml
-coverage.xml
+# Exported project files
+export_presets.cfg
+*.binary
+*.zip
+*.exe
+*.pck
+*.apk
+*.aab
 
-# Type Checking
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Environment variables
-.env
-.env.*
-!.env.example
-
-# Logs
-*.log
+# Android build directory
+/android/

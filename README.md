@@ -14,23 +14,28 @@ For detailed game rules, mechanics, and design specifications, please refer to t
 
 ## Setup and Installation
 
-(Instructions for setting up the Godot project will go here.)
+1. Download and install the [Godot Engine](https://godotengine.org/download/) (version 4.x is recommended).
+2. Clone this repository to your local machine.
+3. Open the Godot Engine, click the "Import" button, and select the `project.godot` file from this repository's root directory.
 
 ## How to Run the Game
 
-(Instructions for running the Godot game will go here.)
+1. Open the project in the Godot Engine.
+2. Press the "Play" button (or F5) in the top-right corner of the editor.
 
 ## Project Structure
 
 ```
-E:/GitHub/ViolenceOfAction/
-├───.git/                      # Git version control directory (managed by Git).
-├───docs/                      # Documentation directory.
-│   └───GAME_RULES.md          # Detailed game rules and mechanics.
-├───assets/                    # Game assets (images, sounds, etc.)
-├───scenes/                    # Godot scenes
-├───scripts/                   # Godot scripts (GDScript or C#)
-└───project.godot              # Godot project file
+/
+├───.godot/              # Godot's internal project data.
+├───assets/              # Game assets (images, sounds, data, etc.).
+├───docs/                # Project documentation.
+├───scenes/              # Godot scenes (.tscn files).
+├───scripts/             # GDScript files (.gd files).
+├───.gitignore           # Files and directories ignored by Git.
+├───CONTRIBUTIONS.md     # Contribution guidelines.
+├───project.godot        # The main Godot project file.
+└───README.md            # This file.
 ```
 
 ## Development

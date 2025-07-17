@@ -10,6 +10,25 @@ Violence of Action is developed using the Godot Engine (primarily GDScript). All
 
 Refer to the [README.md](README.md) for basic project setup.
 
+### Developer Environment Setup
+
+To ensure consistency across the project, please configure your development environment as follows:
+
+*   **Godot Version:** This project is developed using **Godot Engine version 4.4.1**. Please use this specific version to avoid compatibility issues. You can download it from the [Godot Engine website](https://godotengine.org/download/).
+
+*   **Editor Settings:** To maintain a consistent code style, please configure your Godot editor settings:
+    1.  Open the Godot Editor.
+    2.  Go to `Editor -> Editor Settings -> Text Editor`.
+    3.  **Indentation:**
+        *   Set `Indent With` to `Tabs`.
+        *   Set `Indent Size` to `4`.
+    4.  **Whitespace:**
+        *   Enable `Trim Trailing Whitespace On Save`.
+    5.  **Line Endings:**
+        *   Under `Files`, set `Line Endings` to `LF (Unix/macOS)`.
+
+*   **Editor Plugins:** (No required plugins at this time.)
+
 ## Development Workflow
 
 We follow a feature branch workflow. All new features and bug fixes should be developed on a dedicated branch and submitted via a Pull Request to the `master` branch.
