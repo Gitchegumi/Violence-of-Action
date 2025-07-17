@@ -6,7 +6,7 @@
   "can_upgrade": true,
   "upgrades_to": null,
   "description": "Hovering drone-rider capable of crossing all terrain types.",
-  "cost": 4,
+  "cost": 12,
   "stats": {
     "hp": 3,
     "attack": 2,

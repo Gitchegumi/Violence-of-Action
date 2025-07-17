@@ -6,7 +6,7 @@
   "can_upgrade": true,
   "upgrades_to": null,
   "description": "Bio-engineered aquatic troopers with amphibious mobility.",
-  "cost": 2,
+  "cost": 4,
   "stats": {
     "hp": 2,
     "attack": 2,

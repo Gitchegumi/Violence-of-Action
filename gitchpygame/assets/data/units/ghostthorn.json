@@ -6,7 +6,7 @@
   "can_upgrade": true,
   "upgrades_to": null,
   "description": "Stealthy infiltrators using teleportation tech.",
-  "cost": 3,
+  "cost": 8,
   "stats": {
     "hp": 2,
     "attack": 2,

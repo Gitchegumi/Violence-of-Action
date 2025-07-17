@@ -6,7 +6,7 @@
   "can_upgrade": true,
   "upgrades_to": null,
   "description": "Light troops augmented with crystal tech for standard mobility.",
-  "cost": 1,
+  "cost": 2,
   "stats": {
     "hp": 3,
     "attack": 1,

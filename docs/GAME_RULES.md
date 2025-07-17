@@ -29,7 +29,23 @@ There are four types of terrain tiles:
 
 *   **Players:** The game supports 2-3 players.
 *   **Map Generation:** The map is generated randomly, starting with the Objective tile placed at the center of the 15x15 hex grid. Other terrain tiles are then randomly placed clockwise around the Objective tile, starting at the 12 o'clock position, until all tiles are placed.
-*   **Unit Deployment:** (Details on initial unit placement will be added here once unit types are defined.)
+*   **Unit Deployment:** Each player starts the game with 12 essence to purchase their initial deployment force.
+
+
+## Earning Essence
+
+At the start of each turn, players gain essence based on their active units. Each **unit type** contributes **half of its cost** in essence, but **only once per unit type**, regardless of how many units of that type are on the field.
+
+For example:
+
+* If a player controls **6 Shardwalkers** (cost: 2 essence each), they gain **1 essence** (only one Shardwalker counts for generation).
+* If they instead have **4 Shardwalkers** and **1 Tideborn** (cost: 4 essence), they gain **3 essence**:
+
+  * **1** from the Shardwalker type (2 ÷ 2 = 1)
+  * **2** from the Tideborn (4 ÷ 2 = 2)
+
+This system encourages diversity in unit composition while limiting passive income from spammed unit types.
+
 
 ## Turn Order
 
@@ -38,7 +54,7 @@ The game proceeds in a player-by-player turn order. The starting player is chose
 Each player's turn consists of the following phases:
 
 1.  **Start Turn:** Reset any persistent effects from the previous turn.
-2.  **Marshal Troops:** Spend earned currency (details on currency to be defined) to improve existing units or add new units to the deployment zone.
+2.  **Marshal Troops:** Spend any earned essence to improve existing units or add new units to the deployment zone.
 3.  **Movement:** Move any active units up to their maximum movement allowance.
 4.  **Combat:** Declare combat actions. (Detailed combat mechanics will be addressed in a separate section/issue.)
 5.  **Resolve:** Resolve all declared combat actions.
@@ -59,7 +75,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** Engineer / Support
 *   **Tier:** 1
 *   **Description:** Support unit with healing and terrain-altering abilities.
-*   **Cost:** 2
+*   **Cost:** 4
 *   **Stats:** HP: 2, Attack: 1, Range: 1, Armor: 0, Speed: 3
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
 *   **Special:** Heals adjacent allies; can construct temporary barriers
@@ -68,7 +84,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** Special Forces
 *   **Tier:** 1
 *   **Description:** Stealthy infiltrators using teleportation tech.
-*   **Cost:** 3
+*   **Cost:** 8
 *   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 5
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: N/A, Mountain: N/A
 *   **Special:** Can teleport up to 3 hexes once per game
@@ -77,7 +93,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** Heavy Armor
 *   **Tier:** 1
 *   **Description:** Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.
-*   **Cost:** 3
+*   **Cost:** 8
 *   **Stats:** HP: 5, Attack: 3, Range: 1, Armor: 2, Speed: 2
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: 10
 *   **Special:** Splash damage in adjacent hexes
@@ -86,7 +102,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** Core Infantry
 *   **Tier:** 1
 *   **Description:** Light troops augmented with crystal tech for standard mobility.
-*   **Cost:** 1
+*   **Cost:** 2
 *   **Stats:** HP: 3, Attack: 1, Range: 1, Armor: 0, Speed: 4
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
 *   **Special:** None
@@ -95,7 +111,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** All-Terrain Flanker
 *   **Tier:** 1
 *   **Description:** Hovering drone-rider capable of crossing all terrain types.
-*   **Cost:** 4
+*   **Cost:** 12
 *   **Stats:** HP: 3, Attack: 2, Range: 2, Armor: 1, Speed: 6
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: 1, Mountain: 1
 *   **Special:** Ignores terrain penalties; may move again after combat once per game
@@ -104,7 +120,7 @@ Here are the details about the different units, their stats, abilities, and terr
 *   **Role:** Amphibious Unit
 *   **Tier:** 1
 *   **Description:** Bio-engineered aquatic troopers with amphibious mobility.
-*   **Cost:** 2
+*   **Cost:** 4
 *   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 3
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: 1, Mountain: N/A
 *   **Special:** None
