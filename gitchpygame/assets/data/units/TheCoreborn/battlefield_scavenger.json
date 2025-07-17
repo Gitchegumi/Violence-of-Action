@@ -6,7 +6,7 @@
   "can_upgrade": false,
   "upgrades_to": null,
   "description": "A unit that profits from destruction on the battlefield.",
-  "cost": 1,
+  "cost": "fibonacci",
   "stats": {
     "hp": 1,
     "attack": 1,
@@ -20,5 +20,5 @@
     "water": null,
     "mountain": null
   },
-  "special": "Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."
+  "special": "This unit's only method of generating essence. See GAME_RULES.md for scaling cost. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."
 }

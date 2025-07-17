@@ -81,6 +81,21 @@ Each player's turn consists of the following phases:
 5.  **Resolve:** Resolve all declared combat actions.
 6.  **Clean Up:** Resolve any temporary effects that expire at the end of the turn, and establish any persistent effects that will carry over into the next turn. Finally, pass play to the next player.
 
+### 1. Deploying New Units
+
+- New units may be purchased at their listed cost.
+- Units must be deployed into the player’s **deployment zone**.
+- No unit may be deployed outside its owner’s designated deployment zone at any time.
+
+### 2. Upgrading Existing Units
+
+- Units already on the board may be upgraded to improve their stats or gain new abilities (exact upgrade paths TBD).
+- A unit may be upgraded **only once per turn**.
+- Upgrades can only be applied to units that are **not engaged in combat** and **are not adjacent to enemy units**.
+- Upgrades are purchased by paying an **upgrade cost** (mechanics and values to be defined once combat rules are finalized).
+
+Players must choose between expanding their force or enhancing the strength of the units they already control. This creates a flexible but finite economy where strategic decisions shape the battlefield over time.
+
 ## Win Conditions
 
 Players can achieve victory through one of the following conditions:
@@ -118,13 +133,31 @@ Here are the details about the different units, their stats, abilities, and terr
 ### The Coreborn
 
 #### Battlefield Scavenger
-*   **Role:** Scavenger
-*   **Tier:** 1
-*   **Description:** A unit that profits from destruction on the battlefield.
-*   **Cost:** 1
-*   **Stats:** HP: 1, Attack: 1, Range: 1, Armor: 0, Speed: 3
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
-*   **Special:** This unit's only method of generating essence. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns.
+*   **Role:** Scavenger  
+*   **Tier:** 1  
+*   **Description:** A unit that profits from destruction on the battlefield.  
+*   **Cost:** Variable (see below)  
+*   **Stats:** HP: 1, Attack: 1, Range: 1, Armor: 0, Speed: 3  
+*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A  
+*   **Special:** This unit's only method of generating essence.
+
+At the **start of its controller's turn**, the Battlefield Scavenger grants **3 essence for each unit** (friendly or enemy) destroyed **since the beginning of that player's previous turn**.
+
+- This includes units destroyed during the player's previous turn, any opponent’s turns, and any effects in between.
+- The bonus is awarded during the **Start Turn** phase.
+- Each destroyed unit can only trigger one Scavenger per turn — you can't double-dip on the same kill.
+
+##### Scaling Cost
+Each Battlefield Scavenger a player controls increases the cost of the next one, using the Fibonacci sequence:
+
+- 1st Scavenger: **1 essence**
+- 2nd Scavenger: **2 essence**
+- 3rd Scavenger: **3 essence**
+- 4th Scavenger: **5 essence**
+- 5th Scavenger: **8 essence**
+- 6th and beyond: Continue the Fibonacci progression (13, 21, etc.)
+
+This cost scaling represents increasing resistance from the battlefield population and logistical strain in deploying additional scavengers.
 
 #### Fluxsmith
 *   **Role:** Engineer / Support
