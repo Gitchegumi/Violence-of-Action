@@ -8,7 +8,7 @@ This repository contains the source code for Violence of Action, a turn-based st
 
 ### From Pygame to Godot
 
-Initially, Violence of Action was envisioned and prototyped using Pygame. However, due to the inherent challenges in developing complex UI/UX elements and managing intricate game states within Pygame, a strategic decision was made to transition the project to the Godot Engine. This shift occurred early in development, prior to any significant game logic or asset creation, to leverage Godot's robust tools for game development, particularly its scene-based architecture and integrated editor. All Python code will be removed as development progresses in Godot.
+Initially, Violence of Action was envisioned and prototyped using Pygame. However, due to the inherent challenges in developing complex UI/UX elements and managing intricate game states within Pygame, a strategic decision was made to transition the project to the Godot Engine. This shift occurred early in development, prior to any significant game logic or asset creation, to leverage Godot's robust tools for game development, particularly its scene-based architecture and integrated editor. Another key factor in choosing Godot was the Pythonic nature of GDScript, which provides a familiar and efficient scripting environment. All Python code will be removed as development progresses in Godot.
 
 For detailed game rules, mechanics, and design specifications, please refer to the [Game Rules documentation](docs/GAME_RULES.md).
 
