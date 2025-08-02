@@ -26,3 +26,6 @@ export_presets.cfg
 
 # Android build directory
 /android/
+
+# Gemini files
+GEMINI.md
