@@ -12,11 +12,11 @@ const TILE_DISTRIBUTION = {
 }
 
 const TERRAIN_TO_ATLAS_COORD = {
-	TerrainType.FIELD: Vector2i(6, 0),
-	TerrainType.FOREST: Vector2i(7, 0),
-	TerrainType.WATER: Vector2i(0, 0),
-	TerrainType.MOUNTAIN: Vector2i(8, 0),
-	TerrainType.OBJECTIVE: Vector2i(3, 0)
+	TerrainType.FIELD: Vector2i(1, 0),
+	TerrainType.FOREST: Vector2i(2, 0),
+	TerrainType.WATER: Vector2i(4, 0),
+	TerrainType.MOUNTAIN: Vector2i(3, 0),
+	TerrainType.OBJECTIVE: Vector2i(0, 0)
 }
 
 # The radius of the hexagonal map in tiles.
