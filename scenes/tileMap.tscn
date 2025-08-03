@@ -1,0 +1,39 @@
+[gd_scene load_steps=5 format=3 uid="uid://c6i7i5yoovjsh"]
+
+[ext_resource type="Texture2D" uid="uid://dt4asd0lt3eew" path="res://assets/images/tile-sets/spaced-tiles.png" id="1_sfcjx"]
+[ext_resource type="Script" uid="uid://dcdpjggtfn1pj" path="res://scripts/tile_map.gd" id="2_vai0s"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vai0s"]
+texture = ExtResource("1_sfcjx")
+margins = Vector2i(22, 22)
+separation = Vector2i(20, 0)
+texture_region_size = Vector2i(77, 63)
+0:0/0 = 0
+3:0/0 = 0
+6:0/0 = 0
+7:0/0 = 0
+8:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_ha2v4"]
+tile_shape = 3
+tile_size = Vector2i(77, 63)
+terrain_set_0/mode = 0
+terrain_set_0/terrain_0/name = "Grass"
+terrain_set_0/terrain_0/color = Color(0.576471, 0.792157, 0.333333, 1)
+terrain_set_0/terrain_1/name = "Tall Grass"
+terrain_set_0/terrain_1/color = Color(0.443137, 0.682353, 0.482353, 1)
+terrain_set_0/terrain_2/name = "Mountain"
+terrain_set_0/terrain_2/color = Color(0.921569, 0.572549, 0.505882, 1)
+terrain_set_0/terrain_3/name = "Water"
+terrain_set_0/terrain_3/color = Color(0.34902, 0.545098, 0.784314, 1)
+terrain_set_0/terrain_4/name = "Objective"
+terrain_set_0/terrain_4/color = Color(0.956863, 0.929412, 0.458824, 1)
+sources/0 = SubResource("TileSetAtlasSource_vai0s")
+
+[node name="TileMapLayer" type="TileMapLayer"]
+position = Vector2(-1, -1)
+tile_set = SubResource("TileSet_ha2v4")
+script = ExtResource("2_vai0s")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(576, 324)

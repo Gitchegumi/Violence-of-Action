@@ -6,16 +6,16 @@ This is a turn-based strategy game played on a 15x15 hexagonal grid. The game bo
 
 ## Map and Terrain
 
-The battlefield is a 15x15 hex grid, composed of 225 randomly placed tiles built around a central Objective tile. The terrain type of each tile affects unit movement.
+The battlefield is a 8 tile radius hex grid, composed of 216 randomly placed tiles built around a central Objective tile. The terrain type of each tile affects unit movement.
 
 ### Tile Types and Distribution
 
 There are four types of terrain tiles:
 
-*   **Grass:** 57 tiles
-*   **Tall Grass:** 56 tiles
-*   **Water:** 56 tiles
-*   **Mountain:** 55 tiles
+*   **Grass:** 62 tiles
+*   **Tall Grass:** 61 tiles
+*   **Water:** 53 tiles
+*   **Mountain:** 40 tiles
 *   **Objective:** 1 Tile
 
 ### Movement Costs
