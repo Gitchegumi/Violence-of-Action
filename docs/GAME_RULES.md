@@ -2,7 +2,7 @@
 
 ## Game Overview
 
-This is a turn-based strategy game played on a 15x15 hexagonal grid. The game board is randomly generated at the start of each match, creating a unique battlefield every time. Players will command their units to move across the map, engage in combat, and complete objectives.
+This is a turn-based strategy game played on a hexagonal map. The game board is randomly generated at the start of each match, creating a unique battlefield every time. Players will command their units to move across the map, engage in combat, and capture the objective.
 
 ## Map and Terrain
 
@@ -12,23 +12,23 @@ The battlefield is a 8 tile radius hex grid, composed of 216 randomly placed til
 
 There are four types of terrain tiles:
 
-*   **Grass:** 62 tiles
-*   **Tall Grass:** 61 tiles
+*   **Field:** 62 tiles
+*   **Forest:** 61 tiles
 *   **Water:** 53 tiles
 *   **Mountain:** 40 tiles
 *   **Objective:** 1 Tile
 
 ### Movement Costs
 
-*   **Grass:** Costs 1 movement point to enter.
-*   **Tall Grass:** Costs 2 movement points to enter.
+*   **Field:** Costs 1 movement point to enter.
+*   **Forest:** Costs 2 movement points to enter.
 *   **Water:** Can only be traversed by units with water-crossing capabilities. Cost 1 movement to enter for these units.
 *   **Mountain:** Costs 5 movement points to enter.
 
 ## Game Setup
 
 *   **Players:** The game supports 2-3 players.
-*   **Map Generation:** The map is generated randomly, starting with the Objective tile placed at the center of the 15x15 hex grid. Other terrain tiles are then randomly placed clockwise around the Objective tile, starting at the 12 o'clock position, until all tiles are placed.
+*   **Map Generation:** The map is generated randomly, starting with the Objective tile placed at the center of the hex map. Other terrain tiles are then randomly placed clockwise around the Objective tile, starting at the 12 o'clock position, until all tiles are placed.
 *   **Unit Deployment:** Each player starts the game with 12 essence to purchase their initial deployment force.
 
 ## Initial Deployment Phase

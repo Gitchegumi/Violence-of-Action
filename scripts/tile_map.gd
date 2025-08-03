@@ -1,19 +1,19 @@
 extends TileMapLayer
 
 # Enum for terrain types to make the code more readable.
-enum TerrainType { GRASS, TALL_GRASS, WATER, MOUNTAIN, OBJECTIVE }
+enum TerrainType { FIELD, FOREST, WATER, MOUNTAIN, OBJECTIVE }
 
 # The distribution of terrain tiles as specified in GAME_RULES.md.
 const TILE_DISTRIBUTION = {
-	TerrainType.GRASS: 62,
-	TerrainType.TALL_GRASS: 61,
+	TerrainType.FIELD: 62,
+	TerrainType.FOREST: 61,
 	TerrainType.WATER: 53,
 	TerrainType.MOUNTAIN: 40,
 }
 
 const TERRAIN_TO_ATLAS_COORD = {
-	TerrainType.GRASS: Vector2i(6, 0),
-	TerrainType.TALL_GRASS: Vector2i(7, 0),
+	TerrainType.FIELD: Vector2i(6, 0),
+	TerrainType.FOREST: Vector2i(7, 0),
 	TerrainType.WATER: Vector2i(0, 0),
 	TerrainType.MOUNTAIN: Vector2i(8, 0),
 	TerrainType.OBJECTIVE: Vector2i(3, 0)
