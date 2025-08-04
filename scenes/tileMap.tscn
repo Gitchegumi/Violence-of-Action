@@ -1,9 +1,9 @@
 [gd_scene load_steps=14 format=3 uid="uid://c6i7i5yoovjsh"]
 
-[ext_resource type="Texture2D" uid="uid://bu2jpcieuvkm6" path="res://assets/images/tile-sets/Placeholder Tiles.png" id="1_vai0s"]
+[ext_resource type="Texture2D" uid="uid://bmcm0no38b5ve" path="res://assets/images/tile-sets/Placeholder Tiles.png" id="1_vai0s"]
 [ext_resource type="Script" uid="uid://dcdpjggtfn1pj" path="res://scripts/tile_map.gd" id="2_vai0s"]
 [ext_resource type="Script" uid="uid://mtv275nd4mwu" path="res://scripts/terrain_type.gd" id="3_nom7x"]
-[ext_resource type="Texture2D" uid="uid://u6n5a7c3dj7r" path="res://assets/images/tile-sets/tile_selection.png" id="3_r4mkq"]
+[ext_resource type="Texture2D" uid="uid://bobfakdh6tp34" path="res://assets/images/tile-sets/tile_selection.png" id="3_r4mkq"]
 [ext_resource type="Resource" uid="uid://bwleypqdpg1q4" path="res://assets/data/terrain_types/field.tres" id="4_f80qb"]
 [ext_resource type="Resource" uid="uid://ductesbhuyng2" path="res://assets/data/terrain_types/forest.tres" id="5_qy4fl"]
 [ext_resource type="Resource" uid="uid://bxckqesd81gew" path="res://assets/data/terrain_types/mountain.tres" id="6_f7cwn"]
