@@ -6,16 +6,16 @@ This is a turn-based strategy game played on a hexagonal map. The game board is 
 
 ## Map and Terrain
 
-The battlefield is a 8 tile radius hex grid, composed of 216 randomly placed tiles built around a central Objective tile. The terrain type of each tile affects unit movement.
+The battlefield is a 8 tile radius hex grid, composed of 216 randomly placed tiles built around a central Objective tile. The terrain type of each tile affects unit movement. Tiles are placed based on random noise generation to keep maps natural looking, but random.
 
 ### Tile Types and Distribution
 
 There are four types of terrain tiles:
 
-*   **Field:** 62 tiles
-*   **Forest:** 61 tiles
-*   **Water:** 53 tiles
-*   **Mountain:** 40 tiles
+*   **Field:** 78 tiles
+*   **Forest:** 77 tiles
+*   **Water:** 40 tiles
+*   **Mountain:** 21 tiles
 *   **Objective:** 1 Tile
 
 ### Movement Costs
