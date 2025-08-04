@@ -8,17 +8,17 @@
   "description": "Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.",
   "cost": 3,
   "stats": {
-    "hp": 5,
-    "attack": 3,
-    "range": 1,
-    "armor": 2,
-    "speed": 2
+	"hp": 5,
+	"attack": 3,
+	"range": 1,
+	"armor": 2,
+	"speed": 2
   },
   "terrain": {
-    "grass": 1,
-    "tall_grass": 2,
-    "water": null,
-    "mountain": 10
+	"grass": 1,
+	"tall_grass": 2,
+	"water": null,
+	"mountain": 10
   },
   "special": "Splash damage in adjacent hexes"
 }

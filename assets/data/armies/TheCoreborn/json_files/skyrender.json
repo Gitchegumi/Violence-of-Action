@@ -8,17 +8,17 @@
   "description": "Hovering drone-rider capable of crossing all terrain types.",
   "cost": 12,
   "stats": {
-    "hp": 3,
-    "attack": 2,
-    "range": 2,
-    "armor": 1,
-    "speed": 6
+	"hp": 3,
+	"attack": 2,
+	"range": 2,
+	"armor": 1,
+	"speed": 6
   },
   "terrain": {
-    "grass": 1,
-    "tall_grass": 1,
-    "water": 1,
-    "mountain": 1
+	"grass": 1,
+	"tall_grass": 1,
+	"water": 1,
+	"mountain": 1
   },
   "special": "Ignores terrain penalties; may move again after combat once per game"
 }

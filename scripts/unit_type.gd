@@ -13,6 +13,9 @@ class_name UnitType
 ## Is the unit upgradable?
 @export var can_upgrade: bool = true
 
+## The essence cost to upgrade
+@export var upgrade_cost: int = 0
+
 ## Upgrades to which unit?
 @export var upgrades_to: UnitType
 

@@ -8,6 +8,7 @@ unit_name = "Fluxsmith"
 unit_role = "Engineer / Support"
 unit_tier = 1
 can_upgrade = true
+upgrade_cost = 3
 unit_description = "Support unit with healing and terrain-altering abilities."
 unit_cost = 2
 stats_block = {

@@ -8,17 +8,17 @@
   "description": "Bio-engineered aquatic troopers with amphibious mobility.",
   "cost": 2,
   "stats": {
-    "hp": 2,
-    "attack": 2,
-    "range": 1,
-    "armor": 0,
-    "speed": 3
+	"hp": 2,
+	"attack": 2,
+	"range": 1,
+	"armor": 0,
+	"speed": 3
   },
   "terrain": {
-    "grass": 1,
-    "tall_grass": 2,
-    "water": 1,
-    "mountain": null
+	"grass": 1,
+	"tall_grass": 2,
+	"water": 1,
+	"mountain": null
   },
   "special": null
 }

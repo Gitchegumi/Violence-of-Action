@@ -1,24 +1,24 @@
 {
-  "id": "fluxsmith",
-  "name": "Fluxsmith",
-  "role": "Engineer / Support",
-  "tier": 1,
-  "can_upgrade": true,
-  "upgrades_to": null,
-  "description": "Support unit with healing and terrain-altering abilities.",
-  "cost": 2,
-  "stats": {
-	"hp": 2,
-	"attack": 1,
-	"range": 1,
-	"armor": 0,
-	"speed": 3
-  },
-  "terrain": {
-	"grass": 1,
-	"tall_grass": 2,
-	"water": null,
-	"mountain": null
-  },
-  "special": "Heals adjacent allies; can construct temporary barriers"
+	"id": "fluxsmith",
+	"name": "Fluxsmith",
+	"role": "Engineer / Support",
+	"tier": 1.0,
+	"can_upgrade": true,
+	"upgrades_to": null,
+	"description": "Support unit with healing and terrain-altering abilities.",
+	"cost": 2.0,
+	"stats": {
+		"hp": 2.0,
+		"attack": 1.0,
+		"range": 1.0,
+		"armor": 0.0,
+		"speed": 3.0
+	},
+	"terrain": {
+		"grass": 1.0,
+		"tall_grass": 2.0,
+		"water": null,
+		"mountain": null
+	},
+	"special": "Heals adjacent allies; can construct temporary barriers"
 }
