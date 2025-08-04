@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://d4fivkad8fgh"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_uur5j"]
+
+[resource]
+script = ExtResource("1_uur5j")
+unit_name = "Battlefield Scavenger"
+unit_role = "Scavenger"
+unit_tier = 1
+can_upgrade = false
+upgrade_cost = -1
+unit_description = "A unit that profits from destruction on the battlefield."
+unit_cost_type = "fibonnacci"
+unit_cost = 1
+stats_block = {
+"armor": 0,
+"attack": 1,
+"health": 1,
+"range": 1,
+"speed": 3
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 2,
+"mountain": 5,
+"water": -1
+}
+special_abilities = Array[String](["This unit's only method of generating essence. See GAME_RULES.md for scaling cost. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

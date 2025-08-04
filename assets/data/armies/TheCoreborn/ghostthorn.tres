@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://dygur3s7vcwig"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_8m3po"]
+
+[resource]
+script = ExtResource("1_8m3po")
+unit_name = "Ghost Thorn"
+unit_role = "Special Forces"
+unit_tier = 1
+can_upgrade = true
+upgrade_cost = 5
+unit_description = "Stealthy infiltrators using teleportation tech."
+unit_cost_type = "standard"
+unit_cost = 3
+stats_block = {
+"armor": 0,
+"attack": 2,
+"health": 2,
+"range": 1,
+"speed": 5
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 2,
+"mountain": 5,
+"water": -1
+}
+special_abilities = Array[String](["Can teleport up to 3 hexes once per game"])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
