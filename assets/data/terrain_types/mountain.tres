@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TerrainType" load_steps=2 format=3 uid="uid://bxckqesd81gew"]
+
+[ext_resource type="Script" uid="uid://mtv275nd4mwu" path="res://scripts/terrain_type.gd" id="1_abcde"]
+
+[resource]
+script = ExtResource("1_abcde")
+terrain_name = "Mountain"
+atlas_coord = Vector2i(3, 0)
+move_cost = 5
+distribution_count = 21
+passable_by = "land"
+essence_cost_to_hold = 0

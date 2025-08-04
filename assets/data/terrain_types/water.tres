@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TerrainType" load_steps=2 format=3 uid="uid://bh866jqvm2hwk"]
+
+[ext_resource type="Script" uid="uid://mtv275nd4mwu" path="res://scripts/terrain_type.gd" id="1_abcde"]
+
+[resource]
+script = ExtResource("1_abcde")
+terrain_name = "Water"
+atlas_coord = Vector2i(4, 0)
+move_cost = 1
+distribution_count = 40
+passable_by = "water-crossing"
+essence_cost_to_hold = 0
