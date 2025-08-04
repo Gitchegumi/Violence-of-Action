@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://vo7dx1jmsgxq"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_6xceg"]
+
+[resource]
+script = ExtResource("1_6xceg")
+unit_name = "Fluxsmith"
+unit_role = "Engineer / Support"
+unit_tier = 1
+can_upgrade = true
+unit_description = "Support unit with healing and terrain-altering abilities."
+unit_cost = 2
+stats_block = {
+"armor": 0,
+"attack": 1,
+"health": 2,
+"range": 1,
+"speed": 3
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 2,
+"mountain": 5,
+"water": 0
+}
+special_abilities = Array[String](["Heals adjacent allies", "Can construct temporary barriers"])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
