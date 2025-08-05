@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://c84ojdvoj3brv"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_2hema"]
+
+[resource]
+script = ExtResource("1_2hema")
+unit_name = "Sky Render"
+unit_role = "Hover Craft"
+unit_tier = 1
+can_upgrade = true
+upgrade_cost = 15
+unit_description = "Hovering drone-rider capable of crossing all terrain types."
+unit_cost_type = "standard"
+unit_cost = 12
+stats_block = {
+"armor": 1,
+"attack": 2,
+"health": 2,
+"range": 2,
+"speed": 8
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 1,
+"mountain": 1,
+"water": 1
+}
+special_abilities = Array[String](["Ignores terrain penalties", "may move again after combat once per game"])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

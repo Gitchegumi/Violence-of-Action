@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://dslsv0yfxylc1"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_6iqno"]
+
+[resource]
+script = ExtResource("1_6iqno")
+unit_name = "Shard Walker"
+unit_role = "Core Infantry"
+unit_tier = 1
+can_upgrade = true
+upgrade_cost = 3
+unit_description = "Light troops augmented with crystal tech for standard mobility."
+unit_cost_type = "standard"
+unit_cost = 1
+stats_block = {
+"armor": 0,
+"attack": 1,
+"health": 3,
+"range": 1,
+"speed": 4
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 2,
+"mountain": 5,
+"water": -1
+}
+special_abilities = Array[String]([])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
