@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="UnitType" load_steps=2 format=3 uid="uid://88nmx0kl6ilv"]
+
+[ext_resource type="Script" uid="uid://cogrj3h8s8nxx" path="res://scripts/unit_type.gd" id="1_tvlwq"]
+
+[resource]
+script = ExtResource("1_tvlwq")
+unit_name = "Tide Born"
+unit_role = "Amphibious"
+unit_tier = 1
+can_upgrade = true
+upgrade_cost = 5
+unit_description = "Bio-engineered aquatic troopers with amphibious mobility."
+unit_cost_type = "standard"
+unit_cost = 2
+stats_block = {
+"armor": 0,
+"attack": 2,
+"health": 2,
+"range": 1,
+"speed": 3
+}
+terrain_type_matrix = {
+"field": 1,
+"forest": 2,
+"mountain": 5,
+"water": 1
+}
+special_abilities = Array[String](["Can move on water"])
+metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

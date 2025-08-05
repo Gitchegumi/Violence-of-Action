@@ -40,7 +40,7 @@ class_name UnitType
 	"field": 1,
 	"forest": 2,
 	"mountain": 5,
-	"water": 0
+	"water": -1
 }
 
 ## Any Special Abilities
