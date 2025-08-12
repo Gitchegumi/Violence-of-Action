@@ -27,21 +27,10 @@ class_name UnitType
 @export var unit_cost: int = 0
 
 ## The Unit's Stats Block
-@export var stats_block: Dictionary = {
-	"health": 0,
-	"attack": 0,
-	"range": 0,
-	"armor": 0,
-	"speed": 0
-}
+@export var stats_block: Dictionary = {"health": 0, "attack": 0, "range": 0, "armor": 0, "speed": 0}
 
 ## The Units ability to traverse terrain
-@export var terrain_type_matrix: Dictionary = {
-	"field": 1,
-	"forest": 2,
-	"mountain": 5,
-	"water": -1
-}
+@export var terrain_type_matrix: Dictionary = {"field": 1, "forest": 2, "mountain": 5, "water": -1}
 
 ## Any Special Abilities
 @export var special_abilities: Array[String] = []
@@ -85,7 +74,7 @@ func get_cost(p_unit_count: int = 0) -> int:
 		return unit_cost
 	elif unit_cost_type == "fibonacci":
 		return fibonacci(p_unit_count + 1)
-	return 0 # Default case for unknown cost types
+	return 0  # Default case for unknown cost types
 
 
 # Calculates the nth Fibonacci number.
