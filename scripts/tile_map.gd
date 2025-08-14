@@ -12,10 +12,16 @@ const PLAYER_COUNT = 2 # Can be 2 or 3
 ## Assign this in the Godot Inspector.
 @export var objective_type: TerrainType
 
+# --- Troop Placement Integration ---
+@onready var troop_manager = preload("res://scripts/troop_manager.gd").new()
+
 # --- Built-in Godot Functions ---
 
 func _ready():
 	_generate_map()
+	# Wire up the troop manager (keeps mechanics out of main.gd)
+	add_child(troop_manager)
+	troop_manager.tile_map = self
 
 # --- Map Generation ---
 
@@ -297,3 +303,8 @@ func _unhandled_input(event):
 					print(info)
 				else:
 					print("Selected tile: ", selected_tile, " (Unknown Terrain)")
+	
+	# Press P to place a unit on the currently selected tile (if valid)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
+		if selected_tile != Vector2i(-1, -1):
+			troop_manager.place_unit(selected_tile)

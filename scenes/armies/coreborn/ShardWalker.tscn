@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://canapamnuujyo"]
+
+[ext_resource type="Script" uid="uid://b2emw4ripikjq" path="res://scripts/armies/coreborn/shard_walker.gd" id="1_6ckio"]
+[ext_resource type="Texture2D" uid="uid://cfoscs781i3qf" path="res://assets/images/coreborn/placeholder-units.png" id="1_l236m"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_6ckio"]
+radius = 100.62
+height = 266.0
+
+[node name="ShardWalker" type="Node2D"]
+script = ExtResource("1_6ckio")
+
+[node name="UnitArtwork" type="Sprite2D" parent="."]
+texture = ExtResource("1_l236m")
+region_enabled = true
+region_rect = Rect2(258, 548, 236, 301)
+
+[node name="UnitSelection" type="Area2D" parent="."]
+
+[node name="SelectionHitbox" type="CollisionShape2D" parent="UnitSelection"]
+position = Vector2(-1, 0)
+shape = SubResource("CapsuleShape2D_6ckio")
+
+[node name="SelectionRing" type="Node2D" parent="."]
+
+[node name="UnitStats" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true
