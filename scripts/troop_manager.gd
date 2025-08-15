@@ -74,7 +74,7 @@ func place_unit(map_pos: Vector2i) -> bool:
 
 func _center_of_tile(map_pos: Vector2i) -> Vector2:
 	# For hex stairs right layout, Godot's map_to_local returns the center
-    return tile_map.map_to_local(map_pos)
+	return tile_map.map_to_local(map_pos)
 
 func _on_unit_selected(unit: ShardWalker):
 	print("Selected: ", unit.data.display_name, " @ ", unit.map_pos)
