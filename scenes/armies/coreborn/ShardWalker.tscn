@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://canapamnuujyo"]
 
-[ext_resource type="Script" uid="uid://b2emw4ripikjq" path="res://scripts/armies/coreborn/shard_walker.gd" id="1_6ckio"]
-[ext_resource type="Texture2D" uid="uid://cfoscs781i3qf" path="res://assets/images/coreborn/placeholder-units.png" id="1_l236m"]
+[ext_resource type="Script" uid="uid://0v1hhlnhiimx" path="res://scripts/armies/coreborn/shard_walker.gd" id="1_6ckio"]
+[ext_resource type="Texture2D" uid="uid://cs22un4jxdahi" path="res://assets/images/coreborn/placeholder-units.png" id="1_l236m"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_6ckio"]
 radius = 100.62
