@@ -73,10 +73,8 @@ func place_unit(map_pos: Vector2i) -> bool:
 	return true
 
 func _center_of_tile(map_pos: Vector2i) -> Vector2:
-	# Use the built-in TileMapLayer API to get the center of the tile
-	var tile_origin = tile_map.map_to_local(map_pos)
-	var tile_size = tile_map.tile_set.tile_size if tile_map.tile_set else Vector2i(64, 64)
-	return tile_origin + Vector2(tile_size.x / 2.0, tile_size.y / 2.0)
+	# For hex stairs right layout, Godot's map_to_local returns the center
+    return tile_map.map_to_local(map_pos)
 
 func _on_unit_selected(unit: ShardWalker):
 	print("Selected: ", unit.data.display_name, " @ ", unit.map_pos)
