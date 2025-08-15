@@ -38,9 +38,7 @@ func _load_unit_catalog():
 			if f.ends_with(".tres"):
 				var res: Resource = ResourceLoader.load(dir_path + "/" + f)
 				if res and res is UnitType:
-					var id = (res as UnitType).id
-					if id == "": id = f.get_basename()
-					catalog[id] = res
+					catalog[f.get_basename()] = res
 		dir.list_dir_end()
 
 	# Pick a default unit if none selected
@@ -65,7 +63,7 @@ func place_unit(map_pos: Vector2i) -> bool:
 	if terrain == null or terrain.passable_by != "land":
 		return false
 
-	var u: ShardWalker = base_unit_scene.instantiate()
+	var u: ShardWalker = shardwalker_scene.instantiate()
 	u.data = catalog[current_unit_id]
 	u.map_pos = map_pos
 	u.position = _center_of_tile(map_pos)

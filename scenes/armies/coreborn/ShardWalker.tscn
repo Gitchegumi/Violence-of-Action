@@ -8,6 +8,7 @@ radius = 100.62
 height = 266.0
 
 [node name="ShardWalker" type="Node2D"]
+scale = Vector2(0.2, 0.2)
 script = ExtResource("1_6ckio")
 
 [node name="UnitArtwork" type="Sprite2D" parent="."]
