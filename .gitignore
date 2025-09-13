@@ -30,4 +30,6 @@ export_presets.cfg
 
 # Gemini files
 GEMINI.md
+
+# VS Code workspace file
 ViolenceofAction.code-workspace
