@@ -14,6 +14,8 @@ const PLAYER_COUNT = 2 # Can be 2 or 3
 
 # --- Troop Placement Integration ---
 @onready var troop_manager = preload("res://scripts/troop_manager.gd").new()
+var deployment_zones_data: Array = []
+
 
 # --- Built-in Godot Functions ---
 
@@ -39,11 +41,11 @@ func _generate_map():
 	var terrain_map = _generate_noise_terrain(center_pos)
 
 	# --- 2. Define Deployment Zones and Ensure They Are Passable ---
-	var deployment_zones = _get_deployment_zones(center_pos)
-	_ensure_passable_zones(terrain_map, deployment_zones)
+	deployment_zones_data = _get_deployment_zones(center_pos)
+	_ensure_passable_zones(terrain_map, deployment_zones_data)
 
 	# --- 3. Validate and Carve Paths to Objective ---
-	_ensure_paths_to_objective(terrain_map, deployment_zones, center_pos)
+	_ensure_paths_to_objective(terrain_map, deployment_zones_data, center_pos)
 
 	# --- 4. Place Tiles on the Map ---
 	self.terrain_data_map = terrain_map # Make the map data available for selection logic
@@ -153,6 +155,13 @@ func _find_path(start: Vector2i, end: Vector2i, terrain_map: Dictionary) -> bool
 
 # --- Coordinate and Zone Helpers ---
 
+# Check if a coordinate is in a player's deployment zone.
+func is_in_deployment_zone(coord: Vector2i, player_index: int) -> bool:
+	if player_index < 0 or player_index >= deployment_zones_data.size():
+		return false
+	return coord in deployment_zones_data[player_index]
+
+
 # Gets the coordinates for deployment zones based on player count.
 func _get_deployment_zones(center: Vector2i) -> Array:
 	var zones = []
@@ -160,13 +169,13 @@ func _get_deployment_zones(center: Vector2i) -> Array:
 
 	if PLAYER_COUNT == 2:
 		var zone_nw = []; var zone_se = []
-		for i in range(r):
+		for i in range(r + 1):
 			zone_nw.append(center + Vector2i(-r + i, -i))
 			zone_se.append(center + Vector2i(r - i, i))
 		zones.append(zone_nw); zones.append(zone_se)
 	else: # 3 Players
 		var zone_n = []; var zone_se = []; var zone_sw = []
-		for i in range(r):
+		for i in range(r + 1):
 			zone_n.append(center + Vector2i(i, -r))
 			zone_se.append(center + Vector2i(r, i))
 			zone_sw.append(center + Vector2i(-r + i, r - i))
@@ -307,4 +316,7 @@ func _unhandled_input(event):
 	# Press P to place a unit on the currently selected tile (if valid)
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if selected_tile != Vector2i(-1, -1):
-			troop_manager.place_unit(selected_tile)
+			if is_in_deployment_zone(selected_tile, 0):
+				troop_manager.place_unit(selected_tile)
+			else:
+				print("Cannot place unit outside of deployment zone.")
