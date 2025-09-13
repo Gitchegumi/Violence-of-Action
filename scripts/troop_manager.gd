@@ -67,6 +67,8 @@ func place_unit(map_pos: Vector2i) -> bool:
 	u.data = catalog[current_unit_id]
 	u.map_pos = map_pos
 	u.position = _center_of_tile(map_pos)
+	# Scale the unit down for tile map placement
+	u.scale = Vector2(0.15, 0.15)
 	tile_map.add_child(u)
 	units_on_map[map_pos] = u
 	u.selected.connect(_on_unit_selected)
