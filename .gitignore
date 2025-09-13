@@ -31,5 +31,8 @@ export_presets.cfg
 # Gemini files
 GEMINI.md
 
+# GitHub Spec Kit files
+violence-of-action/
+
 # VS Code workspace file
 ViolenceofAction.code-workspace
