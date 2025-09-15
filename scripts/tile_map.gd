@@ -1,5 +1,8 @@
 extends TileMapLayer
 
+## Emitted when a tile is clicked and a unit is found or not found.
+signal unit_selected(unit: Node)
+
 # The radius of the hexagonal map in tiles.
 const MAP_RADIUS = 8
 const PLAYER_COUNT = 2 # Can be 2 or 3
@@ -282,41 +285,35 @@ func _unhandled_input(event):
 	if event is InputEventMouseMotion and is_dragging:
 		camera.position -= event.relative
 
-	# Handle left-click for tile selection
+	# Handle left-click for tile selection and unit selection
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
 		is_dragging = false
 		
 		var map_pos = local_to_map(get_local_mouse_position())
 		
-		if get_cell_source_id(map_pos) != -1:
-			var terrain: TerrainType = terrain_data_map.get(map_pos)
+		print("Left click at local position: ", get_local_mouse_position())
+		print("Mapped to tile position: ", map_pos)
+		
+		# Check if a unit is on this tile
+		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
+		
+		if unit_on_tile:
+			print("Unit found at tile: ", map_pos, ", unit: ", unit_on_tile.name)
+			emit_signal("unit_selected", unit_on_tile)
+		else:
+			print("No unit found at tile: ", map_pos)
+			emit_signal("unit_selected", null)
 			
-			selection_layer.clear()
-			selected_tile = map_pos
-			
-			selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
-			
-			if terrain:
-				var info = str("Selected: ", terrain.terrain_name, ", Cost: ", terrain.move_cost)
-				if terrain.essence_cost_to_hold > 0:
-					info += str(", Essence Cost: ", terrain.essence_cost_to_hold)
-				if terrain.passable_by != "land":
-					info += str(", Requires: ", terrain.passable_by)
-				print(info)
-			else:
-				# This could happen if the objective tile is selected
-				if map_pos == Vector2i(6,7):
-					var info = str("Selected: ", objective_type.terrain_name, ", Cost: ", objective_type.move_cost)
-					if objective_type.essence_cost_to_hold > 0:
-						info += str(", Essence Cost: ", objective_type.essence_cost_to_hold)
-					print(info)
-				else:
-					print("Selected tile: ", selected_tile, " (Unknown Terrain)")
+		# Existing tile selection highlight logic (keep this)
+		selection_layer.clear()
+		selected_tile = map_pos
+		selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
 	
 	# Press P to place a unit on the currently selected tile (if valid)
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if selected_tile != Vector2i(-1, -1):
 			if is_in_deployment_zone(selected_tile, 0):
 				troop_manager.place_unit(selected_tile)
+				get_viewport().set_input_as_handled()
 			else:
 				print("Cannot place unit outside of deployment zone.")

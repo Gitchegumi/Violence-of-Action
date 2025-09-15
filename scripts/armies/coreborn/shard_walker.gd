@@ -11,20 +11,28 @@ func _ready():
 	if data == null:
 		push_error("Unit spawned without data.")
 		return
-	
-	# Apply art
-	if $Sprite and data.texture:
-		$Sprite.texture = data.texture
 
-	# Click to select
-	if $ClickArea:
-		$ClickArea.input_pickable = true
-		$ClickArea.input_event.connect(_on_input)
+	# Apply art
+	if $UnitArtwork:
+		pass
+
+	# C	if $UnitSelection:
+		$UnitSelection.input_pickable = true
+		$UnitSelection.input_event.connect(_on_input)
 
 func _on_input(_vp, event, _shape_idx):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		emit_signal("selected", self)
+		get_viewport().set_input_as_handled()
 
 func set_selected(on: bool) -> void:
 	if has_node("SelectionRing"):
 		$SelectionRing.visible = on
+
+func get_unit_data() -> UnitType:
+	return data
+
+func get_artwork_node() -> Node:
+	if $UnitArtwork:
+		return $UnitArtwork.duplicate()
+	return null

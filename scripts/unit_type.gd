@@ -4,6 +4,10 @@ class_name UnitType
 ## The display name of the unit.
 @export var unit_name: String = "Unnamed"
 
+
+
+
+
 ## The Unit's combat role
 @export var unit_role: String = "Undefined"
 
