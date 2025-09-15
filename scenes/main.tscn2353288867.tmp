@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://b6163kstksqqe"]
+
+[ext_resource type="PackedScene" uid="uid://c6i7i5yoovjsh" path="res://scenes/tileMap.tscn" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://cp41w75xohqfi" path="res://scripts/main.gd" id="1_sugp2"]
+[ext_resource type="PackedScene" uid="uid://1rpkc5flac0n" path="res://scenes/ui/unit_info_panel.tscn" id="2_0wfyh"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_sugp2")
+
+[node name="TileMapLayer" parent="." instance=ExtResource("1_o5qli")]
+
+[node name="UnitInfoPanel" parent="." instance=ExtResource("2_0wfyh")]
+offset_left = -2.0
+offset_top = 448.0
+offset_right = -2.0
+offset_bottom = 448.0

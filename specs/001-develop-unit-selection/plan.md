@@ -169,7 +169,7 @@ The `/tasks` command will generate a `tasks.md` file by following a Test-Driven 
 3.  **Implement the Feature:**
     *   Create a task to add the `unit_selected(unit: Node)` signal to `tile_map.gd`.
     *   Create a task to implement the click handling logic in `tile_map.gd` to detect clicks on tiles with units and emit the `unit_selected` signal.
-    *   Create a task to create the `unit_info_panel.tscn` scene and its script, including the `show_unit(unit: Node)` and `hide_panel()` functions.
+    *   Create a task to create a **functional placeholder** for the `unit_info_panel.tscn` scene. This includes adding basic `Label` nodes for stats and a `TextureRect` for the image. The script should include the `show_unit(unit: Node)` and `hide_panel()` functions. The final aesthetic design will be handled in a separate task.
     *   Create a task to connect the `tile_map.gd` `unit_selected` signal to the `unit_info_panel.gd` `show_unit` function in the main scene.
 4.  **Make Tests Pass:**
     *   Create a task to run the tests and verify that they now pass.
@@ -201,15 +201,15 @@ The `/tasks` command will generate a `tasks.md` file by following a Test-Driven 
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
-- [ ] Phase 3: Tasks generated (/tasks command)
-- [ ] Phase 4: Implementation complete
-- [ ] Phase 5: Validation passed
+- [x] Phase 3: Tasks generated (/tasks command)
+- [x] Phase 4: Implementation complete
+- [x] Phase 5: Validation passed
 
 **Gate Status**:
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
-- [ ] Complexity deviations documented
+- [x] Complexity deviations documented
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*
