@@ -7,6 +7,9 @@
 bin/
 obj/
 
+# Temporary files
+*.tmp
+
 # Editor-specific files
 .editor/
 .vscode/
@@ -34,6 +37,7 @@ GEMINI.md
 
 # GitHub Spec Kit files
 .specify/
+prompts/
 
 
 # VS Code workspace file

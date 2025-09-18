@@ -78,5 +78,5 @@ func hide_panel():
 	speed_label.text = "Speed: "
 	for child in unit_viewport.get_children():
 		child.queue_free()
-child in unit_viewport.get_children():
+	for child in unit_viewport.get_children():
 		child.queue_free()
