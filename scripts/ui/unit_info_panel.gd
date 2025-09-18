@@ -48,7 +48,6 @@ func show_unit(unit: Node):
 			# Center the artwork within the viewport
 			if artwork_node is Node2D:
 				var viewport_size = unit_viewport.size
-				var artwork_rect = artwork_node.get_rect()
 				var center_x = viewport_size.x / 2.0
 				var center_y = viewport_size.y / 2.0
 				artwork_node.position = Vector2(center_x, center_y)
