@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-develop-unit-selection`
 **Created**: 2025-09-13
-**Status**: Draft
+**Status**: Completed
 **Input**: User description: "Develop unit selection logic so that units placed on the map are selectable, referencing issue #42. This feature builds on feature/place-troops branch. The goal is to allow a player to select a placed unit and see information about that unit on the lower third. It can be implemented by selecting a tile that has a unit on it which will then show the unit's information in the lower third"
 
 ---
