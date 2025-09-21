@@ -19,7 +19,7 @@ This file expands the global GEMINI.md to provide additional context for the _Vi
 - Give suggestions for signals to connect when appropriate
 - Only directly edit `.gd` files
 
-## ⛔ Gemini Must Not:
+## ⛔ Gemini Must Not
 
 - Modify `project.godot` or `.import/` directories
 - Do not modify `.tscn` files directly
