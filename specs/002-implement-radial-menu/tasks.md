@@ -14,30 +14,30 @@ Derived from available artifacts (no REST endpoints; event-driven Godot feature)
 
 ## Phase 3.1: Setup
 
-- [ ] T001 Ensure GUT test runner configuration recognizes new test files (`tests/unit/test_radial_signals.gd`, `tests/ui/test_radial_menu_scene.gd`) – adjust any gut config if needed.
-- [ ] T002 [P] Create directory `scripts/ui/` if missing.
-- [ ] T003 [P] Create directory `scenes/ui/` if missing.
-- [ ] T004 Add placeholder `scripts/ui/deployment_controller.gd` (empty stub) – not wired yet (prevents later large `tile_map.gd`).
+- [X] T001 Ensure GUT test runner configuration recognizes new test files (`tests/unit/test_radial_signals.gd`, `tests/ui/test_radial_menu_scene.gd`) – adjust any gut config if needed.
+- [X] T002 [P] Create directory `scripts/ui/` if missing.
+- [X] T003 [P] Create directory `scenes/ui/` if missing.
+- [X] T004 Add placeholder `scripts/ui/deployment_controller.gd` (empty stub) – not wired yet (prevents later large `tile_map.gd`).
 
 ## Phase 3.2: Tests First (TDD) – Augment & Fail Intentionally
 
 Existing failing tests present. Add additional failing tests for full coverage before implementation.
 
-- [ ] T005 [P] Add integration test skeleton: `tests/ui/test_radial_focus_navigation.gd` (focus cycling & angular input stubs – all failing).
-- [ ] T006 [P] Add integration test skeleton: `tests/ui/test_radial_pagination.gd` (assert pagination controls appear with >12 mock units – failing).
-- [ ] T007 [P] Add integration test skeleton: `tests/ui/test_radial_edge_reposition.gd` (assert reposition near viewport edge – failing).
-- [ ] T008 [P] Add integration test skeleton: `tests/ui/test_radial_failure_feedback.gd` (simulate insufficient resources & occupied tile – failing).
-- [ ] T009 [P] Add integration test skeleton: `tests/ui/test_radial_debounce.gd` (attempt rapid double placement – failing).
-- [ ] T010 [P] Add integration test skeleton: `tests/ui/test_radial_resource_race.gd` (resources change mid-session – failing).
-- [ ] T011 [P] Add leak/orphan detection test: `tests/ui/test_radial_leak_cycle.gd` (open/close 20 times, currently failing due to missing implementation hooks).
+- [X] T005 [P] Add integration test skeleton: `tests/ui/test_radial_focus_navigation.gd` (focus cycling & angular input stubs – all failing).
+- [X] T006 [P] Add integration test skeleton: `tests/ui/test_radial_pagination.gd` (assert pagination controls appear with >12 mock units – failing).
+- [X] T007 [P] Add integration test skeleton: `tests/ui/test_radial_edge_reposition.gd` (assert reposition near viewport edge – failing).
+- [X] T008 [P] Add integration test skeleton: `tests/ui/test_radial_failure_feedback.gd` (simulate insufficient resources & occupied tile – failing).
+- [X] T009 [P] Add integration test skeleton: `tests/ui/test_radial_debounce.gd` (attempt rapid double placement – failing).
+- [X] T010 [P] Add integration test skeleton: `tests/ui/test_radial_resource_race.gd` (resources change mid-session – failing).
+- [X] T011 [P] Add leak/orphan detection test: `tests/ui/test_radial_leak_cycle.gd` (open/close 20 times, currently failing due to missing implementation hooks).
 
 ## Phase 3.3: Core Implementation (Signals, Data & Scenes)
 
-- [ ] T012 Declare deploy_* signals in `scripts/tile_map.gd` (or move to controller later) to satisfy `test_radial_signals.gd`.
-- [ ] T013 Implement `scenes/ui/radial_menu.tscn` (root `Control` named `RadialMenu`, placeholder container for icons).
-- [ ] T014 Implement `scripts/ui/radial_menu.gd` stub with: signal re-emits (hover, select, close), `open(origin_tile: Vector2i, units:Array)`, `close(reason:String)` (no layout yet).
-- [ ] T015 Implement `scenes/ui/unit_info_panel.tscn` (root `Control` named `UnitInfoPanel`, hidden default, child nodes: TextureRect, Name Label, Stats VBoxContainer, Abilities RichTextLabel).
-- [ ] T016 Implement `scripts/ui/unit_info_panel.gd` with `show_unit(dict)` + `hide_panel()` fulfilling existing test expectations (visibility toggles only initially).
+- [X] T012 Declare deploy_* signals in `scripts/tile_map.gd` (or move to controller later) to satisfy `test_radial_signals.gd`.
+- [X] T013 Implement `scenes/ui/radial_menu.tscn` (root `Control` named `RadialMenu`, placeholder container for icons).
+- [X] T014 Implement `scripts/ui/radial_menu.gd` stub with: signal re-emits (hover, select, close), `open(origin_tile: Vector2i, units:Array)`, `close(reason:String)` (no layout yet).
+- [X] T015 Implement `scenes/ui/radial_unit_info_panel.tscn` (root `Control` named `RadialUnitInfoPanel`, hidden default, child nodes: TextureRect, Name Label, Stats VBoxContainer, Abilities RichTextLabel).
+- [ ] T016 Implement `scripts/ui/radial_unit_info_panel.gd` with `show_unit(dict)` + `hide_panel()` fulfilling existing test expectations (visibility toggles only initially).
 - [ ] T017 Wire tile click in `tile_map.gd` to emit `deploy_tile_clicked` and instantiate radial scene (still static list stub of mock units) -> emit `deploy_radial_opened`.
 - [ ] T018 Add affordability filter logic (generate mock list with cost flag) & disabled state visual (e.g., modulate/gray) – no pagination yet.
 

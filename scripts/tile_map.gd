@@ -3,6 +3,13 @@ extends TileMapLayer
 ## Emitted when a tile is clicked and a unit is found or not found.
 signal unit_selected(unit: Node)
 
+signal deploy_tile_clicked(position: Vector2i)
+signal deploy_radial_opened(origin: Vector2i)
+signal deploy_unit_hovered(unit_id: String)
+signal deploy_unit_selected(unit_id: String, origin: Vector2i)
+signal deploy_placement_failed(reason: String, origin: Vector2i, unit_id: String)
+signal deploy_radial_closed(reason: String)
+
 # The radius of the hexagonal map in tiles.
 const MAP_RADIUS = 8
 const PLAYER_COUNT = 2 # Can be 2 or 3
