@@ -26,6 +26,13 @@ const PLAYER_COUNT = 2 # Can be 2 or 3
 @onready var troop_manager = preload("res://scripts/troop_manager.gd").new()
 var deployment_zones_data: Array = []
 
+# --- Radial Menu Integration ---
+var radial_menu_scene = preload("res://scenes/ui/radial_menu.tscn")
+var radial_menu_instance = null
+
+# --- Mock Resource System (for T018) ---
+var player_essence: int = 10  # Mock starting resources
+
 
 # --- Built-in Godot Functions ---
 
@@ -301,6 +308,13 @@ func _unhandled_input(event):
 		print("Left click at local position: ", get_local_mouse_position())
 		print("Mapped to tile position: ", map_pos)
 		
+		# Emit deploy tile clicked signal
+		emit_signal("deploy_tile_clicked", map_pos)
+		
+		# Check if tile is in deployment zone for radial menu
+		if is_in_deployment_zone(map_pos, 0):  # Assuming player 0 for now
+			_show_radial_menu(map_pos)
+		
 		# Check if a unit is on this tile
 		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
 		
@@ -324,3 +338,110 @@ func _unhandled_input(event):
 				get_viewport().set_input_as_handled()
 			else:
 				print("Cannot place unit outside of deployment zone.")
+	
+	# Debug keys for testing affordability (T018)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_1:
+		set_player_essence(5)  # Low resources - some units unaffordable
+	if event is InputEventKey and event.pressed and event.keycode == KEY_2:
+		set_player_essence(10)  # Medium resources 
+	if event is InputEventKey and event.pressed and event.keycode == KEY_3:
+		set_player_essence(20)  # High resources - all affordable
+
+# --- Radial Menu Functions ---
+
+func _show_radial_menu(origin_tile: Vector2i):
+	"""Show radial menu at the specified tile position with mock units"""
+	# Close existing radial menu if open
+	if radial_menu_instance:
+		_close_radial_menu("new_location")
+	
+	# Create mock units for deployment
+	var mock_units = _create_mock_units()
+	
+	# Instantiate radial menu
+	radial_menu_instance = radial_menu_scene.instantiate()
+	add_child(radial_menu_instance)
+	
+	# Position the radial menu at the tile center
+	var world_pos = map_to_local(origin_tile)
+	radial_menu_instance.position = world_pos
+	
+	# Open the radial menu with mock units
+	radial_menu_instance.open(origin_tile, mock_units)
+	
+	# Emit signal that radial menu is opened
+	emit_signal("deploy_radial_opened", origin_tile)
+
+func _close_radial_menu(reason: String):
+	"""Close the current radial menu if one exists"""
+	if radial_menu_instance:
+		radial_menu_instance.close(reason)
+		radial_menu_instance.queue_free()
+		radial_menu_instance = null
+		emit_signal("deploy_radial_closed", reason)
+
+func _create_mock_units() -> Array:
+	"""Create mock units for testing radial menu functionality with affordability"""
+	var units = []
+	
+	# Mock Infantry
+	var infantry_cost = 3
+	units.append({
+		"unit_id": "infantry",
+		"unit_name": "Infantry Squad", 
+		"unit_role": "Assault",
+		"unit_cost": infantry_cost,
+		"affordable": player_essence >= infantry_cost,
+		"stats_block": {"health": 12, "attack": 3, "range": 2, "armor": 1, "speed": 4},
+		"abilities": "Basic combat unit with balanced stats"
+	})
+	
+	# Mock Tank
+	var tank_cost = 8
+	units.append({
+		"unit_id": "tank",
+		"unit_name": "Battle Tank",
+		"unit_role": "Heavy",
+		"unit_cost": tank_cost,
+		"affordable": player_essence >= tank_cost,
+		"stats_block": {"health": 25, "attack": 6, "range": 3, "armor": 4, "speed": 2},
+		"abilities": "Heavy armor and firepower, slow movement"
+	})
+	
+	# Mock Artillery
+	var artillery_cost = 6
+	units.append({
+		"unit_id": "artillery",
+		"unit_name": "Artillery Unit",
+		"unit_role": "Support",
+		"unit_cost": artillery_cost,
+		"affordable": player_essence >= artillery_cost,
+		"stats_block": {"health": 8, "attack": 8, "range": 5, "armor": 1, "speed": 1},
+		"abilities": "Long-range bombardment, fragile"
+	})
+	
+	# Mock Expensive Unit (to test disabled state)
+	var expensive_cost = 15
+	units.append({
+		"unit_id": "mech",
+		"unit_name": "Battle Mech",
+		"unit_role": "Elite",
+		"unit_cost": expensive_cost,
+		"affordable": player_essence >= expensive_cost,
+		"stats_block": {"health": 30, "attack": 10, "range": 4, "armor": 5, "speed": 3},
+		"abilities": "Elite war machine with superior stats"
+	})
+	
+	return units
+
+func set_player_essence(amount: int):
+	"""Set player essence for testing affordability (temporary for T018)"""
+	player_essence = amount
+	if Engine.has_singleton("Logger"):
+		Logger.info("Player essence set to: %d" % player_essence)
+	else:
+		print("Player essence set to: ", player_essence)
+
+func get_player_essence() -> int:
+	"""Get current player essence"""
+	return player_essence

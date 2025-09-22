@@ -38,8 +38,8 @@ Existing failing tests present. Add additional failing tests for full coverage b
 - [X] T014 Implement `scripts/ui/radial_menu.gd` stub with: signal re-emits (hover, select, close), `open(origin_tile: Vector2i, units:Array)`, `close(reason:String)` (no layout yet).
 - [X] T015 Implement `scenes/ui/radial_unit_info_panel.tscn` (root `Control` named `RadialUnitInfoPanel`, hidden default, child nodes: TextureRect, Name Label, Stats VBoxContainer, Abilities RichTextLabel).
 - [X] T016 Implement `scripts/ui/radial_unit_info_panel.gd` with `show_unit(dict)` + `hide_panel()` fulfilling existing test expectations (visibility toggles only initially).
-- [ ] T017 Wire tile click in `tile_map.gd` to emit `deploy_tile_clicked` and instantiate radial scene (still static list stub of mock units) -> emit `deploy_radial_opened`.
-- [ ] T018 Add affordability filter logic (generate mock list with cost flag) & disabled state visual (e.g., modulate/gray) – no pagination yet.
+- [X] T017 Wire tile click in `tile_map.gd` to emit `deploy_tile_clicked` and instantiate radial scene (still static list stub of mock units) -> emit `deploy_radial_opened`.
+- [X] T018 Add affordability filter logic (generate mock list with cost flag) & disabled state visual (e.g., modulate/gray) – no pagination yet.
 
 ## Phase 3.4: Interaction & Navigation
 
