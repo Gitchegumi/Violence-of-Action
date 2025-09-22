@@ -1,5 +1,27 @@
 [gd_scene format=3 uid="uid://ddjkgjq7tk40g"]
 
+[ext_resource type="Script" path="res://scripts/ui/radial_unit_info_panel.gd" id="1_8g4vb"]
+
 [node name="RadialUnitInfoPanel" type="Control"]
 layout_mode = 3
 anchors_preset = 0
+script = ExtResource("1_8g4vb")
+
+[node name="UnitIcon" type="TextureRect" parent="."]
+layout_mode = 0
+anchors_preset = 0
+
+[node name="UnitName" type="Label" parent="."]
+layout_mode = 0
+anchors_preset = 0
+text = "Unit Name"
+
+[node name="StatsContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+anchors_preset = 0
+
+[node name="AbilitiesText" type="RichTextLabel" parent="."]
+layout_mode = 0
+anchors_preset = 0
+bbcode_enabled = true
+text = "Abilities: (none)"
