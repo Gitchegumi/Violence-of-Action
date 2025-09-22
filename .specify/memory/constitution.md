@@ -1,12 +1,19 @@
 <!--
 Sync Impact Report
-Previous Version: 2.2.0 → New Version: 2.2.1 (PATCH bump: ratification date finalized; no principle/content change)
+Previous Version: 2.2.1 → New Version: 2.3.0 (MINOR bump: new principle added for Godot file handling)
 Modified Principles: None
-Added Sections: None
+Added Sections: Principle VI - Godot File Handling Protocol
 Removed Sections: None
-Templates Updated: (no changes required for PATCH)
-Pending Updates: NONE
-Deferred TODOs: NONE
+Templates Updated: 
+  ✅ .specify/templates/plan-template.md (verified - Constitution Check will include new principle)
+  ✅ .specify/templates/spec-template.md (verified - no Godot-specific references)  
+  ✅ .specify/templates/tasks-template.md (verified - no changes needed)
+  ✅ .specify/templates/agent-file-template.md (verified - no changes needed)
+Runtime Docs Checked:
+  ✅ README.md (mentions .tscn files but no conflicts with new principle)
+  ✅ docs/quickstart.md (no Godot file references)
+Pending Updates: None
+Deferred TODOs: None
 -->
 
 # Violence of Action Constitution
@@ -56,6 +63,17 @@ MUST remain optional: core gameplay never hard-depends on Gemini availability. A
 exposed to external tooling MUST keep stable entry points. Rationale: Predictable evolution
 and safe external integration.
 
+### VI. Godot File Handling Protocol
+
+Agents MUST NOT directly edit .tscn (scene) or .tres (resource) files using text manipulation
+tools. These binary-adjacent formats require Godot's native serialization to maintain
+integrity and prevent corruption. When Godot MCP is unavailable, agents MUST provide
+specific user instructions and await confirmation before proceeding. Scene modifications
+SHOULD use Godot MCP commands or manual user guidance only. Script attachment to scenes,
+node hierarchy changes, and resource property updates MUST follow this protocol.
+Rationale: Prevents file corruption, maintains Godot's internal consistency, and ensures
+changes are properly validated by the engine.
+
 ## Additional Constraints
 
 Performance Targets:
@@ -99,6 +117,7 @@ Review Gates (Mandatory):
 - Principle III: Does the script/scene do only one thing? Any accidental God object?
 - Principle IV: Any new logs using logger? Any raw print() to remove?
 - Principle V: Any breaking data/schema change? If yes, version bump artifact present?
+- Principle VI: Any .tscn/.tres files modified? If yes, were proper protocols followed?
 
 Prohibited Without Justification:
 
@@ -137,4 +156,4 @@ Escalation:
 - Blocking violations (test absence, monolithic script, unseeded randomness) MUST be fixed
 before merge—no deferrals.
 
-**Version**: 2.2.1 | **Ratified**: 2025-09-21 | **Last Amended**: 2025-09-21
+**Version**: 2.3.0 | **Ratified**: 2025-09-21 | **Last Amended**: 2025-09-22
