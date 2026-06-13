@@ -1,22 +1,33 @@
-# Godot 4+ specific ignores
+############################################
+# Godot 4.x
+############################################
 .godot/
+.import/
+*.import
 *.uid
+*.translation
+project.godot.bck
+*.tmp
+*.tscn~
 
-# Mono/.NET specific ignores
+############################################
+# Mono / .NET (if using C#)
+############################################
 .mono/
 bin/
 obj/
 
-# Editor-specific files
-.editor/
+############################################
+# Editor / IDE meta
+############################################
 .vscode/
-project.godot.bck
-*.translation
+.editor/
+.idea/
+.vs/
 
-# Asset import files
-*.import
-
-# Exported project files
+############################################
+# Build / Export Artifacts
+############################################
 export_presets.cfg
 *.binary
 *.zip
@@ -24,9 +35,31 @@ export_presets.cfg
 *.pck
 *.apk
 *.aab
-
-# Android build directory
 /android/
 
-# Gemini files
-GEMINI.md
+############################################
+# Logs / Coverage / Misc
+############################################
+*.log
+coverage/
+*.junit.xml
+*.orig
+
+############################################
+# Python Environment / Caches
+############################################
+.venv/
+__pycache__/
+
+############################################
+# Governance & Automation
+############################################
+# Ignore only ephemeral potential future dirs, track templates & scripts
+.specify/**/cache/
+.specify/**/tmp/
+.specify/**/logs/
+
+############################################
+# Workspace / Project Files
+############################################
+ViolenceofAction.code-workspace

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://bjw2kjjwoin7l"]
+
+[ext_resource type="Script" uid="uid://kssinsxb8ath" path="res://scripts/ui/radial_menu.gd" id="1_radial"]
+
+[node name="RadialMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_radial")
