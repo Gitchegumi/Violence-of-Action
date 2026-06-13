@@ -1,9 +1,9 @@
 extends GutTest
 
 # Repeated open/close cycles must not leak orphan nodes (T030, T011).
+# Uses GUT's built-in per-test orphan counter via assert_no_new_orphans().
 
 var RadialScene = preload("res://scenes/ui/radial_menu.tscn")
-var _orphan_counter = preload('res://addons/gut/orphan_counter.gd').new()
 
 func _units_count(n: int) -> Array:
 	var arr := []
@@ -14,13 +14,6 @@ func _units_count(n: int) -> Array:
 		})
 	return arr
 
-func before_all():
-	_orphan_counter.start()
-
-func after_all():
-	var orphans = _orphan_counter.stop()
-	assert_eq(orphans, 0, 'Should not have any orphan nodes after test.')
-
 func test_no_leaks_after_many_cycles():
 	for i in range(20):
 		var m = RadialScene.instantiate()
@@ -30,6 +23,7 @@ func test_no_leaks_after_many_cycles():
 		m.close("cancel")
 		m.queue_free()
 		await get_tree().process_frame
+	# Let the final deferred frees settle before counting orphans.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	assert_true(true, "completed open/close cycles without errors")
+	assert_no_new_orphans("radial open/close cycles should not leak nodes")

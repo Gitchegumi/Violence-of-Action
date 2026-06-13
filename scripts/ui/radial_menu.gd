@@ -6,9 +6,15 @@ extends Control
 # future deployment_controller.gd) can react without depending on internals.
 
 signal deploy_unit_hovered(unit_id)
+signal deploy_unit_unhovered
 signal deploy_unit_selected(unit_id, origin)
 signal deploy_radial_closed(reason)
 signal deploy_placement_failed(reason, origin, unit_id)
+signal deploy_action_selected(action_id, origin)
+
+# DEPLOY: items are deployable units (place on confirm).
+# ACTION: items are unit actions for an occupied tile (emit action on confirm).
+enum Mode { DEPLOY, ACTION }
 
 const PAGE_SIZE := 12
 const RADIUS := 80.0
@@ -16,9 +22,10 @@ const ICON_SIZE := Vector2(60, 60)
 const DEBOUNCE_MS := 250
 const LOG_CHANNEL := "deployment.radial"
 
-const InfoPanelScene := preload("res://scenes/ui/radial_unit_info_panel.tscn")
-
 # --- Session state (see data-model.md: RadialMenuSession) ---
+# Note: all_units/visible_units/unit_icons hold whatever the current mode
+# presents — deployable unit dicts in DEPLOY mode, action dicts in ACTION mode.
+var mode: int = Mode.DEPLOY
 var all_units: Array = []        # Full ordered list across all pages
 var visible_units: Array = []    # Current page slice
 var unit_icons: Array = []       # Button refs for current page
@@ -28,7 +35,6 @@ var page_index: int = 0
 var active: bool = false
 var last_selection_time_ms: int = 0
 
-var info_panel: Control = null
 var _prev_button: Button = null
 var _next_button: Button = null
 
@@ -56,7 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		focus_previous()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
-		_confirm_unit(get_focused_unit())
+		_confirm_item(get_focused_unit())
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		close("cancel")
@@ -75,19 +81,35 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Lifecycle ---
 
 func open(origin_tile: Vector2i, units: Array) -> void:
-	"""Open the radial menu around origin_tile with the provided unit list."""
+	"""Open the radial menu around origin_tile with deployable units."""
+	mode = Mode.DEPLOY
+	_open_common(origin_tile, units)
+	_log("Opened deploy radial at %s with %d units" % [str(origin_tile), units.size()])
+
+
+func open_actions(origin_tile: Vector2i, actions: Array) -> void:
+	"""Open the radial menu around an occupied tile with unit actions."""
+	mode = Mode.ACTION
+	_open_common(origin_tile, actions)
+	_log("Opened action radial at %s with %d actions" % [str(origin_tile), actions.size()])
+
+
+func is_action_mode() -> bool:
+	return mode == Mode.ACTION
+
+
+func _open_common(origin_tile: Vector2i, items: Array) -> void:
 	origin_position = origin_tile
-	all_units = units
+	all_units = items
 	page_index = 0
 	focus_index = 0
 	active = true
+	origin_valid = true
 	last_selection_time_ms = 0
-	_ensure_info_panel()
 	_rebuild()
 	_select_initial_focus()
 	show()
 	set_process_unhandled_input(true)
-	_log("Opened radial at %s with %d units" % [str(origin_tile), units.size()])
 
 
 func close(reason: String) -> void:
@@ -95,8 +117,6 @@ func close(reason: String) -> void:
 	active = false
 	set_process_unhandled_input(false)
 	_clear_ui()
-	if info_panel and is_instance_valid(info_panel):
-		info_panel.hide_panel()
 	hide()
 	emit_signal("deploy_radial_closed", reason)
 	_log("Closed radial (%s)" % reason)
@@ -120,20 +140,33 @@ func _rebuild() -> void:
 func _create_unit_icons() -> void:
 	var angle_step := TAU / maxf(1.0, float(visible_units.size()))
 	for i in range(visible_units.size()):
-		var unit: Dictionary = visible_units[i]
+		var item: Dictionary = visible_units[i]
 		var icon := Button.new()
 		icon.name = "UnitIcon%d" % i
-		icon.text = "%s\n(%d)" % [unit.get("unit_name", "Unit"), int(unit.get("unit_cost", 0))]
+		icon.text = _item_text(item)
 		icon.custom_minimum_size = ICON_SIZE
 		var icon_angle := i * angle_step
 		var offset := Vector2(RADIUS * cos(icon_angle), RADIUS * sin(icon_angle))
 		icon.position = offset + size / 2.0 - ICON_SIZE / 2.0
-		_apply_affordability_visual(icon, unit)
+		_apply_affordability_visual(icon, item)
 		if not icon.disabled:
 			icon.pressed.connect(_on_icon_pressed.bind(i))
 		icon.mouse_entered.connect(_on_icon_hovered.bind(i))
+		icon.mouse_exited.connect(_on_icon_unhovered)
 		add_child(icon)
 		unit_icons.append(icon)
+
+
+func _item_text(item: Dictionary) -> String:
+	if mode == Mode.ACTION:
+		return item.get("label", "Action")
+	return "%s\n(%d)" % [item.get("unit_name", "Unit"), int(item.get("unit_cost", 0))]
+
+
+func _item_enabled(item: Dictionary) -> bool:
+	if mode == Mode.ACTION:
+		return item.get("enabled", true)
+	return item.get("affordable", true)
 
 
 func _create_pagination_controls() -> void:
@@ -242,16 +275,22 @@ func set_focus_from_angle(angle_rad: float) -> void:
 
 
 func _select_initial_focus() -> void:
-	"""Initial focus lands on the lowest-cost unit on the page (T022)."""
+	"""DEPLOY: focus the lowest-cost unit (T022). ACTION: first enabled action."""
 	if visible_units.is_empty():
 		return
 	var best_i := 0
-	var best_cost := INF
-	for i in range(visible_units.size()):
-		var cost: float = float(visible_units[i].get("unit_cost", 0))
-		if cost < best_cost:
-			best_cost = cost
-			best_i = i
+	if mode == Mode.ACTION:
+		for i in range(visible_units.size()):
+			if _item_enabled(visible_units[i]):
+				best_i = i
+				break
+	else:
+		var best_cost := INF
+		for i in range(visible_units.size()):
+			var cost: float = float(visible_units[i].get("unit_cost", 0))
+			if cost < best_cost:
+				best_cost = cost
+				best_i = i
 	focus_index = best_i
 	_update_focus_visual()
 	_emit_focus_hover()
@@ -264,12 +303,14 @@ func get_focused_unit() -> Dictionary:
 
 
 func _emit_focus_hover() -> void:
-	var unit := get_focused_unit()
-	if unit.is_empty():
+	var item := get_focused_unit()
+	if item.is_empty():
 		return
-	emit_signal("deploy_unit_hovered", unit.get("unit_id", ""))
-	if info_panel and is_instance_valid(info_panel):
-		info_panel.show_unit(unit)
+	# Unit info on hover only applies to deployable units (DEPLOY mode). The
+	# controller listens to deploy_unit_hovered and drives the shared info panel.
+	if mode == Mode.ACTION:
+		return
+	emit_signal("deploy_unit_hovered", item.get("unit_id", ""))
 
 
 func _update_focus_visual() -> void:
@@ -277,13 +318,13 @@ func _update_focus_visual() -> void:
 		var icon: Button = unit_icons[i]
 		if not is_instance_valid(icon):
 			continue
-		# Focus ring: brighten focused icon, keep affordability tint otherwise.
-		var unit: Dictionary = visible_units[i] if i < visible_units.size() else {}
-		var affordable: bool = unit.get("affordable", true)
+		# Focus ring: brighten focused icon, keep enabled/disabled tint otherwise.
+		var item: Dictionary = visible_units[i] if i < visible_units.size() else {}
+		var enabled: bool = _item_enabled(item)
 		if i == focus_index:
-			icon.modulate = Color(1.2, 1.2, 0.7) if affordable else Color(0.8, 0.6, 0.6)
+			icon.modulate = Color(1.2, 1.2, 0.7) if enabled else Color(0.8, 0.6, 0.6)
 		else:
-			icon.modulate = Color.WHITE if affordable else Color(0.5, 0.5, 0.5, 0.6)
+			icon.modulate = Color.WHITE if enabled else Color(0.5, 0.5, 0.5, 0.6)
 			icon.scale = Vector2.ONE
 	_animate_focus_ring()
 
@@ -310,20 +351,34 @@ func _on_icon_hovered(index: int) -> void:
 	_emit_focus_hover()
 
 
+func _on_icon_unhovered() -> void:
+	# Mouse left a unit icon -> clear the deploy hover preview (DEPLOY only).
+	if mode == Mode.ACTION:
+		return
+	emit_signal("deploy_unit_unhovered")
+
+
 func _on_icon_pressed(index: int) -> void:
 	if index < 0 or index >= visible_units.size():
 		return
 	focus_index = index
-	_confirm_unit(visible_units[index])
+	_confirm_item(visible_units[index])
 
 
-func _confirm_unit(unit: Dictionary) -> void:
-	if unit.is_empty():
+func _confirm_item(item: Dictionary) -> void:
+	if item.is_empty():
 		return
+	if mode == Mode.ACTION:
+		if not _item_enabled(item):
+			return
+		emit_signal("deploy_action_selected", item.get("action_id", ""), origin_position)
+		_log("Action selected: %s at %s" % [item.get("action_id", ""), str(origin_position)])
+		return
+	# DEPLOY mode: confirm a unit placement.
 	if placement_context_provider.is_valid():
-		attempt_placement(unit, placement_context_provider.call())
+		attempt_placement(item, placement_context_provider.call())
 	else:
-		emit_signal("deploy_unit_selected", unit.get("unit_id", ""), origin_position)
+		emit_signal("deploy_unit_selected", item.get("unit_id", ""), origin_position)
 
 
 # --- Placement & validation (T024-T027) ---
@@ -396,8 +451,8 @@ func _refresh_icon_states() -> void:
 	_update_focus_visual()
 
 
-func _apply_affordability_visual(icon: Button, unit: Dictionary) -> void:
-	if not unit.get("affordable", true):
+func _apply_affordability_visual(icon: Button, item: Dictionary) -> void:
+	if not _item_enabled(item):
 		# Disabled visual: grayed-out, dimmed, with red cost styling (T034).
 		icon.modulate = Color(0.5, 0.5, 0.5, 0.6)
 		icon.disabled = true
@@ -427,16 +482,6 @@ func reposition_within_viewport(viewport_size: Vector2) -> void:
 	pos.x = clampf(pos.x, margin, maxf(margin, viewport_size.x - margin))
 	pos.y = clampf(pos.y, margin, maxf(margin, viewport_size.y - margin))
 	position = pos
-
-
-# --- Info panel ---
-
-func _ensure_info_panel() -> void:
-	if info_panel and is_instance_valid(info_panel):
-		return
-	info_panel = InfoPanelScene.instantiate()
-	add_child(info_panel)
-	info_panel.hide_panel()
 
 
 # --- Logging (T033) ---

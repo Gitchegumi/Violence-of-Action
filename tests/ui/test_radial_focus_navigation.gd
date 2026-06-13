@@ -44,3 +44,10 @@ func test_focus_sets_from_angle():
 func test_initial_focus_is_lowest_cost():
 	menu.open(Vector2i(0, 0), _units([5, 2, 8]))
 	assert_eq(menu.focus_index, 1, "initial focus lands on lowest-cost unit")
+
+func test_mouse_exit_emits_unhovered_in_deploy_mode():
+	menu.open(Vector2i(0, 0), _units([1, 2]))
+	watch_signals(menu)
+	menu._on_icon_unhovered()
+	assert_signal_emitted(menu, "deploy_unit_unhovered",
+		"leaving a unit icon clears the deploy preview")

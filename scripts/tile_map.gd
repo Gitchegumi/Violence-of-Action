@@ -9,6 +9,10 @@ signal deploy_unit_hovered(unit_id: String)
 signal deploy_unit_selected(unit_id: String, origin: Vector2i)
 signal deploy_placement_failed(reason: String, origin: Vector2i, unit_id: String)
 signal deploy_radial_closed(reason: String)
+signal deploy_action_selected(action_id: String, origin: Vector2i)
+# Emitted when a DEPLOY radial closes, so the shared info panel can hide its
+# hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
+signal deploy_preview_ended
 
 # The radius of the hexagonal map in tiles.
 const MAP_RADIUS = 8
@@ -31,7 +35,9 @@ var radial_menu_scene = preload("res://scenes/ui/radial_menu.tscn")
 var radial_menu_instance = null
 var radial_origin: Vector2i = Vector2i(-1, -1)
 var current_radial_units: Array = []
-var deployment_placeholders: Dictionary = {}  # Vector2i -> placeholder node
+var current_radial_unit_node = null  # Occupied-tile unit when in action mode
+var pending_action: Dictionary = {}  # Set when an action awaits target selection
+var _radial_is_deploy: bool = false  # True while a DEPLOY radial is open
 
 # --- Mock Resource System (for T018) ---
 var player_essence: int = 10  # Mock starting resources
@@ -312,21 +318,23 @@ func _unhandled_input(event):
 
 		# Emit deploy tile clicked signal
 		emit_signal("deploy_tile_clicked", map_pos)
-		
-		# Check if tile is in deployment zone for radial menu
-		if is_in_deployment_zone(map_pos, 0):  # Assuming player 0 for now
-			_show_radial_menu(map_pos)
-		
-		# Check if a unit is on this tile
+
+		# Route the click: occupied tile -> action radial; empty deployment
+		# tile -> deploy radial; anything else -> plain selection.
 		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
-		
+
 		if unit_on_tile:
 			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
+			_show_action_radial(map_pos, unit_on_tile)
 			emit_signal("unit_selected", unit_on_tile)
+		elif is_in_deployment_zone(map_pos, 0):  # Assuming player 0 for now
+			_deploy_log("Empty deployment tile %s" % str(map_pos))
+			_show_radial_menu(map_pos)
+			emit_signal("unit_selected", null)
 		else:
 			_deploy_log("No unit at tile %s" % str(map_pos))
 			emit_signal("unit_selected", null)
-			
+
 		# Existing tile selection highlight logic (keep this)
 		selection_layer.clear()
 		selected_tile = map_pos
@@ -352,79 +360,178 @@ func _unhandled_input(event):
 # --- Radial Menu Functions ---
 
 func _show_radial_menu(origin_tile: Vector2i):
-	"""Show radial menu at the specified tile position with mock units"""
-	# Close existing radial menu if open
+	"""Show the DEPLOY radial at an empty deployment tile with real units."""
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
 
-	# Create mock units for deployment
-	var mock_units = _create_mock_units()
-	current_radial_units = mock_units
+	current_radial_units = _get_deployable_units()
+	current_radial_unit_node = null
 	radial_origin = origin_tile
+	_radial_is_deploy = true
 
-	# Instantiate radial menu
 	radial_menu_instance = radial_menu_scene.instantiate()
 	add_child(radial_menu_instance)
 
-	# Position the radial menu at the tile center, then keep it on-screen (T029)
-	var world_pos = map_to_local(origin_tile)
-	radial_menu_instance.position = world_pos
+	# Position at the tile center, then keep the full ring on-screen (T029).
+	radial_menu_instance.position = map_to_local(origin_tile)
 	radial_menu_instance.reposition_within_viewport(get_viewport_rect().size)
 
-	# Provide the placement-validation context and listen for outcomes.
 	# tile_map is the centralized public signal surface (contract: signals.md);
 	# it re-emits the radial's hover/selected signals for external consumers.
 	radial_menu_instance.placement_context_provider = _build_placement_context
 	radial_menu_instance.deploy_unit_hovered.connect(_on_radial_unit_hovered)
+	radial_menu_instance.deploy_unit_unhovered.connect(_on_radial_unit_unhovered)
 	radial_menu_instance.deploy_unit_selected.connect(_on_radial_unit_selected)
 	radial_menu_instance.deploy_placement_failed.connect(_on_radial_placement_failed)
 	radial_menu_instance.deploy_radial_closed.connect(_on_radial_self_closed)
 
-	# Open the radial menu with mock units
-	radial_menu_instance.open(origin_tile, mock_units)
+	radial_menu_instance.open(origin_tile, current_radial_units)
 
-	# Emit signal that radial menu is opened
 	emit_signal("deploy_radial_opened", origin_tile)
-	_deploy_log("Radial opened at %s" % str(origin_tile))
+	_deploy_log("Deploy radial opened at %s (%d units)" % [str(origin_tile), current_radial_units.size()])
+
+func _show_action_radial(origin_tile: Vector2i, unit_node):
+	"""Show the ACTION radial at an occupied tile (Attack/Move/Upgrade/Inspect)."""
+	if radial_menu_instance:
+		_close_radial_menu("new_location")
+
+	radial_origin = origin_tile
+	current_radial_unit_node = unit_node
+	current_radial_units = []
+	_radial_is_deploy = false
+
+	radial_menu_instance = radial_menu_scene.instantiate()
+	add_child(radial_menu_instance)
+
+	radial_menu_instance.position = map_to_local(origin_tile)
+	radial_menu_instance.reposition_within_viewport(get_viewport_rect().size)
+
+	radial_menu_instance.deploy_action_selected.connect(_on_radial_action_selected)
+	radial_menu_instance.deploy_radial_closed.connect(_on_radial_self_closed)
+
+	radial_menu_instance.open_actions(origin_tile, _build_unit_actions(unit_node))
+
+	emit_signal("deploy_radial_opened", origin_tile)
+	_deploy_log("Action radial opened at %s" % str(origin_tile))
+
+func _get_deployable_units() -> Array:
+	"""Build the deployable-unit list from the real troop catalog.
+	For now only the Shard Walker is fully implemented."""
+	var units: Array = []
+	var data: UnitType = troop_manager.catalog.get("shard_walker")
+	if data:
+		units.append(_unit_type_to_dict("shard_walker", data))
+	else:
+		_deploy_log("shard_walker missing from troop catalog")
+	return units
+
+func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
+	var cost := data.get_cost(0)
+	return {
+		"unit_id": id,
+		"unit_name": data.unit_name,
+		"unit_role": data.unit_role,
+		"unit_cost": cost,
+		"affordable": player_essence >= cost,
+		"stats_block": data.stats_block,
+		"abilities": data.special_abilities,
+		"unit_description": data.unit_description,
+	}
+
+func _build_unit_actions(unit_node) -> Array:
+	"""Action options for an occupied tile. Upgrade is enabled only when the
+	unit has an upgrade target and the player can afford it."""
+	var data: UnitType = null
+	if unit_node and unit_node.has_method("get_unit_data"):
+		data = unit_node.get_unit_data()
+	var can_upgrade := data != null and data.can_upgrade \
+		and data.upgrades_to != null and player_essence >= data.upgrade_cost
+	return [
+		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
+		{"action_id": "move", "label": "Move", "enabled": true, "description": "Move to another tile"},
+		{"action_id": "upgrade", "label": "Upgrade", "enabled": can_upgrade, "description": "Upgrade this unit"},
+		{"action_id": "inspect", "label": "Inspect", "enabled": true, "description": "View unit details"},
+	]
 
 func _build_placement_context() -> Dictionary:
 	"""Supply the radial menu with current validation context (T024)."""
-	var occupied := troop_manager.get_unit_at_map_coord(radial_origin) != null \
-		or deployment_placeholders.has(radial_origin)
-	var valid := is_in_deployment_zone(radial_origin, 0)
 	return {
 		"resources": player_essence,
-		"tile_valid": valid,
-		"tile_occupied": occupied,
+		"tile_valid": is_in_deployment_zone(radial_origin, 0),
+		"tile_occupied": troop_manager.get_unit_at_map_coord(radial_origin) != null,
 		"now_ms": Time.get_ticks_msec(),
 	}
 
 func _on_radial_unit_hovered(unit_id: String):
 	emit_signal("deploy_unit_hovered", unit_id)
 
+func _on_radial_unit_unhovered():
+	# Mouse left a deploy icon -> hide the shared info-panel preview.
+	emit_signal("deploy_preview_ended")
+
 func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
-	"""Successful placement: deduct resources, spawn placeholder, re-validate,
-	then close the radial as 'placed' (T024, T027)."""
+	"""Successful placement: spawn the real unit via troop_manager, deduct
+	essence, re-validate affordability, then close the radial as 'placed'."""
 	var unit := _find_radial_unit(unit_id)
 	var cost := int(unit.get("unit_cost", 0)) if not unit.is_empty() else 0
-	player_essence = maxi(0, player_essence - cost)
-	_spawn_placeholder_unit(origin, unit_id)
-	# Re-validate affordability with the reduced resource pool before closing.
+	troop_manager.set_current_unit(unit_id)
+	if troop_manager.place_unit(origin):
+		player_essence = maxi(0, player_essence - cost)
+		_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), player_essence])
+	else:
+		_deploy_log("troop_manager rejected placement of %s at %s" % [unit_id, str(origin)])
 	if radial_menu_instance:
 		radial_menu_instance.revalidate_affordability(player_essence)
 	emit_signal("deploy_unit_selected", unit_id, origin)
-	_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), player_essence])
 	_close_radial_menu("placed")
+
+func _on_radial_action_selected(action_id: String, origin: Vector2i):
+	"""Dispatch a selected unit action, then close the action radial."""
+	var unit_node = current_radial_unit_node
+	emit_signal("deploy_action_selected", action_id, origin)
+	match action_id:
+		"inspect":
+			emit_signal("unit_selected", unit_node)  # drives the big info panel
+		"upgrade":
+			_upgrade_unit(unit_node, origin)
+		"move":
+			_begin_pending_action("move", unit_node, origin)
+		"attack":
+			_begin_pending_action("attack", unit_node, origin)
+	_close_radial_menu("action:%s" % action_id)
+
+func _upgrade_unit(unit_node, origin: Vector2i):
+	if unit_node == null or not unit_node.has_method("get_unit_data"):
+		return
+	var data: UnitType = unit_node.get_unit_data()
+	if data == null or not data.can_upgrade or data.upgrades_to == null:
+		_deploy_log("Upgrade unavailable for unit at %s" % str(origin))
+		return
+	if player_essence < data.upgrade_cost:
+		_deploy_log("Not enough essence to upgrade at %s" % str(origin))
+		return
+	player_essence -= data.upgrade_cost
+	unit_node.data = data.upgrades_to
+	_deploy_log("Upgraded unit at %s to %s (essence=%d)" % [str(origin), data.upgrades_to.unit_name, player_essence])
+
+func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
+	# Move/Attack need a follow-up target-selection step. For now we record the
+	# pending action and log intent; the target picker is a future task.
+	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
+	_deploy_log("%s requested for unit at %s (awaiting target tile)" % [kind.capitalize(), str(origin)])
 
 func _on_radial_placement_failed(reason: String, origin: Vector2i, unit_id: String):
 	emit_signal("deploy_placement_failed", reason, origin, unit_id)
 	_deploy_log("Placement failed (%s) for %s at %s" % [reason, unit_id, str(origin)])
 
 func _on_radial_self_closed(reason: String):
-	"""Radial closed itself (cancel/escape/right-click). Clean up our ref."""
-	if reason == "placed":
-		return  # _close_radial_menu drives this path; avoid double handling.
+	"""Single owner of radial teardown: the radial emits deploy_radial_closed
+	whenever it closes (self-initiated or via _close_radial_menu)."""
+	var was_deploy := _radial_is_deploy
 	_dispose_radial_instance()
+	if was_deploy:
+		# Clear the deploy-hover preview from the shared info panel.
+		emit_signal("deploy_preview_ended")
 	emit_signal("deploy_radial_closed", reason)
 	_deploy_log("Radial closed (%s)" % reason)
 
@@ -434,81 +541,27 @@ func _find_radial_unit(unit_id: String) -> Dictionary:
 			return u
 	return {}
 
-func _spawn_placeholder_unit(origin: Vector2i, unit_id: String):
-	"""Spawn a lightweight placeholder marker for the deployed unit (T024)."""
-	var marker := Marker2D.new()
-	marker.name = "Deployed_%s_%d_%d" % [unit_id, origin.x, origin.y]
-	marker.position = map_to_local(origin)
-	add_child(marker)
-	deployment_placeholders[origin] = marker
-
 func _close_radial_menu(reason: String):
-	"""Close the current radial menu if one exists"""
+	"""Request close; teardown + deploy_radial_closed happen in the handler."""
 	if radial_menu_instance:
 		radial_menu_instance.close(reason)
-		_dispose_radial_instance()
-		emit_signal("deploy_radial_closed", reason)
 
 func _dispose_radial_instance():
 	if radial_menu_instance:
 		radial_menu_instance.queue_free()
 		radial_menu_instance = null
 	current_radial_units = []
+	current_radial_unit_node = null
 	radial_origin = Vector2i(-1, -1)
+	_radial_is_deploy = false
 
-func _create_mock_units() -> Array:
-	"""Create mock units for testing radial menu functionality with affordability"""
-	var units = []
-	
-	# Mock Infantry
-	var infantry_cost = 3
-	units.append({
-		"unit_id": "infantry",
-		"unit_name": "Infantry Squad", 
-		"unit_role": "Assault",
-		"unit_cost": infantry_cost,
-		"affordable": player_essence >= infantry_cost,
-		"stats_block": {"health": 12, "attack": 3, "range": 2, "armor": 1, "speed": 4},
-		"abilities": "Basic combat unit with balanced stats"
-	})
-	
-	# Mock Tank
-	var tank_cost = 8
-	units.append({
-		"unit_id": "tank",
-		"unit_name": "Battle Tank",
-		"unit_role": "Heavy",
-		"unit_cost": tank_cost,
-		"affordable": player_essence >= tank_cost,
-		"stats_block": {"health": 25, "attack": 6, "range": 3, "armor": 4, "speed": 2},
-		"abilities": "Heavy armor and firepower, slow movement"
-	})
-	
-	# Mock Artillery
-	var artillery_cost = 6
-	units.append({
-		"unit_id": "artillery",
-		"unit_name": "Artillery Unit",
-		"unit_role": "Support",
-		"unit_cost": artillery_cost,
-		"affordable": player_essence >= artillery_cost,
-		"stats_block": {"health": 8, "attack": 8, "range": 5, "armor": 1, "speed": 1},
-		"abilities": "Long-range bombardment, fragile"
-	})
-	
-	# Mock Expensive Unit (to test disabled state)
-	var expensive_cost = 15
-	units.append({
-		"unit_id": "mech",
-		"unit_name": "Battle Mech",
-		"unit_role": "Elite",
-		"unit_cost": expensive_cost,
-		"affordable": player_essence >= expensive_cost,
-		"stats_block": {"health": 30, "attack": 10, "range": 4, "armor": 5, "speed": 3},
-		"abilities": "Elite war machine with superior stats"
-	})
-	
-	return units
+# --- Unit data accessors (used by main.gd to drive the shared info panel) ---
+
+func get_unit_type(unit_id: String) -> UnitType:
+	return troop_manager.catalog.get(unit_id)
+
+func get_unit_artwork(unit_id: String) -> Node:
+	return troop_manager.get_unit_artwork(unit_id)
 
 func _deploy_log(message: String) -> void:
 	GameLog.debug("deployment.radial", message)

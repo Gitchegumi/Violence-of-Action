@@ -14,22 +14,36 @@ func _ready():
 	# Hide the panel by default
 	hide_panel()
 
+## Show a placed unit node (has get_unit_data() and optionally get_artwork_node()).
 func show_unit(unit: Node):
 	if not unit or not unit.has_method("get_unit_data"):
 		print("show_unit called for invalid unit.")
 		hide_panel()
 		return
 
-	var unit_data = unit.get_unit_data() # Assuming unit has a method to get its data
+	var unit_data = unit.get_unit_data()
 	if not unit_data:
 		GameLog.error("Unit node does not have valid unit_data.")
 		hide_panel()
 		return
 
+	var artwork: Node = null
+	if unit.has_method("get_artwork_node"):
+		artwork = unit.get_artwork_node()
+	show_unit_type(unit_data, artwork)
+
+## Show unit details directly from data (UnitType resource or a data dict),
+## with optional artwork. Used by the deploy radial to preview an unplaced unit
+## on hover, reusing this panel's look instead of a separate overlay.
+func show_unit_type(unit_data, artwork: Node = null):
+	if not unit_data:
+		hide_panel()
+		return
+
 	# Populate labels
-	unit_name_label.text = "Unit Name: " + unit_data.unit_name
-	unit_role_label.text = "Role: " + unit_data.unit_role
-	unit_cost_label.text = "Cost: " + str(unit_data.unit_cost) # Assuming unit_cost is an int
+	unit_name_label.text = "Unit Name: " + str(unit_data.unit_name)
+	unit_role_label.text = "Role: " + str(unit_data.unit_role)
+	unit_cost_label.text = "Cost: " + str(unit_data.unit_cost)
 	health_label.text = "Health: " + str(unit_data.stats_block.health)
 	attack_label.text = "Attack: " + str(unit_data.stats_block.attack)
 	range_label.text = "Range: " + str(unit_data.stats_block.range)
@@ -40,24 +54,14 @@ func show_unit(unit: Node):
 	for child in unit_viewport.get_children():
 		child.queue_free()
 
-	if unit.has_method("get_artwork_node"):
-		var artwork_node = unit.get_artwork_node()
-		if artwork_node:
-			unit_viewport.add_child(artwork_node)
-			# Center the artwork within the viewport
-			if artwork_node is Node2D:
-				var viewport_size = unit_viewport.size
-				var center_x = viewport_size.x / 2.0
-				var center_y = viewport_size.y / 2.0
-				artwork_node.position = Vector2(center_x, center_y)
-				artwork_node.scale = Vector2(1.8, 1.8)
-		else:
-			GameLog.info("Unit's get_artwork_node() returned null.")
-	else:
-		GameLog.info("Unit does not have a get_artwork_node() method.")
+	if artwork:
+		unit_viewport.add_child(artwork)
+		if artwork is Node2D:
+			var viewport_size = unit_viewport.size
+			artwork.position = Vector2(viewport_size.x / 2.0, viewport_size.y / 2.0)
+			artwork.scale = Vector2(1.8, 1.8)
 
 	visible = true
-	print("UnitInfoPanel visible set to true.")
 
 ## Hides the unit information panel and clears its contents.
 func hide_panel():

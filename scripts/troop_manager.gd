@@ -79,6 +79,26 @@ func get_unit_at_map_coord(map_pos: Vector2i) -> Node:
 		return units_on_map[map_pos]
 	return null
 
+# Returns a standalone artwork node for a unit type (for info-panel previews of
+# not-yet-placed units). get_artwork_node() returns a duplicate, so freeing the
+# temporary scene instance is safe.
+func get_unit_artwork(unit_id: String) -> Node:
+	var scene := _scene_for_unit_id(unit_id)
+	if scene == null:
+		return null
+	var inst := scene.instantiate()
+	var artwork: Node = null
+	if inst.has_method("get_artwork_node"):
+		artwork = inst.get_artwork_node()
+	inst.free()
+	return artwork
+
+func _scene_for_unit_id(unit_id: String) -> PackedScene:
+	# Only the Shard Walker has a scene wired up so far.
+	if unit_id == "shard_walker":
+		return shardwalker_scene
+	return null
+
 func _center_of_tile(map_pos: Vector2i) -> Vector2:
 	# For hex stairs right layout, Godot's map_to_local returns the center
 	return tile_map.map_to_local(map_pos)
