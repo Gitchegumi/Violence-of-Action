@@ -29,6 +29,9 @@ var deployment_zones_data: Array = []
 # --- Radial Menu Integration ---
 var radial_menu_scene = preload("res://scenes/ui/radial_menu.tscn")
 var radial_menu_instance = null
+var radial_origin: Vector2i = Vector2i(-1, -1)
+var current_radial_units: Array = []
+var deployment_placeholders: Dictionary = {}  # Vector2i -> placeholder node
 
 # --- Mock Resource System (for T018) ---
 var player_essence: int = 10  # Mock starting resources
@@ -304,10 +307,9 @@ func _unhandled_input(event):
 		is_dragging = false
 		
 		var map_pos = local_to_map(get_local_mouse_position())
-		
-		print("Left click at local position: ", get_local_mouse_position())
-		print("Mapped to tile position: ", map_pos)
-		
+
+		_deploy_log("Left click tile %s" % str(map_pos))
+
 		# Emit deploy tile clicked signal
 		emit_signal("deploy_tile_clicked", map_pos)
 		
@@ -319,10 +321,10 @@ func _unhandled_input(event):
 		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
 		
 		if unit_on_tile:
-			print("Unit found at tile: ", map_pos, ", unit: ", unit_on_tile.name)
+			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
 			emit_signal("unit_selected", unit_on_tile)
 		else:
-			print("No unit found at tile: ", map_pos)
+			_deploy_log("No unit at tile %s" % str(map_pos))
 			emit_signal("unit_selected", null)
 			
 		# Existing tile selection highlight logic (keep this)
@@ -354,31 +356,105 @@ func _show_radial_menu(origin_tile: Vector2i):
 	# Close existing radial menu if open
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
-	
+
 	# Create mock units for deployment
 	var mock_units = _create_mock_units()
-	
+	current_radial_units = mock_units
+	radial_origin = origin_tile
+
 	# Instantiate radial menu
 	radial_menu_instance = radial_menu_scene.instantiate()
 	add_child(radial_menu_instance)
-	
-	# Position the radial menu at the tile center
+
+	# Position the radial menu at the tile center, then keep it on-screen (T029)
 	var world_pos = map_to_local(origin_tile)
 	radial_menu_instance.position = world_pos
-	
+	radial_menu_instance.reposition_within_viewport(get_viewport_rect().size)
+
+	# Provide the placement-validation context and listen for outcomes.
+	# tile_map is the centralized public signal surface (contract: signals.md);
+	# it re-emits the radial's hover/selected signals for external consumers.
+	radial_menu_instance.placement_context_provider = _build_placement_context
+	radial_menu_instance.deploy_unit_hovered.connect(_on_radial_unit_hovered)
+	radial_menu_instance.deploy_unit_selected.connect(_on_radial_unit_selected)
+	radial_menu_instance.deploy_placement_failed.connect(_on_radial_placement_failed)
+	radial_menu_instance.deploy_radial_closed.connect(_on_radial_self_closed)
+
 	# Open the radial menu with mock units
 	radial_menu_instance.open(origin_tile, mock_units)
-	
+
 	# Emit signal that radial menu is opened
 	emit_signal("deploy_radial_opened", origin_tile)
+	_deploy_log("Radial opened at %s" % str(origin_tile))
+
+func _build_placement_context() -> Dictionary:
+	"""Supply the radial menu with current validation context (T024)."""
+	var occupied := troop_manager.get_unit_at_map_coord(radial_origin) != null \
+		or deployment_placeholders.has(radial_origin)
+	var valid := is_in_deployment_zone(radial_origin, 0)
+	return {
+		"resources": player_essence,
+		"tile_valid": valid,
+		"tile_occupied": occupied,
+		"now_ms": Time.get_ticks_msec(),
+	}
+
+func _on_radial_unit_hovered(unit_id: String):
+	emit_signal("deploy_unit_hovered", unit_id)
+
+func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
+	"""Successful placement: deduct resources, spawn placeholder, re-validate,
+	then close the radial as 'placed' (T024, T027)."""
+	var unit := _find_radial_unit(unit_id)
+	var cost := int(unit.get("unit_cost", 0)) if not unit.is_empty() else 0
+	player_essence = maxi(0, player_essence - cost)
+	_spawn_placeholder_unit(origin, unit_id)
+	# Re-validate affordability with the reduced resource pool before closing.
+	if radial_menu_instance:
+		radial_menu_instance.revalidate_affordability(player_essence)
+	emit_signal("deploy_unit_selected", unit_id, origin)
+	_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), player_essence])
+	_close_radial_menu("placed")
+
+func _on_radial_placement_failed(reason: String, origin: Vector2i, unit_id: String):
+	emit_signal("deploy_placement_failed", reason, origin, unit_id)
+	_deploy_log("Placement failed (%s) for %s at %s" % [reason, unit_id, str(origin)])
+
+func _on_radial_self_closed(reason: String):
+	"""Radial closed itself (cancel/escape/right-click). Clean up our ref."""
+	if reason == "placed":
+		return  # _close_radial_menu drives this path; avoid double handling.
+	_dispose_radial_instance()
+	emit_signal("deploy_radial_closed", reason)
+	_deploy_log("Radial closed (%s)" % reason)
+
+func _find_radial_unit(unit_id: String) -> Dictionary:
+	for u in current_radial_units:
+		if u.get("unit_id", "") == unit_id:
+			return u
+	return {}
+
+func _spawn_placeholder_unit(origin: Vector2i, unit_id: String):
+	"""Spawn a lightweight placeholder marker for the deployed unit (T024)."""
+	var marker := Marker2D.new()
+	marker.name = "Deployed_%s_%d_%d" % [unit_id, origin.x, origin.y]
+	marker.position = map_to_local(origin)
+	add_child(marker)
+	deployment_placeholders[origin] = marker
 
 func _close_radial_menu(reason: String):
 	"""Close the current radial menu if one exists"""
 	if radial_menu_instance:
 		radial_menu_instance.close(reason)
+		_dispose_radial_instance()
+		emit_signal("deploy_radial_closed", reason)
+
+func _dispose_radial_instance():
+	if radial_menu_instance:
 		radial_menu_instance.queue_free()
 		radial_menu_instance = null
-		emit_signal("deploy_radial_closed", reason)
+	current_radial_units = []
+	radial_origin = Vector2i(-1, -1)
 
 func _create_mock_units() -> Array:
 	"""Create mock units for testing radial menu functionality with affordability"""
@@ -434,13 +510,13 @@ func _create_mock_units() -> Array:
 	
 	return units
 
+func _deploy_log(message: String) -> void:
+	GameLog.debug("deployment.radial", message)
+
 func set_player_essence(amount: int):
 	"""Set player essence for testing affordability (temporary for T018)"""
 	player_essence = amount
-	if Engine.has_singleton("Logger"):
-		Logger.info("Player essence set to: %d" % player_essence)
-	else:
-		print("Player essence set to: ", player_essence)
+	_deploy_log("Player essence set to: %d" % player_essence)
 
 func get_player_essence() -> int:
 	"""Get current player essence"""

@@ -1,9 +1,10 @@
 <!--
 Sync Impact Report
-Previous Version: 2.2.1 → New Version: 2.3.0 (MINOR bump: new principle added for Godot file handling)
-Modified Principles: None
-Added Sections: Principle VI - Godot File Handling Protocol
+Previous Version: 2.3.0 → New Version: 2.4.0 (MINOR bump: Principle I engine target 4.4.1 → 4.5)
+Modified Principles: Principle I - Engine Version Discipline (target Godot 4.4.1 → 4.5)
+Added Sections: None
 Removed Sections: None
+Note: Run /speckit-constitution to formalize this version bump and re-sync dependent templates.
 Templates Updated: 
   ✅ .specify/templates/plan-template.md (verified - Constitution Check will include new principle)
   ✅ .specify/templates/spec-template.md (verified - no Godot-specific references)  
@@ -22,11 +23,15 @@ Deferred TODOs: None
 
 ### I. Engine Version Discipline
 
-All development targets Godot 4.4.1. Minor/patch engine upgrades MAY be adopted after a
+All development targets Godot 4.5. Minor/patch engine upgrades MAY be adopted after a
 recorded upgrade review (build + smoke tests + performance sanity) and explicit mention in
 the change log. No work depends on unreleased (nightly) APIs in mainline. Experimental
 engine features MUST be isolated behind a feature flag or separate scene for rapid rollback.
 Rationale: Ensures determinism, reduces integration friction, and supports stable tooling.
+
+Upgrade note (4.4.1 → 4.5): adopted during feature 002. The autoload singleton was renamed
+`Logger` → `GameLog` because Godot 4.5 introduced a native `Logger` class that shadows the
+autoload name at parse time. GUT suite (31 tests) green; project boots clean.
 
 ### II. GUT Test-First (Non-Negotiable)
 

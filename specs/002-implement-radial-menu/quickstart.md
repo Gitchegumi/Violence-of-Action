@@ -65,6 +65,27 @@ Attempt automation via Godot MCP for scene creation. If MCP not available:
   - Successful placement closes radial (`deploy_radial_closed('placed')`).
 - Add leak test: Open/close radial N times (e.g., 25) and assert orphan count stable.
 
+## Pagination & Edge Repositioning (Implementation Notes)
+
+Pagination (`scripts/ui/radial_menu.gd`):
+
+- `PAGE_SIZE = 12`. When `all_units.size() > 12`, `has_pagination()` is true and
+  `PrevPageButton` / `NextPageButton` nodes are created at the top-left / top-right
+  of the ring (excluded from the unit count).
+- `next_page()` / `prev_page()` advance `page_index` modulo `_page_count()` (so they
+  wrap), reset `focus_index` to 0, rebuild the visible slice, and re-emit the focus
+  hover so the info panel follows the new page.
+- `visible_units` is `all_units.slice(page_index * PAGE_SIZE, ...)`; icons are rebuilt
+  per page so only the current slice is in the tree.
+
+Edge repositioning (`reposition_within_viewport(viewport_size)`):
+
+- Computes `margin = RADIUS (80) + ICON_SIZE.x (60) = 140` and clamps the menu's
+  `position` into `[margin, viewport - margin]` on both axes, guaranteeing the full
+  icon ring stays on-screen near any viewport edge.
+- The controller (`tile_map.gd`) calls this immediately after positioning the radial
+  at the clicked tile and before `open()`.
+
 ## Extension Hooks
 
 Future: Add filter bar node; emit additional metadata dictionary in hover/selected without breaking existing parameter order.

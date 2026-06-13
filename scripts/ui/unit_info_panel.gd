@@ -22,8 +22,7 @@ func show_unit(unit: Node):
 
 	var unit_data = unit.get_unit_data() # Assuming unit has a method to get its data
 	if not unit_data:
-		if Engine.has_singleton("Logger"):
-			Logger.error("Unit node does not have valid unit_data.")
+		GameLog.error("Unit node does not have valid unit_data.")
 		hide_panel()
 		return
 
@@ -53,11 +52,9 @@ func show_unit(unit: Node):
 				artwork_node.position = Vector2(center_x, center_y)
 				artwork_node.scale = Vector2(1.8, 1.8)
 		else:
-			if Engine.has_singleton("Logger"):
-				Logger.info("Unit's get_artwork_node() returned null.")
+			GameLog.info("Unit's get_artwork_node() returned null.")
 	else:
-		if Engine.has_singleton("Logger"):
-			Logger.info("Unit does not have a get_artwork_node() method.")
+		GameLog.info("Unit does not have a get_artwork_node() method.")
 
 	visible = true
 	print("UnitInfoPanel visible set to true.")
