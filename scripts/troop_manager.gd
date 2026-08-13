@@ -51,7 +51,7 @@ func set_current_unit(id: String) -> void:
 	else:
 		push_warning("Unknown unit id: " + id)
 
-func place_unit(map_pos: Vector2i) -> bool:
+func place_unit(map_pos: Vector2i, player_id: int = 0) -> bool:
 	if tile_map == null: return false
 	if units_on_map.has(map_pos): return false
 	if current_unit_id == "" or not catalog.has(current_unit_id):
@@ -66,6 +66,7 @@ func place_unit(map_pos: Vector2i) -> bool:
 	var u: ShardWalker = shardwalker_scene.instantiate()
 	u.data = catalog[current_unit_id]
 	u.map_pos = map_pos
+	u.controller_player_id = player_id
 	u.position = _center_of_tile(map_pos)
 	# Scale the unit down for tile map placement
 	u.scale = Vector2(0.15, 0.15)
@@ -73,6 +74,25 @@ func place_unit(map_pos: Vector2i) -> bool:
 	units_on_map[map_pos] = u
 	u.selected.connect(_on_unit_selected)
 	return true
+
+func count_units(unit_id: String, player_id: int) -> int:
+	var expected: UnitType = catalog.get(unit_id)
+	if expected == null:
+		return 0
+	var count := 0
+	for unit in units_on_map.values():
+		if unit == null or not unit.has_method("get_unit_data"):
+			continue
+		if int(unit.get("controller_player_id")) != player_id:
+			continue
+		var actual: UnitType = unit.get_unit_data()
+		if actual == expected or (
+			actual != null
+			and not actual.resource_path.is_empty()
+			and actual.resource_path == expected.resource_path
+		):
+			count += 1
+	return count
 
 func get_unit_at_map_coord(map_pos: Vector2i) -> Node:
 	if units_on_map.has(map_pos):

@@ -3,6 +3,7 @@ class_name ShardWalker
 
 @export var data: UnitType
 var map_pos: Vector2i
+var controller_player_id := 0
 
 signal selected(unit: ShardWalker)
 

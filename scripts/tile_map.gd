@@ -583,7 +583,8 @@ func _get_deployable_units() -> Array:
 	return units
 
 func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
-	var cost := data.get_cost(0)
+	var existing_count := troop_manager.count_units(id, ACTIVE_PLAYER_ID)
+	var cost := data.get_cost(existing_count)
 	return {
 		"unit_id": id,
 		"unit_name": data.unit_name,
@@ -597,11 +598,13 @@ func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
 
 func _build_unit_actions(unit_node) -> Array:
 	"""Action options for an occupied tile. Upgrade is enabled only when the
-	unit has an upgrade target and the player can afford it."""
+	unit has an upgrade target, the player can afford it, and authoritative
+	combat safety state is available."""
 	var data: UnitType = null
 	if unit_node and unit_node.has_method("get_unit_data"):
 		data = unit_node.get_unit_data()
-	var can_upgrade := data != null and data.can_upgrade \
+	var can_upgrade := _has_authoritative_upgrade_safety_state(unit_node) \
+		and data != null and data.can_upgrade \
 		and data.upgrades_to != null and resource_manager.can_afford(ACTIVE_PLAYER_ID, data.upgrade_cost)
 	return [
 		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
@@ -628,16 +631,18 @@ func _on_radial_unit_unhovered():
 
 func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
 	"""Reserve essence, place the real unit, and refund any rejected placement."""
-	var unit := _find_radial_unit(unit_id)
-	if unit.is_empty():
+	var data: UnitType = troop_manager.catalog.get(unit_id)
+	if data == null or _find_radial_unit(unit_id).is_empty():
 		_deploy_log("Unknown deployment unit rejected: %s" % unit_id)
 		return
-	var cost := int(unit.get("unit_cost", 0))
+	# Re-resolve dynamic pricing at confirmation time so a stale radial quote
+	# cannot undercharge after the player's board state changes.
+	var cost := data.get_cost(troop_manager.count_units(unit_id, ACTIVE_PLAYER_ID))
 	if not resource_manager.try_spend(ACTIVE_PLAYER_ID, cost, "purchase:%s" % unit_id):
 		_deploy_log("Not enough essence to place %s" % unit_id)
 		return
 	troop_manager.set_current_unit(unit_id)
-	if troop_manager.place_unit(origin):
+	if troop_manager.place_unit(origin, ACTIVE_PLAYER_ID):
 		_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), get_player_essence()])
 	else:
 		resource_manager.add_essence(ACTIVE_PLAYER_ID, cost, "purchase_refund:%s" % unit_id)
@@ -669,20 +674,14 @@ func _upgrade_unit(unit_node, origin: Vector2i):
 	if data == null or not data.can_upgrade or data.upgrades_to == null:
 		_deploy_log("Upgrade unavailable for unit at %s" % str(origin))
 		return
-	if not resource_manager.can_afford(ACTIVE_PLAYER_ID, data.upgrade_cost):
-		_deploy_log("Not enough essence to upgrade at %s" % str(origin))
+	if not _has_authoritative_upgrade_safety_state(unit_node):
+		_deploy_log("Upgrade disabled until combat engagement and adjacency state is available")
 		return
-	if not resource_manager.try_purchase_upgrade(
-		ACTIVE_PLAYER_ID,
-		str(unit_node.get_instance_id()),
-		data.upgrade_cost,
-		false,
-		false
-	):
-		_deploy_log("Unit at %s cannot be upgraded again this turn" % str(origin))
-		return
-	unit_node.data = data.upgrades_to
-	_deploy_log("Upgraded unit at %s to %s (essence=%d)" % [str(origin), data.upgrades_to.unit_name, get_player_essence()])
+
+func _has_authoritative_upgrade_safety_state(_unit_node) -> bool:
+	# Issue #8 owns combat engagement and enemy-adjacency state. Until that
+	# production state exists, upgrades must fail closed instead of assuming safe.
+	return false
 
 func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 	# Move/Attack need a follow-up target-selection step. For now we record the
