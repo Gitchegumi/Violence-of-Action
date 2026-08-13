@@ -51,7 +51,7 @@ func set_current_unit(id: String) -> void:
 	else:
 		push_warning("Unknown unit id: " + id)
 
-func place_unit(map_pos: Vector2i, player_id: int = 0) -> bool:
+func place_unit(map_pos: Vector2i, player_id: int) -> bool:
 	if tile_map == null: return false
 	if units_on_map.has(map_pos): return false
 	if current_unit_id == "" or not catalog.has(current_unit_id):
@@ -93,6 +93,13 @@ func count_units(unit_id: String, player_id: int) -> int:
 		):
 			count += 1
 	return count
+
+func get_units_for_player(player_id: int) -> Array:
+	var result: Array = []
+	for unit in units_on_map.values():
+		if unit != null and int(unit.get("controller_player_id")) == player_id:
+			result.append(unit)
+	return result
 
 func get_unit_at_map_coord(map_pos: Vector2i) -> Node:
 	if units_on_map.has(map_pos):

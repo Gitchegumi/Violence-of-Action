@@ -14,6 +14,7 @@ const GAMEPLAY_SCENE := "res://scenes/main.tscn"
 
 
 func _ready() -> void:
+	GameState.return_to_menu()
 	start_button.pressed.connect(open_setup_dialog)
 	rules_button.pressed.connect(open_rules_dialog)
 	quit_button.pressed.connect(_quit_game)
@@ -61,6 +62,7 @@ func submit_setup(transition_to_game: bool = true) -> Dictionary:
 	var player_count := player_count_option.get_item_id(player_count_option.selected)
 	var config := build_match_config(player_count, seed_input.text)
 	GameSession.set_match_config(config)
+	GameState.begin_match(config)
 	match_config_created.emit(config)
 	if transition_to_game:
 		get_tree().change_scene_to_file(GAMEPLAY_SCENE)

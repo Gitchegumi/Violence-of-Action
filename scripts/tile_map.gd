@@ -42,7 +42,6 @@ var pending_action: Dictionary = {}  # Set when an action awaits target selectio
 var _radial_is_deploy: bool = false  # True while a DEPLOY radial is open
 
 var resource_manager: ResourceManager
-const ACTIVE_PLAYER_ID := 0
 
 
 # --- Built-in Godot Functions ---
@@ -599,7 +598,7 @@ func _unhandled_input(event):
 			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
 			_show_action_radial(map_pos, unit_on_tile)
 			emit_signal("unit_selected", unit_on_tile)
-		elif is_in_deployment_zone(map_pos, 0):  # Assuming player 0 for now
+		elif _can_deploy_at(map_pos):
 			_deploy_log("Empty deployment tile %s" % str(map_pos))
 			_show_radial_menu(map_pos)
 			emit_signal("unit_selected", null)
@@ -612,14 +611,14 @@ func _unhandled_input(event):
 		selected_tile = map_pos
 		selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
 	
-	# Press P to place a unit on the currently selected tile (if valid)
+	# Press P to open the normal purchase flow on the selected tile.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if selected_tile != Vector2i(-1, -1):
-			if is_in_deployment_zone(selected_tile, 0):
-				troop_manager.place_unit(selected_tile)
+			if _can_deploy_at(selected_tile):
+				_show_radial_menu(selected_tile)
 				get_viewport().set_input_as_handled()
 			else:
-				print("Cannot place unit outside of deployment zone.")
+				print("Cannot deploy on this tile during the current phase.")
 
 	# F recenters on the selected hex (including a selected unit's hex).
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
@@ -638,6 +637,9 @@ func _unhandled_input(event):
 
 func _show_radial_menu(origin_tile: Vector2i):
 	"""Show the DEPLOY radial at an empty deployment tile with real units."""
+	if not _can_deploy_at(origin_tile):
+		_deploy_log("Deploy radial rejected outside an eligible deployment tile or phase")
+		return
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
 
@@ -703,14 +705,14 @@ func _get_deployable_units() -> Array:
 	return units
 
 func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
-	var existing_count := troop_manager.count_units(id, ACTIVE_PLAYER_ID)
+	var existing_count := troop_manager.count_units(id, GameState.active_player_id)
 	var cost := data.get_cost(existing_count)
 	return {
 		"unit_id": id,
 		"unit_name": data.unit_name,
 		"unit_role": data.unit_role,
 		"unit_cost": cost,
-		"affordable": resource_manager.can_afford(ACTIVE_PLAYER_ID, cost),
+		"affordable": resource_manager.can_afford(GameState.active_player_id, cost),
 		"stats_block": data.stats_block,
 		"abilities": data.special_abilities,
 		"unit_description": data.unit_description,
@@ -725,7 +727,7 @@ func _build_unit_actions(unit_node) -> Array:
 		data = unit_node.get_unit_data()
 	var can_upgrade := _has_authoritative_upgrade_safety_state(unit_node) \
 		and data != null and data.can_upgrade \
-		and data.upgrades_to != null and resource_manager.can_afford(ACTIVE_PLAYER_ID, data.upgrade_cost)
+		and data.upgrades_to != null and resource_manager.can_afford(GameState.active_player_id, data.upgrade_cost)
 	return [
 		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
 		{"action_id": "move", "label": "Move", "enabled": true, "description": "Move to another tile"},
@@ -737,7 +739,7 @@ func _build_placement_context() -> Dictionary:
 	"""Supply the radial menu with current validation context (T024)."""
 	return {
 		"resources": get_player_essence(),
-		"tile_valid": is_in_deployment_zone(radial_origin, 0),
+		"tile_valid": _can_deploy_at(radial_origin),
 		"tile_occupied": troop_manager.get_unit_at_map_coord(radial_origin) != null,
 		"now_ms": Time.get_ticks_msec(),
 	}
@@ -751,26 +753,43 @@ func _on_radial_unit_unhovered():
 
 func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
 	"""Reserve essence, place the real unit, and refund any rejected placement."""
+	if not _can_deploy_at(origin):
+		_deploy_log("Deployment rejected outside an eligible tile or phase")
+		deploy_placement_failed.emit("deployment_not_allowed", origin, unit_id)
+		_close_radial_menu("deployment_not_allowed")
+		return
 	var data: UnitType = troop_manager.catalog.get(unit_id)
 	if data == null or _find_radial_unit(unit_id).is_empty():
 		_deploy_log("Unknown deployment unit rejected: %s" % unit_id)
 		return
 	# Re-resolve dynamic pricing at confirmation time so a stale radial quote
 	# cannot undercharge after the player's board state changes.
-	var cost := data.get_cost(troop_manager.count_units(unit_id, ACTIVE_PLAYER_ID))
-	if not resource_manager.try_spend(ACTIVE_PLAYER_ID, cost, "purchase:%s" % unit_id):
+	var cost := data.get_cost(troop_manager.count_units(unit_id, GameState.active_player_id))
+	if not resource_manager.try_spend(GameState.active_player_id, cost, "purchase:%s" % unit_id):
 		_deploy_log("Not enough essence to place %s" % unit_id)
 		return
 	troop_manager.set_current_unit(unit_id)
-	if troop_manager.place_unit(origin, ACTIVE_PLAYER_ID):
+	if troop_manager.place_unit(origin, GameState.active_player_id):
 		_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), get_player_essence()])
 	else:
-		resource_manager.add_essence(ACTIVE_PLAYER_ID, cost, "purchase_refund:%s" % unit_id)
+		resource_manager.add_essence(GameState.active_player_id, cost, "purchase_refund:%s" % unit_id)
 		_deploy_log("troop_manager rejected placement of %s at %s" % [unit_id, str(origin)])
 	if radial_menu_instance:
 		radial_menu_instance.revalidate_affordability(get_player_essence())
 	emit_signal("deploy_unit_selected", unit_id, origin)
 	_close_radial_menu("placed")
+
+
+func _can_deploy_at(origin: Vector2i) -> bool:
+	return _is_deployment_phase() \
+		and is_in_deployment_zone(origin, GameState.active_player_id) \
+		and troop_manager.get_unit_at_map_coord(origin) == null
+
+
+func _is_deployment_phase() -> bool:
+	return GameState.current_state == GameState.State.INITIAL_DEPLOYMENT \
+		or (GameState.current_state == GameState.State.PLAYING \
+		and GameState.current_phase == GameState.TurnPhase.MARSHAL_TROOPS)
 
 func _on_radial_action_selected(action_id: String, origin: Vector2i):
 	"""Dispatch a selected unit action, then close the action radial."""
@@ -856,8 +875,8 @@ func _deploy_log(message: String) -> void:
 	GameLog.debug("deployment.radial", message)
 
 func set_player_essence(amount: int):
-	resource_manager.set_essence(ACTIVE_PLAYER_ID, amount, "debug_set")
+	resource_manager.set_essence(GameState.active_player_id, amount, "debug_set")
 	_deploy_log("Player essence set to: %d" % get_player_essence())
 
 func get_player_essence() -> int:
-	return resource_manager.get_essence(ACTIVE_PLAYER_ID) if resource_manager else 0
+	return resource_manager.get_essence(GameState.active_player_id) if resource_manager else 0
