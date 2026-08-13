@@ -98,6 +98,8 @@ func move_unit(unit: Node, destination: Vector2i) -> Dictionary:
 	unit.movement_remaining -= int(path_result.cost)
 	if int(validation.adjacent_enemies) == 1:
 		unit.disengaged_this_turn = true
+	elif get_adjacent_enemies(unit).size() > 0:
+		unit.entered_engagement_this_turn = true
 	return path_result
 
 
@@ -112,16 +114,22 @@ func get_move_validation(unit: Node) -> Dictionary:
 		return {"valid": false, "reason": "not_active_player", "adjacent_enemies": 0}
 	if int(unit.get("movement_remaining")) <= 0:
 		return {"valid": false, "reason": "no_movement_remaining", "adjacent_enemies": 0}
+	if bool(unit.get("disengaged_this_turn")):
+		return {"valid": false, "reason": "disengagement_complete", "adjacent_enemies": 0}
 	var adjacent_enemies := get_adjacent_enemies(unit).size()
 	if adjacent_enemies > 1:
 		return {"valid": false, "reason": "pinned", "adjacent_enemies": adjacent_enemies}
-	if adjacent_enemies == 1 and bool(unit.get("took_non_movement_action")):
+	if adjacent_enemies == 1 and (
+		bool(unit.get("took_non_movement_action")) \
+		or bool(unit.get("entered_engagement_this_turn"))
+	):
 		return {"valid": false, "reason": "engaged_after_action", "adjacent_enemies": adjacent_enemies}
 	return {"valid": true, "reason": "", "adjacent_enemies": adjacent_enemies}
 
 
 func find_cheapest_path(unit: Node, destination: Vector2i) -> Dictionary:
 	var origin: Vector2i = unit.map_pos
+	var origin_enemy_ids := _adjacent_enemy_ids(unit, origin)
 	if destination == origin:
 		return {"success": false, "reason": "same_tile", "path": [], "cost": 0}
 	if not tile_map.terrain_data_map.has(destination):
@@ -144,6 +152,8 @@ func find_cheapest_path(unit: Node, destination: Vector2i) -> Dictionary:
 			continue
 		if current_coord == destination:
 			break
+		if current_coord != origin and _has_new_enemy_engagement(unit, current_coord, origin_enemy_ids):
+			continue
 		for neighbor in tile_map._get_neighbors(current_coord):
 			var step_cost := _movement_cost(unit, neighbor)
 			if step_cost < 0 or _is_enemy_occupied(unit, neighbor):
@@ -165,12 +175,30 @@ func find_cheapest_path(unit: Node, destination: Vector2i) -> Dictionary:
 
 
 func get_adjacent_enemies(unit: Node) -> Array:
+	return _get_enemies_adjacent_to(unit, unit.map_pos)
+
+
+func _get_enemies_adjacent_to(unit: Node, coord: Vector2i) -> Array:
 	var enemies: Array = []
-	for neighbor in tile_map._get_neighbors(unit.map_pos):
+	for neighbor in tile_map._get_neighbors(coord):
 		var occupant = get_unit_at_map_coord(neighbor)
 		if occupant != null and int(occupant.get("controller_player_id")) != int(unit.get("controller_player_id")):
 			enemies.append(occupant)
 	return enemies
+
+
+func _adjacent_enemy_ids(unit: Node, coord: Vector2i) -> Dictionary:
+	var enemy_ids: Dictionary = {}
+	for enemy in _get_enemies_adjacent_to(unit, coord):
+		enemy_ids[enemy.get_instance_id()] = true
+	return enemy_ids
+
+
+func _has_new_enemy_engagement(unit: Node, coord: Vector2i, origin_enemy_ids: Dictionary) -> bool:
+	for enemy in _get_enemies_adjacent_to(unit, coord):
+		if not origin_enemy_ids.has(enemy.get_instance_id()):
+			return true
+	return false
 
 
 func can_record_non_movement_action(unit: Node) -> bool:

@@ -98,13 +98,37 @@ func test_movement_budget_can_be_split_across_multiple_moves():
 
 
 func test_single_engagement_allows_disengagement_but_forbids_later_action():
-	_set_tiles([Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0)], _terrain("Field"))
+	_set_tiles([Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(-2, 0)], _terrain("Field"))
 	var mover := _unit(Vector2i(0, 0))
 	_unit(Vector2i(1, 0), 1)
 	var result: Dictionary = troop_manager.move_unit(mover, Vector2i(-1, 0))
 	assert_true(result.success)
 	assert_true(mover.disengaged_this_turn)
 	assert_false(troop_manager.record_non_movement_action(mover))
+	var position_after_disengagement: Vector2i = mover.map_pos
+	var movement_after_disengagement: int = mover.movement_remaining
+	var second_move: Dictionary = troop_manager.move_unit(mover, Vector2i(-2, 0))
+	assert_false(second_move.success)
+	assert_eq(second_move.reason, "disengagement_complete")
+	assert_eq(mover.map_pos, position_after_disengagement)
+	assert_eq(mover.movement_remaining, movement_after_disengagement)
+
+
+func test_path_cannot_continue_beyond_new_enemy_engagement():
+	_set_tiles([
+		Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(1, 1),
+	], _terrain("Field"))
+	var mover := _unit(Vector2i(0, 0))
+	_unit(Vector2i(1, 1), 1)
+	var farther_result: Dictionary = troop_manager.find_cheapest_path(mover, Vector2i(3, 0))
+	assert_false(farther_result.success)
+	assert_eq(farther_result.reason, "unreachable")
+	var engagement_result: Dictionary = troop_manager.move_unit(mover, Vector2i(1, 0))
+	assert_true(engagement_result.success)
+	assert_true(mover.entered_engagement_this_turn)
+	var second_move: Dictionary = troop_manager.move_unit(mover, Vector2i(2, 0))
+	assert_false(second_move.success)
+	assert_eq(second_move.reason, "engaged_after_action")
 
 
 func test_attack_without_destroying_adjacent_enemy_prevents_movement():

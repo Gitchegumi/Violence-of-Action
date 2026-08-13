@@ -8,6 +8,7 @@ var movement_remaining := 0
 var took_non_movement_action := false
 var disengaged_this_turn := false
 var post_combat_movement_unlocked := false
+var entered_engagement_this_turn := false
 
 signal selected(unit: ShardWalker)
 
@@ -42,6 +43,7 @@ func reset_turn_state() -> void:
 	took_non_movement_action = false
 	disengaged_this_turn = false
 	post_combat_movement_unlocked = false
+	entered_engagement_this_turn = false
 
 
 func record_non_movement_action() -> bool:
