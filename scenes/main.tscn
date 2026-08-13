@@ -54,6 +54,11 @@ offset_right = 340.0
 offset_bottom = 112.0
 text = "Cancel Action"
 
+[node name="DeploymentAlert" type="AcceptDialog" parent="."]
+title = "Deployment Required"
+initial_position = 1
+dialog_text = "Each player must place at least one unit before declaring Ready."
+
 [node name="PauseOverlay" type="ColorRect" parent="."]
 visible = false
 offset_left = 360.0

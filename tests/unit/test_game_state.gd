@@ -111,6 +111,7 @@ func test_main_objective_control_wins_after_three_later_controller_turns():
 	var tile_map = main.get_node("TileMapLayer")
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(tile_map.objective_position, 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
 	GameState.start_playing_for_test(2)
 	var essence_before_capture: int = main.get_node("ResourceManager").get_essence(0)
 	main._on_turn_ended(0, 1)
@@ -177,18 +178,51 @@ func test_three_player_elimination_waits_until_only_one_player_remains():
 	assert_eq(GameState.winner_player_id, 0)
 
 
+func test_ready_requires_each_player_to_deploy_at_least_one_unit():
+	GameSession.set_match_config({"player_count": 2, "seed": 982451653})
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	main.get_node("AdvancePhaseButton").pressed.emit()
+	assert_eq(GameState.current_state, GameState.State.INITIAL_DEPLOYMENT)
+	assert_eq(GameState.active_player_id, 0)
+	assert_false(GameState.deployment_ready[0])
+	assert_true(main.get_node("DeploymentAlert").visible)
+	assert_true(main.get_node("DeploymentAlert").dialog_text.contains("at least one unit"))
+
+
+func test_one_army_playing_transition_defensively_declares_elimination_victory():
+	GameSession.set_match_config({"player_count": 2, "seed": 982451653})
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[0][0], 0))
+	GameState.start_playing_for_test(2)
+	assert_eq(GameState.current_state, GameState.State.GAME_OVER)
+	assert_eq(GameState.winner_player_id, 0)
+	assert_eq(GameState.game_over_reason, "elimination")
+	assert_true(main.get_node("TurnLabel").text.contains("Player 1 Wins"))
+
+
 func test_gameplay_ui_and_deployment_validation_follow_active_player():
 	GameState.begin_match({"player_count": 2})
 	var main = MainScene.instantiate()
 	add_child_autofree(main)
+	var tile_map = main.get_node("TileMapLayer")
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[0][0], 0))
 	assert_true(main.get_node("TurnLabel").text.contains("Player 1"))
 	main.get_node("AdvancePhaseButton").pressed.emit()
 	assert_eq(GameState.active_player_id, 1)
 	assert_true(main.get_node("TurnLabel").text.contains("Player 2"))
 	assert_true(main.get_node("EssenceLabel").text.contains("Player 2"))
-	var tile_map = main.get_node("TileMapLayer")
 	tile_map.radial_origin = tile_map.deployment_zones_data[1][0]
 	assert_true(tile_map._build_placement_context().tile_valid, "Player 2 uses Player 2's deployment zone")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
 	main.get_node("AdvancePhaseButton").pressed.emit()
 	assert_eq(GameState.current_state, GameState.State.PLAYING)
 	assert_eq(GameState.current_phase, GameState.TurnPhase.START_TURN)

@@ -26,6 +26,10 @@ func _gameplay_tile_map():
 	await get_tree().process_frame
 	return main.get_node("TileMapLayer")
 
+
+func _place_passive_opposing_unit(tile_map) -> void:
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+
 func test_shard_walker_loads_from_catalog():
 	var tm = TroopManagerScript.new()
 	add_child_autofree(tm)
@@ -162,6 +166,7 @@ func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	_place_passive_opposing_unit(tile_map)
 	var destination := Vector2i(-999, -999)
 	for neighbor in tile_map._get_neighbors(origin):
 		var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
@@ -187,6 +192,7 @@ func test_right_click_cancels_live_move_targeting():
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	_place_passive_opposing_unit(tile_map)
 	GameState.start_playing_for_test(2)
 	GameState.current_phase = GameState.TurnPhase.MOVEMENT
 	tile_map.troop_manager.start_turn(0)
@@ -205,6 +211,7 @@ func test_visible_cancel_button_clears_move_targeting():
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	_place_passive_opposing_unit(tile_map)
 	GameState.start_playing_for_test(2)
 	GameState.current_phase = GameState.TurnPhase.MOVEMENT
 	tile_map.troop_manager.start_turn(0)
@@ -222,6 +229,7 @@ func test_phase_advance_automatically_clears_pending_action_for_next_player():
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	_place_passive_opposing_unit(tile_map)
 	GameState.start_playing_for_test(2)
 	GameState.current_phase = GameState.TurnPhase.MOVEMENT
 	tile_map.troop_manager.start_turn(0)

@@ -55,6 +55,14 @@ func _refresh_objective_ui() -> void:
 
 func _on_advance_phase_pressed() -> void:
 	if GameState.current_state == GameState.State.INITIAL_DEPLOYMENT:
+		var player_id := GameState.active_player_id
+		if $TileMapLayer.troop_manager.get_units_for_player(player_id).is_empty():
+			$DeploymentAlert.dialog_text = (
+				"Player %d must place at least one unit in their army before declaring Ready."
+				% (player_id + 1)
+			)
+			$DeploymentAlert.popup_centered(Vector2i(480, 160))
+			return
 		GameState.mark_deployment_ready(GameState.active_player_id)
 		if GameState.current_state == GameState.State.INITIAL_DEPLOYMENT:
 			GameState.active_player_id = (GameState.active_player_id + 1) % GameState.player_count
@@ -63,8 +71,10 @@ func _on_advance_phase_pressed() -> void:
 		GameState.advance_phase()
 
 
-func _on_state_changed(_previous, _current) -> void:
+func _on_state_changed(previous, current) -> void:
 	_refresh_turn_ui()
+	if previous == GameState.State.INITIAL_DEPLOYMENT and current == GameState.State.PLAYING:
+		_evaluate_elimination_victory()
 
 
 func _on_phase_changed(_previous, _current, _player_id: int, _round_number: int) -> void:
