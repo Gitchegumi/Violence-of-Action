@@ -74,14 +74,15 @@ func _generate_map():
 	_ensure_paths_to_objective(terrain_map, deployment_zones_data, center_pos)
 
 	# --- 4. Place Tiles on the Map ---
-	self.terrain_data_map = terrain_map # Make the map data available for selection logic
+	self.terrain_data_map = terrain_map.duplicate() # Complete playable map for selection logic
 	for coord in terrain_map:
 		var terrain: TerrainType = terrain_map[coord]
 		set_cell(coord, tile_set_source_id, terrain.atlas_coord)
 
 	# --- 5. Place the Objective Tile ---
 	set_cell(center_pos, tile_set_source_id, objective_type.atlas_coord)
-	_update_camera_bounds(terrain_map.keys() + [center_pos])
+	terrain_data_map[center_pos] = objective_type
+	_update_camera_bounds(terrain_data_map.keys())
 	
 	print("Total tiles placed: ", terrain_map.size() + 1)
 
