@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_6iqno")
-unit_name = "Shard Walker"
+unit_name = "Shardwalker"
 unit_role = "Core Infantry"
 unit_tier = 1
-can_upgrade = true
-upgrade_cost = 3
+can_upgrade = false
+upgrade_cost = -1
 unit_description = "Light troops augmented with crystal tech for standard mobility."
 unit_cost_type = "standard"
 unit_cost = 2
@@ -22,7 +22,7 @@ stats_block = {
 terrain_type_matrix = {
 "field": 1,
 "forest": 2,
-"mountain": 5,
+"mountain": -1,
 "water": -1
 }
 special_abilities = Array[String]([])
