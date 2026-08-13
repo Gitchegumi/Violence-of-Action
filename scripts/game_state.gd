@@ -78,6 +78,8 @@ func start_playing_for_test(configured_player_count: int = 2) -> void:
 	round_number = 1
 	current_phase = TurnPhase.START_TURN
 	_change_state(State.PLAYING)
+	if current_state != State.PLAYING:
+		return
 	turn_started.emit(active_player_id, round_number)
 	phase_changed.emit(TurnPhase.CLEAN_UP, current_phase, active_player_id, round_number)
 
@@ -93,6 +95,8 @@ func advance_phase() -> bool:
 		return true
 	var ending_player := active_player_id
 	turn_ended.emit(ending_player, round_number)
+	if current_state != State.PLAYING:
+		return true
 	active_player_id = (active_player_id + 1) % player_count
 	if active_player_id == starting_player_id:
 		round_number += 1
@@ -148,6 +152,8 @@ func _start_playing() -> void:
 	active_player_id = starting_player_id
 	current_phase = TurnPhase.START_TURN
 	_change_state(State.PLAYING)
+	if current_state != State.PLAYING:
+		return
 	turn_started.emit(active_player_id, round_number)
 	phase_changed.emit(TurnPhase.CLEAN_UP, current_phase, active_player_id, round_number)
 

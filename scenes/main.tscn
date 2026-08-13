@@ -32,6 +32,13 @@ offset_right = 300.0
 offset_bottom = 77.0
 text = "Initial Deployment"
 
+[node name="ObjectiveLabel" type="Label" parent="."]
+offset_left = 360.0
+offset_top = 14.0
+offset_right = 590.0
+offset_bottom = 45.0
+text = "Objective: Uncontrolled"
+
 [node name="AdvancePhaseButton" type="Button" parent="."]
 offset_left = 14.0
 offset_top = 80.0
@@ -46,6 +53,11 @@ offset_top = 80.0
 offset_right = 340.0
 offset_bottom = 112.0
 text = "Cancel Action"
+
+[node name="DeploymentAlert" type="AcceptDialog" parent="."]
+title = "Deployment Required"
+initial_position = 1
+dialog_text = "Each player must place at least one unit before declaring Ready."
 
 [node name="PauseOverlay" type="ColorRect" parent="."]
 visible = false

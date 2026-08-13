@@ -1,5 +1,7 @@
 extends Node
 
+signal unit_destroyed(unit: Node, player_id: int, destruction_id: String)
+
 # TroopManager is responsible for handling the placement of units on the map.
 # Keep mechanics out of main.gd; this node is created/owned by the TileMap scene.
 
@@ -272,6 +274,19 @@ func get_unit_at_map_coord(map_pos: Vector2i) -> Node:
 	if units_on_map.has(map_pos):
 		return units_on_map[map_pos]
 	return null
+
+
+func destroy_unit(unit: Node, destruction_id: String = "") -> bool:
+	if unit == null or not units_on_map.has(unit.map_pos) or units_on_map[unit.map_pos] != unit:
+		return false
+	var player_id := int(unit.get("controller_player_id"))
+	var resolved_id := destruction_id
+	if resolved_id.is_empty():
+		resolved_id = "unit_%d" % unit.get_instance_id()
+	units_on_map.erase(unit.map_pos)
+	unit_destroyed.emit(unit, player_id, resolved_id)
+	unit.queue_free()
+	return true
 
 # Returns a standalone artwork node for a unit type (for info-panel previews of
 # not-yet-placed units). get_artwork_node() returns a duplicate, so freeing the

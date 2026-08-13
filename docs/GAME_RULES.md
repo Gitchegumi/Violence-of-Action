@@ -111,7 +111,7 @@ Players must choose between expanding their force or enhancing the strength of t
 Players can achieve victory through one of the following conditions:
 
 *   **Elimination:** Eliminate all enemy units belonging to opposing players.
-*   **Objective Control:** Occupy the central Objective tile for 3 consecutive turns. An 'occupation token' will be used to signify control of the Objective tile, persisting even if the occupying unit moves off the tile, until an opposing unit occupies it.
+*   **Objective Control:** Retain the central Objective tile's occupation token through 3 of your own completed turns after capturing it. The token persists even if the occupying unit moves off the tile, until an opposing unit occupies it or upkeep cannot be paid.
 
 ### Objective Control (Occupation Token Rules)
 
@@ -129,7 +129,9 @@ The Objective tile represents a critical point of interest on the battlefield. C
   When a player **gains control** of the Objective tile, they immediately gain **6 essence**.
 
 - **Upkeep Cost:**  
-  At the end of each of their turns while holding the Objective token, a player must pay **3 essence** to maintain control.  
+  Capturing the Objective establishes control at **0 control turns** and does not charge upkeep on the capture turn. At the end of each later turn of their own while holding the Objective token, a player must pay **3 essence** to maintain control. Opponents' completed turns do not charge upkeep or advance the counter.
+  - After successful upkeep, increase the controller's control-turn counter by 1.
+  - The controller wins immediately when that counter reaches 3.
   - If they **cannot pay**, the **local populace rebels**, and the occupation token is **removed** from play. The tile becomes uncontrolled until another player captures it again.
 
 ## Armies

@@ -3,17 +3,21 @@ class_name ResourceManager
 
 signal essence_changed(player_id: int, total: int, delta: int, reason: String)
 signal objective_control_changed(previous_player_id: int, player_id: int)
+signal objective_control_turns_changed(player_id: int, turns: int)
 
 const INITIAL_ESSENCE := 12
 const SCAVENGER_REWARD_PER_DESTRUCTION := 3
 const OBJECTIVE_CAPTURE_BONUS := 6
 const OBJECTIVE_UPKEEP := 3
+const OBJECTIVE_TURNS_TO_WIN := 3
 const NO_PLAYER := -1
 
 var balances: Dictionary = {}
 var pending_destructions: Dictionary = {}
 var upgraded_units_this_turn: Dictionary = {}
 var objective_controller := NO_PLAYER
+var objective_control_turns := 0
+var objective_upkeep_due := false
 var _destruction_serial := 0
 
 
@@ -29,6 +33,8 @@ func configure_players(player_count: int, initial_essence: int = INITIAL_ESSENCE
 	pending_destructions.clear()
 	upgraded_units_this_turn.clear()
 	objective_controller = NO_PLAYER
+	objective_control_turns = 0
+	objective_upkeep_due = false
 	for player_id in range(clampi(player_count, 2, 3)):
 		balances[player_id] = maxi(0, initial_essence)
 		pending_destructions[player_id] = {}
@@ -108,20 +114,36 @@ func capture_objective(player_id: int) -> bool:
 		return false
 	var previous := objective_controller
 	objective_controller = player_id
+	objective_control_turns = 0
+	objective_upkeep_due = false
 	add_essence(player_id, OBJECTIVE_CAPTURE_BONUS, "objective_capture")
 	objective_control_changed.emit(previous, player_id)
+	objective_control_turns_changed.emit(player_id, objective_control_turns)
 	return true
 
 
-func resolve_objective_upkeep(player_id: int) -> bool:
+func resolve_objective_turn(player_id: int) -> Dictionary:
 	if objective_controller != player_id:
-		return true
+		return {"retained": true, "paid_upkeep": false, "turns": objective_control_turns, "victory": false}
+	if not objective_upkeep_due:
+		objective_upkeep_due = true
+		return {"retained": true, "paid_upkeep": false, "turns": objective_control_turns, "victory": false}
 	if try_spend(player_id, OBJECTIVE_UPKEEP, "objective_upkeep"):
-		return true
+		objective_control_turns += 1
+		objective_control_turns_changed.emit(player_id, objective_control_turns)
+		return {
+			"retained": true,
+			"paid_upkeep": true,
+			"turns": objective_control_turns,
+			"victory": objective_control_turns >= OBJECTIVE_TURNS_TO_WIN,
+		}
 	var previous := objective_controller
 	objective_controller = NO_PLAYER
+	objective_control_turns = 0
+	objective_upkeep_due = false
 	objective_control_changed.emit(previous, NO_PLAYER)
-	return false
+	objective_control_turns_changed.emit(NO_PLAYER, objective_control_turns)
+	return {"retained": false, "paid_upkeep": false, "turns": 0, "victory": false}
 
 
 static func calculate_diversity_income(active_units: Array) -> int:
