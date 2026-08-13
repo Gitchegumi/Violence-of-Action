@@ -84,8 +84,10 @@ func _generate_map():
 	deployment_zones_data = _get_deployment_zones(center_pos)
 	_ensure_passable_zones(terrain_map, deployment_zones_data)
 
-	# --- 3. Validate and Carve Paths to Objective ---
-	_ensure_paths_to_objective(terrain_map, deployment_zones_data, center_pos)
+	# --- 3. Validate and Repair Fair Paths to Objective ---
+	if not _ensure_fair_paths_to_objective(terrain_map, deployment_zones_data, center_pos):
+		push_error("Generated map rejected: objective paths could not be made fair.")
+		return
 
 	# --- 4. Place Tiles on the Map ---
 	self.terrain_data_map = terrain_map.duplicate() # Complete playable map for selection logic
@@ -137,63 +139,158 @@ func _generate_noise_terrain(center: Vector2i) -> Dictionary:
 
 # --- Pathfinding and Validation ---
 
-# Ensures a valid path from each deployment zone to the objective.
-func _ensure_paths_to_objective(terrain_map: Dictionary, zones: Array, objective: Vector2i):
-	for zone_coords in zones:
-		var path_found = false
-		for start_coord in zone_coords:
-			if _find_path(start_coord, objective, terrain_map):
-				path_found = true
-				break
-		
-		if not path_found:
-			print("No path found for a zone. Carving a path...")
-			var best_start = zone_coords[0]
-			for coord in zone_coords:
-				if coord.distance_to(objective) < best_start.distance_to(objective):
-					best_start = coord
-			_carve_path(best_start, objective, terrain_map)
+# Fairness uses land movement and each terrain's documented movement-point cost.
+# The starting deployment tile costs nothing; each entered tile, including the
+# objective, contributes its move_cost.
+func get_zone_path_costs(terrain_map: Dictionary, zones: Array, objective: Vector2i) -> Array[int]:
+	var costs: Array[int] = []
+	for zone in zones:
+		costs.append(_shortest_land_path_cost(zone, objective, terrain_map))
+	return costs
 
-# Carves a path by swapping blocking tiles with passable ones.
-func _carve_path(start: Vector2i, end: Vector2i, terrain_map: Dictionary):
-	var path_coords = _get_line_path(start, end)
-	var swappable_coords = []
+
+func are_zone_paths_fair(costs: Array[int], configured_player_count: int) -> bool:
+	if costs.size() != configured_player_count or costs.is_empty():
+		return false
+	for cost in costs:
+		if cost < 0:
+			return false
+	var tolerance := 0 if configured_player_count == 2 else 1
+	return costs.max() - costs.min() <= tolerance
+
+
+func _ensure_fair_paths_to_objective(
+	terrain_map: Dictionary,
+	zones: Array,
+	objective: Vector2i
+) -> bool:
+	var costs := get_zone_path_costs(terrain_map, zones, objective)
+	if _all_path_costs_equal(costs, zones.size()):
+		return true
+	print("Unequal objective paths detected (%s). Repairing..." % str(costs))
+	if not _repair_objective_paths(terrain_map, zones, objective):
+		# A one-point three-player spread is only valid when equality is proven
+		# impossible. This repair is not an exhaustive proof, so fail closed and
+		# let generation reject the candidate instead of accepting tolerance.
+		return false
+	costs = get_zone_path_costs(terrain_map, zones, objective)
+	return _all_path_costs_equal(costs, zones.size())
+
+
+func _all_path_costs_equal(costs: Array[int], configured_player_count: int) -> bool:
+	return costs.size() == configured_player_count \
+		and not costs.is_empty() \
+		and costs.min() >= 0 \
+		and costs.min() == costs.max()
+
+
+func _repair_objective_paths(terrain_map: Dictionary, zones: Array, objective: Vector2i) -> bool:
+	var preferred_terrain := _lowest_cost_land_terrain()
+	if preferred_terrain == null:
+		return false
+	var protected: Dictionary = {}
+	var routes: Array = []
+	for zone in zones:
+		var start := _nearest_zone_coordinate(zone, objective)
+		if start == Vector2i(-2147483648, -2147483648):
+			return false
+		var route := _get_hex_line_path(start, objective)
+		routes.append(route)
+		for coord in route:
+			if coord != objective:
+				protected[coord] = true
+	for zone in zones:
+		for coord in zone:
+			protected[coord] = true
+
+	var donors: Array[Vector2i] = []
 	for coord in terrain_map:
-		var type: TerrainType = terrain_map[coord]
-		if type.passable_by == "land":
-			swappable_coords.append(coord)
-	
-	_shuffle_with_map_rng(swappable_coords)
+		if not protected.has(coord) and terrain_map[coord] == preferred_terrain:
+			donors.append(coord)
+	donors.sort_custom(_coordinate_less)
 
-	for coord in path_coords:
-		if terrain_map.has(coord):
-			var current_type: TerrainType = terrain_map[coord]
-			if current_type.passable_by != "land":
-				if not swappable_coords.is_empty():
-					var swap_with = swappable_coords.pop_front()
-					terrain_map[coord] = terrain_map[swap_with]
-					terrain_map[swap_with] = current_type
-				else:
-					print("Warning: Ran out of swappable tiles. Could not carve full path.")
-					break
+	var replacements: Array[Vector2i] = []
+	var replacement_set: Dictionary = {}
+	for route in routes:
+		for coord in route:
+			if coord == objective or not terrain_map.has(coord):
+				continue
+			if terrain_map[coord] == preferred_terrain or replacement_set.has(coord):
+				continue
+			replacements.append(coord)
+			replacement_set[coord] = true
+	if donors.size() < replacements.size():
+		return false
+	for coord in replacements:
+		var donor: Vector2i = donors.pop_front()
+		var displaced: TerrainType = terrain_map[coord]
+		terrain_map[coord] = preferred_terrain
+		terrain_map[donor] = displaced
+	return true
 
-# Simple Breadth-First Search to check for a path.
-func _find_path(start: Vector2i, end: Vector2i, terrain_map: Dictionary) -> bool:
-	var queue = [start]
-	var visited = {start: true}
-	
-	while not queue.is_empty():
-		var current = queue.pop_front()
-		if current == end:
-			return true
-			
+
+func _shortest_land_path_cost(zone: Array, objective: Vector2i, terrain_map: Dictionary) -> int:
+	var distances: Dictionary = {}
+	var open: Dictionary = {}
+	for start in zone:
+		if terrain_map.has(start) and _is_land(terrain_map[start]):
+			distances[start] = 0
+			open[start] = true
+	while not open.is_empty():
+		var current = _lowest_distance_coordinate(open, distances)
+		var current_cost: int = distances[current]
+		open.erase(current)
+		if current == objective:
+			return current_cost
 		for neighbor in _get_neighbors(current):
-			if terrain_map.has(neighbor) and not visited.has(neighbor):
-				var type: TerrainType = terrain_map[neighbor]
-				if type.passable_by == "land" or neighbor == end:
-					visited[neighbor] = true
-					queue.append(neighbor)
-	return false
+			if neighbor != objective and not terrain_map.has(neighbor):
+				continue
+			var terrain: TerrainType = objective_type if neighbor == objective else terrain_map[neighbor]
+			if neighbor != objective and not _is_land(terrain):
+				continue
+			var candidate := current_cost + maxi(1, terrain.move_cost)
+			if candidate < int(distances.get(neighbor, 2147483647)):
+				distances[neighbor] = candidate
+				open[neighbor] = true
+	return -1
+
+
+func _lowest_distance_coordinate(open: Dictionary, distances: Dictionary) -> Vector2i:
+	var best: Vector2i = open.keys()[0]
+	for coord in open:
+		if distances[coord] < distances[best] or (
+			distances[coord] == distances[best] and _coordinate_less(coord, best)
+		):
+			best = coord
+	return best
+
+
+func _lowest_cost_land_terrain() -> TerrainType:
+	var best: TerrainType = null
+	for terrain in terrain_types:
+		if _is_land(terrain) and (best == null or terrain.move_cost < best.move_cost):
+			best = terrain
+	return best
+
+
+static func _is_land(terrain: TerrainType) -> bool:
+	return terrain != null and terrain.passable_by == "land"
+
+
+func _nearest_zone_coordinate(zone: Array, objective: Vector2i) -> Vector2i:
+	var invalid := Vector2i(-2147483648, -2147483648)
+	var best: Vector2i = invalid
+	for coord in zone:
+		if best == invalid or _hex_distance(coord, objective) < _hex_distance(best, objective) or (
+			_hex_distance(coord, objective) == _hex_distance(best, objective)
+			and _coordinate_less(coord, best)
+		):
+			best = coord
+	return best
+
+
+static func _coordinate_less(a: Vector2i, b: Vector2i) -> bool:
+	return a.x < b.x or (a.x == b.x and a.y < b.y)
 
 # --- Coordinate and Zone Helpers ---
 
@@ -219,8 +316,8 @@ func _get_deployment_zones(center: Vector2i) -> Array:
 		var zone_n = []; var zone_se = []; var zone_sw = []
 		for i in range(r + 1):
 			zone_n.append(center + Vector2i(i, -r))
-			zone_se.append(center + Vector2i(r, i))
-			zone_sw.append(center + Vector2i(-r + i, r - i))
+			zone_se.append(center + Vector2i(r - i, i))
+			zone_sw.append(center + Vector2i(-r, r - i))
 		zones.append(zone_n); zones.append(zone_se); zones.append(zone_sw)
 		
 	return zones
@@ -292,16 +389,39 @@ func _get_neighbors(coord: Vector2i) -> Array:
 		neighbors.append(coord + vec)
 	return neighbors
 
-# Returns a line of coordinates from start to end (for path carving).
-func _get_line_path(start: Vector2i, end: Vector2i) -> Array:
-	var line_coords = []
-	var n = start.distance_to(end)
-	if n == 0: return []
-	for i in range(int(n) + 1):
-		var t = float(i) / n
-		var interpolated = Vector2(start).lerp(Vector2(end), t)
-		line_coords.append(Vector2i(round(interpolated.x), round(interpolated.y)))
-	return line_coords
+# Returns a minimum-step axial hex line, including both endpoints.
+func _get_hex_line_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	var distance := _hex_distance(start, end)
+	if distance == 0:
+		return [start]
+	var line: Array[Vector2i] = []
+	var start_cube := Vector3(start.x, -start.x - start.y, start.y)
+	var end_cube := Vector3(end.x, -end.x - end.y, end.y)
+	for index in range(distance + 1):
+		var cube := start_cube.lerp(end_cube, float(index) / distance)
+		line.append(_cube_round_to_axial(cube))
+	return line
+
+
+static func _hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var delta := a - b
+	return floori((absi(delta.x) + absi(delta.y) + absi(delta.x + delta.y)) / 2.0)
+
+
+static func _cube_round_to_axial(cube: Vector3) -> Vector2i:
+	var rounded_x := roundi(cube.x)
+	var rounded_y := roundi(cube.y)
+	var rounded_z := roundi(cube.z)
+	var x_difference := absf(rounded_x - cube.x)
+	var y_difference := absf(rounded_y - cube.y)
+	var z_difference := absf(rounded_z - cube.z)
+	if x_difference > y_difference and x_difference > z_difference:
+		rounded_x = -rounded_y - rounded_z
+	elif y_difference > z_difference:
+		rounded_y = -rounded_x - rounded_z
+	else:
+		rounded_z = -rounded_x - rounded_y
+	return Vector2i(rounded_x, rounded_z)
 
 
 # --- Camera Controls ---
