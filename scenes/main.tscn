@@ -39,6 +39,14 @@ offset_right = 190.0
 offset_bottom = 112.0
 text = "Ready Player 1"
 
+[node name="CancelActionButton" type="Button" parent="."]
+visible = false
+offset_left = 200.0
+offset_top = 80.0
+offset_right = 340.0
+offset_bottom = 112.0
+text = "Cancel Action"
+
 [node name="PauseOverlay" type="ColorRect" parent="."]
 visible = false
 offset_left = 360.0

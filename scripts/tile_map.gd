@@ -12,6 +12,7 @@ signal deploy_radial_closed(reason: String)
 signal deploy_action_selected(action_id: String, origin: Vector2i)
 signal unit_moved(unit: Node, path: Array, movement_cost: int, movement_remaining: int)
 signal unit_move_rejected(reason: String, destination: Vector2i)
+signal pending_action_changed(active: bool, action_type: String)
 # Emitted when a DEPLOY radial closes, so the shared info panel can hide its
 # hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
 signal deploy_preview_ended
@@ -558,7 +559,7 @@ func _unhandled_input(event):
 	# Handle right-click button press/release for camera dragging
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.is_pressed() and not pending_action.is_empty():
-			_cancel_pending_action()
+			cancel_pending_action()
 			get_viewport().set_input_as_handled()
 			return
 		is_dragging = event.is_pressed()
@@ -840,6 +841,7 @@ func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 			return
 	# Move/Attack use a follow-up target-selection step.
 	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
+	pending_action_changed.emit(true, kind)
 	_deploy_log("%s requested for unit at %s (awaiting target tile)" % [kind.capitalize(), str(origin)])
 
 
@@ -853,6 +855,7 @@ func _resolve_pending_action(destination: Vector2i) -> void:
 		_deploy_log("Move rejected at %s: %s" % [str(destination), result.reason])
 		return
 	pending_action.clear()
+	pending_action_changed.emit(false, "")
 	unit_moved.emit(unit, result.path, result.cost, unit.movement_remaining)
 	emit_signal("unit_selected", unit)
 	_deploy_log("Moved to %s for %d points (%d remaining)" % [
@@ -860,11 +863,12 @@ func _resolve_pending_action(destination: Vector2i) -> void:
 	])
 
 
-func _cancel_pending_action() -> void:
+func cancel_pending_action() -> void:
 	if pending_action.is_empty():
 		return
 	_deploy_log("%s target selection cancelled" % String(pending_action.get("type", "action")).capitalize())
 	pending_action.clear()
+	pending_action_changed.emit(false, "")
 
 
 func _move_description(validation: Dictionary) -> String:

@@ -10,7 +10,9 @@ func _ready():
 	# when the deploy radial closes (so it shows only while choosing).
 	tile_map.deploy_unit_hovered.connect(_on_deploy_unit_hovered)
 	tile_map.deploy_preview_ended.connect($UnitInfoPanel.hide_panel)
+	tile_map.pending_action_changed.connect(_on_pending_action_changed)
 	$AdvancePhaseButton.pressed.connect(_on_advance_phase_pressed)
+	$CancelActionButton.pressed.connect(tile_map.cancel_pending_action)
 	GameState.state_changed.connect(_on_state_changed)
 	GameState.phase_changed.connect(_on_phase_changed)
 	GameState.turn_started.connect(_on_turn_started)
@@ -43,7 +45,13 @@ func _on_state_changed(_previous, _current) -> void:
 
 
 func _on_phase_changed(_previous, _current, _player_id: int, _round_number: int) -> void:
+	$TileMapLayer.cancel_pending_action()
 	_refresh_turn_ui()
+
+
+func _on_pending_action_changed(active: bool, action_type: String) -> void:
+	$CancelActionButton.visible = active
+	$CancelActionButton.text = "Cancel %s" % action_type.capitalize() if active else "Cancel Action"
 
 
 func _on_turn_started(player_id: int, _round_number: int) -> void:

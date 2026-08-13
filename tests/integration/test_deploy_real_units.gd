@@ -197,3 +197,36 @@ func test_right_click_cancels_live_move_targeting():
 	cancel.pressed = true
 	tile_map._unhandled_input(cancel)
 	assert_true(tile_map.pending_action.is_empty())
+
+
+func test_visible_cancel_button_clears_move_targeting():
+	var tile_map = await _gameplay_tile_map()
+	var main = tile_map.get_parent()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	tile_map._begin_pending_action("move", tile_map.troop_manager.get_unit_at_map_coord(origin), origin)
+	assert_true(main.get_node("CancelActionButton").visible)
+	assert_eq(main.get_node("CancelActionButton").text, "Cancel Move")
+	main.get_node("CancelActionButton").pressed.emit()
+	assert_true(tile_map.pending_action.is_empty())
+	assert_false(main.get_node("CancelActionButton").visible)
+
+
+func test_phase_advance_automatically_clears_pending_action_for_next_player():
+	var tile_map = await _gameplay_tile_map()
+	var main = tile_map.get_parent()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	tile_map._begin_pending_action("move", tile_map.troop_manager.get_unit_at_map_coord(origin), origin)
+	assert_false(tile_map.pending_action.is_empty())
+	assert_true(GameState.advance_phase())
+	assert_true(tile_map.pending_action.is_empty(), "phase boundary cannot leak targeting state")
+	assert_false(main.get_node("CancelActionButton").visible)
