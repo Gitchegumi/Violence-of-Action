@@ -598,7 +598,7 @@ func _unhandled_input(event):
 			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
 			_show_action_radial(map_pos, unit_on_tile)
 			emit_signal("unit_selected", unit_on_tile)
-		elif is_in_deployment_zone(map_pos, GameState.active_player_id):
+		elif _can_deploy_at(map_pos):
 			_deploy_log("Empty deployment tile %s" % str(map_pos))
 			_show_radial_menu(map_pos)
 			emit_signal("unit_selected", null)
@@ -611,14 +611,14 @@ func _unhandled_input(event):
 		selected_tile = map_pos
 		selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
 	
-	# Press P to place a unit on the currently selected tile (if valid)
+	# Press P to open the normal purchase flow on the selected tile.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if selected_tile != Vector2i(-1, -1):
-			if is_in_deployment_zone(selected_tile, GameState.active_player_id):
-				troop_manager.place_unit(selected_tile)
+			if _can_deploy_at(selected_tile):
+				_show_radial_menu(selected_tile)
 				get_viewport().set_input_as_handled()
 			else:
-				print("Cannot place unit outside of deployment zone.")
+				print("Cannot deploy on this tile during the current phase.")
 
 	# F recenters on the selected hex (including a selected unit's hex).
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
@@ -637,6 +637,9 @@ func _unhandled_input(event):
 
 func _show_radial_menu(origin_tile: Vector2i):
 	"""Show the DEPLOY radial at an empty deployment tile with real units."""
+	if not _can_deploy_at(origin_tile):
+		_deploy_log("Deploy radial rejected outside an eligible deployment tile or phase")
+		return
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
 
@@ -736,7 +739,7 @@ func _build_placement_context() -> Dictionary:
 	"""Supply the radial menu with current validation context (T024)."""
 	return {
 		"resources": get_player_essence(),
-		"tile_valid": is_in_deployment_zone(radial_origin, GameState.active_player_id),
+		"tile_valid": _can_deploy_at(radial_origin),
 		"tile_occupied": troop_manager.get_unit_at_map_coord(radial_origin) != null,
 		"now_ms": Time.get_ticks_msec(),
 	}
@@ -750,6 +753,11 @@ func _on_radial_unit_unhovered():
 
 func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
 	"""Reserve essence, place the real unit, and refund any rejected placement."""
+	if not _can_deploy_at(origin):
+		_deploy_log("Deployment rejected outside an eligible tile or phase")
+		deploy_placement_failed.emit("deployment_not_allowed", origin, unit_id)
+		_close_radial_menu("deployment_not_allowed")
+		return
 	var data: UnitType = troop_manager.catalog.get(unit_id)
 	if data == null or _find_radial_unit(unit_id).is_empty():
 		_deploy_log("Unknown deployment unit rejected: %s" % unit_id)
@@ -770,6 +778,18 @@ func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
 		radial_menu_instance.revalidate_affordability(get_player_essence())
 	emit_signal("deploy_unit_selected", unit_id, origin)
 	_close_radial_menu("placed")
+
+
+func _can_deploy_at(origin: Vector2i) -> bool:
+	return _is_deployment_phase() \
+		and is_in_deployment_zone(origin, GameState.active_player_id) \
+		and troop_manager.get_unit_at_map_coord(origin) == null
+
+
+func _is_deployment_phase() -> bool:
+	return GameState.current_state == GameState.State.INITIAL_DEPLOYMENT \
+		or (GameState.current_state == GameState.State.PLAYING \
+		and GameState.current_phase == GameState.TurnPhase.MARSHAL_TROOPS)
 
 func _on_radial_action_selected(action_id: String, origin: Vector2i):
 	"""Dispatch a selected unit action, then close the action radial."""

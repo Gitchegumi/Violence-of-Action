@@ -1,7 +1,6 @@
 extends Node
 
 func _ready():
-	process_mode = Node.PROCESS_MODE_ALWAYS
 	var tile_map := $TileMapLayer
 	$ResourceManager.essence_changed.connect(_on_essence_changed)
 	_on_essence_changed(0, $ResourceManager.get_essence(0), 0, "initial")
@@ -27,15 +26,6 @@ func _on_deploy_unit_hovered(unit_id: String) -> void:
 func _on_essence_changed(player_id: int, total: int, _delta: int, _reason: String) -> void:
 	if player_id == GameState.active_player_id:
 		$EssenceLabel.text = "Player %d Essence: %d" % [player_id + 1, total]
-
-
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if GameState.current_state in [GameState.State.INITIAL_DEPLOYMENT, GameState.State.PLAYING]:
-			GameState.pause_game()
-		elif GameState.current_state == GameState.State.PAUSED:
-			GameState.resume_game()
-		get_viewport().set_input_as_handled()
 
 
 func _on_advance_phase_pressed() -> void:

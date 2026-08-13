@@ -51,7 +51,7 @@ func set_current_unit(id: String) -> void:
 	else:
 		push_warning("Unknown unit id: " + id)
 
-func place_unit(map_pos: Vector2i, player_id: int = 0) -> bool:
+func place_unit(map_pos: Vector2i, player_id: int) -> bool:
 	if tile_map == null: return false
 	if units_on_map.has(map_pos): return false
 	if current_unit_id == "" or not catalog.has(current_unit_id):

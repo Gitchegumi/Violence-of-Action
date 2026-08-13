@@ -105,3 +105,23 @@ func test_gameplay_ui_and_deployment_validation_follow_active_player():
 	main.get_node("AdvancePhaseButton").pressed.emit()
 	assert_eq(GameState.current_state, GameState.State.PLAYING)
 	assert_eq(GameState.current_phase, GameState.TurnPhase.START_TURN)
+
+
+func test_paused_real_scene_blocks_gameplay_processing_and_input():
+	GameState.begin_match({"player_count": 2})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var starting_essence: int = tile_map.get_player_essence()
+	assert_true(GameState.pause_game())
+	assert_false(main.can_process(), "gameplay root is pausable")
+	assert_false(tile_map.can_process(), "tile map cannot process behind pause overlay")
+	assert_true(main.get_node("PauseInput").can_process(), "only pause input remains active")
+	assert_true(main.get_node("PauseOverlay").visible)
+	var debug_essence_input := InputEventKey.new()
+	debug_essence_input.keycode = KEY_1
+	debug_essence_input.pressed = true
+	Input.parse_input_event(debug_essence_input)
+	await get_tree().process_frame
+	assert_eq(tile_map.get_player_essence(), starting_essence, "paused input cannot mutate gameplay")

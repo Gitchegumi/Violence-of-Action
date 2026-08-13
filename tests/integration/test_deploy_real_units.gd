@@ -8,21 +8,23 @@ var TileMapScript = preload("res://scripts/tile_map.gd")
 var MockUnit = preload("res://tests/unit/mock_unit.gd")
 var MainScene = preload("res://scenes/main.tscn")
 
+
+func before_each():
+	get_tree().paused = false
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+
+
+func after_each():
+	get_tree().paused = false
+	GameState.return_to_menu()
+	GameState.active_player_id = 0
+
+
 func _gameplay_tile_map():
 	var main = MainScene.instantiate()
 	add_child_autofree(main)
 	await get_tree().process_frame
 	return main.get_node("TileMapLayer")
-
-func _land_tiles(tile_map, required: int) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	for coord in tile_map.terrain_data_map:
-		var terrain: TerrainType = tile_map.terrain_data_map[coord]
-		if terrain != null and terrain.passable_by == "land":
-			result.append(coord)
-			if result.size() == required:
-				break
-	return result
 
 func test_shard_walker_loads_from_catalog():
 	var tm = TroopManagerScript.new()
@@ -85,8 +87,8 @@ func test_successive_dynamic_cost_deployments_revalidate_live_unit_count():
 	var tile_map = await _gameplay_tile_map()
 	var scavenger: UnitType = tile_map.troop_manager.catalog.get("battlefield_scavenger")
 	assert_not_null(scavenger, "production catalog exposes Battlefield Scavenger data")
-	var land_tiles := _land_tiles(tile_map, 2)
-	assert_eq(land_tiles.size(), 2, "generated map has two deployable land tiles")
+	var land_tiles: Array = tile_map.deployment_zones_data[GameState.active_player_id].slice(0, 2)
+	assert_eq(land_tiles.size(), 2, "active player has two deployable land tiles")
 	var stale_quote: Dictionary = tile_map._unit_type_to_dict("battlefield_scavenger", scavenger)
 	assert_eq(stale_quote.unit_cost, 1, "first Scavenger quote uses first Fibonacci price")
 	tile_map.current_radial_units = [stale_quote]
@@ -98,3 +100,53 @@ func test_successive_dynamic_cost_deployments_revalidate_live_unit_count():
 	tile_map._on_radial_unit_selected("battlefield_scavenger", land_tiles[1])
 	assert_eq(tile_map.get_player_essence(), 9, "second Scavenger charges the live Fibonacci price")
 	assert_eq(tile_map.troop_manager.count_units("battlefield_scavenger", 0), 2)
+
+
+func test_deployment_rejects_every_non_marshal_playing_phase_without_spending():
+	var tile_map = await _gameplay_tile_map()
+	GameState.start_playing_for_test(2)
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	var scavenger: UnitType = tile_map.troop_manager.catalog.get("battlefield_scavenger")
+	var quote: Dictionary = tile_map._unit_type_to_dict("battlefield_scavenger", scavenger)
+	var starting_essence: int = tile_map.get_player_essence()
+	var blocked_phases := [
+		GameState.TurnPhase.START_TURN,
+		GameState.TurnPhase.MOVEMENT,
+		GameState.TurnPhase.COMBAT,
+		GameState.TurnPhase.RESOLVE,
+		GameState.TurnPhase.CLEAN_UP,
+	]
+	for blocked_phase in blocked_phases:
+		GameState.current_phase = blocked_phase
+		tile_map.current_radial_units = [quote]
+		tile_map._on_radial_unit_selected("battlefield_scavenger", origin)
+		assert_eq(tile_map.get_player_essence(), starting_essence, "phase rejection spends no essence")
+		assert_eq(tile_map.troop_manager.count_units("battlefield_scavenger", 0), 0)
+
+
+func test_marshal_deployment_charges_and_assigns_the_active_player():
+	var tile_map = await _gameplay_tile_map()
+	GameState.start_playing_for_test(2)
+	GameState.active_player_id = 1
+	GameState.current_phase = GameState.TurnPhase.MARSHAL_TROOPS
+	var origin: Vector2i = tile_map.deployment_zones_data[1][0]
+	var scavenger: UnitType = tile_map.troop_manager.catalog.get("battlefield_scavenger")
+	tile_map.current_radial_units = [tile_map._unit_type_to_dict("battlefield_scavenger", scavenger)]
+	var starting_essence: int = tile_map.get_player_essence()
+	tile_map._on_radial_unit_selected("battlefield_scavenger", origin)
+	assert_eq(tile_map.get_player_essence(), starting_essence - 1)
+	assert_eq(tile_map.troop_manager.count_units("battlefield_scavenger", 0), 0)
+	assert_eq(tile_map.troop_manager.count_units("battlefield_scavenger", 1), 1)
+
+
+func test_p_shortcut_opens_purchase_flow_without_free_placement():
+	var tile_map = await _gameplay_tile_map()
+	tile_map.selected_tile = tile_map.deployment_zones_data[0][0]
+	var starting_essence: int = tile_map.get_player_essence()
+	var shortcut := InputEventKey.new()
+	shortcut.keycode = KEY_P
+	shortcut.pressed = true
+	tile_map._unhandled_input(shortcut)
+	assert_not_null(tile_map.radial_menu_instance, "shortcut opens the purchase radial")
+	assert_eq(tile_map.get_player_essence(), starting_essence, "opening purchase flow spends nothing")
+	assert_eq(tile_map.troop_manager.get_units_for_player(0).size(), 0, "shortcut cannot place a free unit")
