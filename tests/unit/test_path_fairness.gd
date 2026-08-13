@@ -3,6 +3,7 @@ extends GutTest
 var TileMapScene = preload("res://scenes/tileMap.tscn")
 var TileMapScript = preload("res://scripts/tile_map.gd")
 var field: TerrainType
+var forest: TerrainType
 var mountain: TerrainType
 var objective: TerrainType
 
@@ -10,6 +11,7 @@ var objective: TerrainType
 func before_each():
 	GameSession.clear_match_config()
 	field = load("res://assets/data/terrain_types/field.tres")
+	forest = load("res://assets/data/terrain_types/forest.tres")
 	mountain = load("res://assets/data/terrain_types/mountain.tres")
 	objective = load("res://assets/data/terrain_types/objective.tres")
 
@@ -90,6 +92,37 @@ func test_deterministic_repair_swaps_terrain_and_preserves_distribution():
 	assert_eq(costs, [2, 2], "repair creates equal minimum-cost corridors")
 	assert_eq(terrain_map.values().count(field), field_count_before, "field distribution is preserved")
 	assert_eq(terrain_map.values().count(mountain), mountain_count_before, "mountain distribution is preserved")
+	tile_map.free()
+
+
+func test_equalizable_one_point_tolerance_is_rejected_when_repair_cannot_prove_equality():
+	var tile_map = TileMapScript.new()
+	tile_map.objective_type = objective
+	var repair_terrains: Array[TerrainType] = [field, forest]
+	tile_map.terrain_types = repair_terrains
+	var terrain_map := {
+		Vector2i(-2, 0): field,
+		Vector2i(-1, 0): field,
+		Vector2i(2, 0): field,
+		Vector2i(1, 0): forest,
+		Vector2i(0, 2): field,
+		Vector2i(0, 1): forest,
+		Vector2i(10, -10): forest,
+	}
+	var zones := [
+		[Vector2i(-2, 0)],
+		[Vector2i(2, 0)],
+		[Vector2i(0, 2)],
+	]
+	var original := terrain_map.duplicate()
+	var costs := tile_map.get_zone_path_costs(terrain_map, zones, Vector2i.ZERO)
+	assert_eq(costs, [2, 3, 3])
+	assert_true(tile_map.are_zone_paths_fair(costs, 3), "one-point spread is within tolerance")
+	assert_false(
+		tile_map._ensure_fair_paths_to_objective(terrain_map, zones, Vector2i.ZERO),
+		"candidate is rejected because failed lowering does not prove equality impossible"
+	)
+	assert_eq(terrain_map, original, "failed atomic repair does not partially mutate the candidate")
 	tile_map.free()
 
 

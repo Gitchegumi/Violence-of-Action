@@ -169,7 +169,10 @@ func _ensure_fair_paths_to_objective(
 		return true
 	print("Unequal objective paths detected (%s). Repairing..." % str(costs))
 	if not _repair_objective_paths(terrain_map, zones, objective):
-		return are_zone_paths_fair(costs, zones.size())
+		# A one-point three-player spread is only valid when equality is proven
+		# impossible. This repair is not an exhaustive proof, so fail closed and
+		# let generation reject the candidate instead of accepting tolerance.
+		return false
 	costs = get_zone_path_costs(terrain_map, zones, objective)
 	return _all_path_costs_equal(costs, zones.size())
 
