@@ -10,6 +10,9 @@ signal deploy_unit_selected(unit_id: String, origin: Vector2i)
 signal deploy_placement_failed(reason: String, origin: Vector2i, unit_id: String)
 signal deploy_radial_closed(reason: String)
 signal deploy_action_selected(action_id: String, origin: Vector2i)
+signal unit_moved(unit: Node, path: Array, movement_cost: int, movement_remaining: int)
+signal unit_move_rejected(reason: String, destination: Vector2i)
+signal pending_action_changed(active: bool, action_type: String)
 # Emitted when a DEPLOY radial closes, so the shared info panel can hide its
 # hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
 signal deploy_preview_ended
@@ -555,6 +558,10 @@ var terrain_data_map: Dictionary = {}
 func _unhandled_input(event):
 	# Handle right-click button press/release for camera dragging
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.is_pressed() and not pending_action.is_empty():
+			cancel_pending_action()
+			get_viewport().set_input_as_handled()
+			return
 		is_dragging = event.is_pressed()
 		get_viewport().set_input_as_handled()
 
@@ -594,7 +601,9 @@ func _unhandled_input(event):
 		# tile -> deploy radial; anything else -> plain selection.
 		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
 
-		if unit_on_tile:
+		if not pending_action.is_empty():
+			_resolve_pending_action(map_pos)
+		elif unit_on_tile:
 			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
 			_show_action_radial(map_pos, unit_on_tile)
 			emit_signal("unit_selected", unit_on_tile)
@@ -728,9 +737,10 @@ func _build_unit_actions(unit_node) -> Array:
 	var can_upgrade := _has_authoritative_upgrade_safety_state(unit_node) \
 		and data != null and data.can_upgrade \
 		and data.upgrades_to != null and resource_manager.can_afford(GameState.active_player_id, data.upgrade_cost)
+	var move_validation: Dictionary = troop_manager.get_move_validation(unit_node)
 	return [
 		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
-		{"action_id": "move", "label": "Move", "enabled": true, "description": "Move to another tile"},
+		{"action_id": "move", "label": "Move", "enabled": move_validation.valid, "description": _move_description(move_validation)},
 		{"action_id": "upgrade", "label": "Upgrade", "enabled": can_upgrade, "description": "Upgrade this unit"},
 		{"action_id": "inspect", "label": "Inspect", "enabled": true, "description": "View unit details"},
 	]
@@ -823,10 +833,48 @@ func _has_authoritative_upgrade_safety_state(_unit_node) -> bool:
 	return false
 
 func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
-	# Move/Attack need a follow-up target-selection step. For now we record the
-	# pending action and log intent; the target picker is a future task.
+	if kind == "move":
+		var validation := troop_manager.get_move_validation(unit_node)
+		if not validation.valid:
+			unit_move_rejected.emit(validation.reason, origin)
+			_deploy_log("Move rejected: %s" % validation.reason)
+			return
+	# Move/Attack use a follow-up target-selection step.
 	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
+	pending_action_changed.emit(true, kind)
 	_deploy_log("%s requested for unit at %s (awaiting target tile)" % [kind.capitalize(), str(origin)])
+
+
+func _resolve_pending_action(destination: Vector2i) -> void:
+	if pending_action.get("type") != "move":
+		return
+	var unit: Node = pending_action.get("unit")
+	var result := troop_manager.move_unit(unit, destination)
+	if not result.success:
+		unit_move_rejected.emit(result.reason, destination)
+		_deploy_log("Move rejected at %s: %s" % [str(destination), result.reason])
+		return
+	pending_action.clear()
+	pending_action_changed.emit(false, "")
+	unit_moved.emit(unit, result.path, result.cost, unit.movement_remaining)
+	emit_signal("unit_selected", unit)
+	_deploy_log("Moved to %s for %d points (%d remaining)" % [
+		str(destination), result.cost, unit.movement_remaining
+	])
+
+
+func cancel_pending_action() -> void:
+	if pending_action.is_empty():
+		return
+	_deploy_log("%s target selection cancelled" % String(pending_action.get("type", "action")).capitalize())
+	pending_action.clear()
+	pending_action_changed.emit(false, "")
+
+
+func _move_description(validation: Dictionary) -> String:
+	if validation.valid:
+		return "Move using the cheapest valid path"
+	return "Move unavailable: %s" % String(validation.reason).replace("_", " ")
 
 func _on_radial_placement_failed(reason: String, origin: Vector2i, unit_id: String):
 	emit_signal("deploy_placement_failed", reason, origin, unit_id)

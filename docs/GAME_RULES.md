@@ -81,6 +81,16 @@ Each player's turn consists of the following phases:
 5.  **Resolve:** Resolve all declared combat actions.
 6.  **Clean Up:** Resolve any temporary effects that expire at the end of the turn, and establish any persistent effects that will carry over into the next turn. Finally, pass play to the next player.
 
+### Movement and Engagement
+
+- A unit may split its Speed across multiple movement actions during its turn. Unspent movement remains available later in the turn, including after combat if the combat action destroys the adjacent enemy.
+- Movement automatically follows the cheapest valid path by movement-point cost.
+- Units may move through hexes occupied by friendly units, but may not end movement on an occupied hex.
+- Enemy-occupied hexes block movement and may not be entered or crossed.
+- A unit adjacent to one enemy is **decisively engaged**. It may attack, or it may move as a **disengagement action**, but it cannot both disengage and take another action that turn.
+- If an engaged unit attacks and destroys the enemy so that it is no longer adjacent to an enemy, it may spend any remaining movement normally.
+- A unit adjacent to enemies from more than one direction is **pinned** and cannot move, including by disengagement.
+
 ### 1. Deploying New Units
 
 - New units may be purchased at their listed cost.

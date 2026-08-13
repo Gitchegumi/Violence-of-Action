@@ -70,10 +70,177 @@ func place_unit(map_pos: Vector2i, player_id: int) -> bool:
 	u.position = _center_of_tile(map_pos)
 	# Scale the unit down for tile map placement
 	u.scale = Vector2(0.15, 0.15)
+	u.reset_turn_state()
 	tile_map.add_child(u)
 	units_on_map[map_pos] = u
 	u.selected.connect(_on_unit_selected)
 	return true
+
+
+func start_turn(player_id: int) -> void:
+	for unit in get_units_for_player(player_id):
+		if unit.has_method("reset_turn_state"):
+			unit.reset_turn_state()
+
+
+func move_unit(unit: Node, destination: Vector2i) -> Dictionary:
+	var validation := get_move_validation(unit)
+	if not validation.valid:
+		return {"success": false, "reason": validation.reason, "path": [], "cost": 0}
+	var path_result := find_cheapest_path(unit, destination)
+	if not path_result.success:
+		return path_result
+	var origin: Vector2i = unit.map_pos
+	units_on_map.erase(origin)
+	units_on_map[destination] = unit
+	unit.map_pos = destination
+	unit.position = _center_of_tile(destination)
+	unit.movement_remaining -= int(path_result.cost)
+	if int(validation.adjacent_enemies) == 1:
+		unit.disengaged_this_turn = true
+	elif get_adjacent_enemies(unit).size() > 0:
+		unit.entered_engagement_this_turn = true
+	return path_result
+
+
+func get_move_validation(unit: Node) -> Dictionary:
+	var movement_phase := GameState.current_phase == GameState.TurnPhase.MOVEMENT
+	var unlocked_after_combat := GameState.current_phase == GameState.TurnPhase.COMBAT \
+		and unit != null and bool(unit.get("post_combat_movement_unlocked"))
+	if GameState.current_state != GameState.State.PLAYING \
+		or not (movement_phase or unlocked_after_combat):
+		return {"valid": false, "reason": "not_movement_phase", "adjacent_enemies": 0}
+	if unit == null or int(unit.get("controller_player_id")) != GameState.active_player_id:
+		return {"valid": false, "reason": "not_active_player", "adjacent_enemies": 0}
+	if int(unit.get("movement_remaining")) <= 0:
+		return {"valid": false, "reason": "no_movement_remaining", "adjacent_enemies": 0}
+	if bool(unit.get("disengaged_this_turn")):
+		return {"valid": false, "reason": "disengagement_complete", "adjacent_enemies": 0}
+	var adjacent_enemies := get_adjacent_enemies(unit).size()
+	if adjacent_enemies > 1:
+		return {"valid": false, "reason": "pinned", "adjacent_enemies": adjacent_enemies}
+	if adjacent_enemies == 1 and (
+		bool(unit.get("took_non_movement_action")) \
+		or bool(unit.get("entered_engagement_this_turn"))
+	):
+		return {"valid": false, "reason": "engaged_after_action", "adjacent_enemies": adjacent_enemies}
+	return {"valid": true, "reason": "", "adjacent_enemies": adjacent_enemies}
+
+
+func find_cheapest_path(unit: Node, destination: Vector2i) -> Dictionary:
+	var origin: Vector2i = unit.map_pos
+	var origin_enemy_ids := _adjacent_enemy_ids(unit, origin)
+	if destination == origin:
+		return {"success": false, "reason": "same_tile", "path": [], "cost": 0}
+	if not tile_map.terrain_data_map.has(destination):
+		return {"success": false, "reason": "off_map", "path": [], "cost": 0}
+	if units_on_map.has(destination):
+		return {"success": false, "reason": "destination_occupied", "path": [], "cost": 0}
+	var frontier: Array = [{"coord": origin, "cost": 0}]
+	var costs := {origin: 0}
+	var came_from: Dictionary = {}
+	var budget: int = int(unit.get("movement_remaining"))
+	while not frontier.is_empty():
+		frontier.sort_custom(func(a, b):
+			if a.cost == b.cost:
+				return a.coord.x < b.coord.x or (a.coord.x == b.coord.x and a.coord.y < b.coord.y)
+			return a.cost < b.cost
+		)
+		var current: Dictionary = frontier.pop_front()
+		var current_coord: Vector2i = current.coord
+		if current.cost != costs.get(current_coord):
+			continue
+		if current_coord == destination:
+			break
+		if current_coord != origin and _has_new_enemy_engagement(unit, current_coord, origin_enemy_ids):
+			continue
+		for neighbor in tile_map._get_neighbors(current_coord):
+			var step_cost := _movement_cost(unit, neighbor)
+			if step_cost < 0 or _is_enemy_occupied(unit, neighbor):
+				continue
+			var candidate: int = int(current.cost) + step_cost
+			if candidate > budget or (costs.has(neighbor) and candidate >= int(costs[neighbor])):
+				continue
+			costs[neighbor] = candidate
+			came_from[neighbor] = current_coord
+			frontier.append({"coord": neighbor, "cost": candidate})
+	if not costs.has(destination):
+		return {"success": false, "reason": "unreachable", "path": [], "cost": 0}
+	var path: Array[Vector2i] = [destination]
+	var cursor := destination
+	while cursor != origin:
+		cursor = came_from[cursor]
+		path.push_front(cursor)
+	return {"success": true, "reason": "", "path": path, "cost": int(costs[destination])}
+
+
+func get_adjacent_enemies(unit: Node) -> Array:
+	return _get_enemies_adjacent_to(unit, unit.map_pos)
+
+
+func _get_enemies_adjacent_to(unit: Node, coord: Vector2i) -> Array:
+	var enemies: Array = []
+	for neighbor in tile_map._get_neighbors(coord):
+		var occupant = get_unit_at_map_coord(neighbor)
+		if occupant != null and int(occupant.get("controller_player_id")) != int(unit.get("controller_player_id")):
+			enemies.append(occupant)
+	return enemies
+
+
+func _adjacent_enemy_ids(unit: Node, coord: Vector2i) -> Dictionary:
+	var enemy_ids: Dictionary = {}
+	for enemy in _get_enemies_adjacent_to(unit, coord):
+		enemy_ids[enemy.get_instance_id()] = true
+	return enemy_ids
+
+
+func _has_new_enemy_engagement(unit: Node, coord: Vector2i, origin_enemy_ids: Dictionary) -> bool:
+	for enemy in _get_enemies_adjacent_to(unit, coord):
+		if not origin_enemy_ids.has(enemy.get_instance_id()):
+			return true
+	return false
+
+
+func can_record_non_movement_action(unit: Node) -> bool:
+	return unit != null and not bool(unit.get("disengaged_this_turn"))
+
+
+func record_non_movement_action(unit: Node) -> bool:
+	if not can_record_non_movement_action(unit):
+		return false
+	if unit.has_method("record_non_movement_action"):
+		return unit.record_non_movement_action()
+	unit.set("took_non_movement_action", true)
+	return true
+
+
+func record_attack_resolution(unit: Node, destroyed_enemy: bool, was_decisively_engaged: bool) -> bool:
+	if not record_non_movement_action(unit):
+		return false
+	unit.set(
+		"post_combat_movement_unlocked",
+		was_decisively_engaged and destroyed_enemy and get_adjacent_enemies(unit).is_empty()
+	)
+	return true
+
+
+func _movement_cost(unit: Node, coord: Vector2i) -> int:
+	var terrain: TerrainType = tile_map.terrain_data_map.get(coord)
+	if terrain == null:
+		return -1
+	var terrain_key := terrain.terrain_name.to_lower()
+	if terrain_key == "objective":
+		return maxi(1, terrain.move_cost)
+	var data: UnitType = unit.get_unit_data() if unit.has_method("get_unit_data") else null
+	if data == null:
+		return -1
+	return int(data.terrain_type_matrix.get(terrain_key, -1))
+
+
+func _is_enemy_occupied(unit: Node, coord: Vector2i) -> bool:
+	var occupant = get_unit_at_map_coord(coord)
+	return occupant != null \
+		and int(occupant.get("controller_player_id")) != int(unit.get("controller_player_id"))
 
 func count_units(unit_id: String, player_id: int) -> int:
 	var expected: UnitType = catalog.get(unit_id)

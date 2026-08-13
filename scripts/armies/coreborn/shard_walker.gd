@@ -4,6 +4,11 @@ class_name ShardWalker
 @export var data: UnitType
 var map_pos: Vector2i
 var controller_player_id := 0
+var movement_remaining := 0
+var took_non_movement_action := false
+var disengaged_this_turn := false
+var post_combat_movement_unlocked := false
+var entered_engagement_this_turn := false
 
 signal selected(unit: ShardWalker)
 
@@ -31,6 +36,21 @@ func set_selected(on: bool) -> void:
 
 func get_unit_data() -> UnitType:
 	return data
+
+
+func reset_turn_state() -> void:
+	movement_remaining = int(data.stats_block.get("speed", 0)) if data else 0
+	took_non_movement_action = false
+	disengaged_this_turn = false
+	post_combat_movement_unlocked = false
+	entered_engagement_this_turn = false
+
+
+func record_non_movement_action() -> bool:
+	if disengaged_this_turn:
+		return false
+	took_non_movement_action = true
+	return true
 
 func get_artwork_node() -> Node:
 	if $UnitArtwork:
