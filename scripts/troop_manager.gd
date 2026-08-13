@@ -94,6 +94,13 @@ func count_units(unit_id: String, player_id: int) -> int:
 			count += 1
 	return count
 
+func get_units_for_player(player_id: int) -> Array:
+	var result: Array = []
+	for unit in units_on_map.values():
+		if unit != null and int(unit.get("controller_player_id")) == player_id:
+			result.append(unit)
+	return result
+
 func get_unit_at_map_coord(map_pos: Vector2i) -> Node:
 	if units_on_map.has(map_pos):
 		return units_on_map[map_pos]

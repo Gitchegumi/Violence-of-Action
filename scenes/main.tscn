@@ -20,6 +20,40 @@ offset_right = 180.0
 offset_bottom = 45.0
 text = "Player 1 Essence: 12"
 
+[node name="TurnLabel" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 46.0
+offset_right = 300.0
+offset_bottom = 77.0
+text = "Initial Deployment"
+
+[node name="AdvancePhaseButton" type="Button" parent="."]
+offset_left = 14.0
+offset_top = 80.0
+offset_right = 190.0
+offset_bottom = 112.0
+text = "Ready Player 1"
+
+[node name="PauseOverlay" type="ColorRect" parent="."]
+process_mode = 3
+visible = false
+offset_left = 360.0
+offset_top = 250.0
+offset_right = 690.0
+offset_bottom = 330.0
+color = Color(0.04, 0.05, 0.07, 0.92)
+
+[node name="PauseLabel" type="Label" parent="PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "PAUSED\nPress Escape to Resume"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="UnitInfoPanel" parent="." instance=ExtResource("2_0wfyh")]
 offset_left = 14.0
 offset_top = 428.0
