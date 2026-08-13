@@ -47,6 +47,7 @@ func _on_phase_changed(_previous, _current, _player_id: int, _round_number: int)
 
 
 func _on_turn_started(player_id: int, _round_number: int) -> void:
+	$TileMapLayer.troop_manager.start_turn(player_id)
 	$ResourceManager.start_turn(player_id, $TileMapLayer.troop_manager.get_units_for_player(player_id))
 
 

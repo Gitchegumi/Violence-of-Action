@@ -46,6 +46,8 @@ func test_shard_walker_resource_fields():
 
 func test_occupied_tile_actions_are_attack_move_upgrade_inspect():
 	var tm = TileMapScript.new()  # not added to tree: avoids scene-only @onready
+	tm.troop_manager = TroopManagerScript.new()
+	tm.troop_manager.tile_map = tm
 	var mock = MockUnit.new()
 	mock.unit_data = load("res://assets/data/armies/TheCoreborn/tier-1/shard_walker.tres")
 	var actions = tm._build_unit_actions(mock)
@@ -58,9 +60,12 @@ func test_occupied_tile_actions_are_attack_move_upgrade_inspect():
 	for a in actions:
 		if a.action_id == "upgrade":
 			assert_false(a.enabled, "Upgrade disabled (Shard Walker has no upgrade target)")
+		elif a.action_id == "move":
+			assert_false(a.enabled, "Move disabled outside the active player's Movement phase")
 		else:
 			assert_true(a.enabled, "%s enabled" % a.action_id)
 	mock.free()
+	tm.troop_manager.free()
 	tm.free()
 
 func test_unsafe_upgrade_path_stays_disabled_without_spending():
@@ -150,3 +155,45 @@ func test_p_shortcut_opens_purchase_flow_without_free_placement():
 	assert_not_null(tile_map.radial_menu_instance, "shortcut opens the purchase radial")
 	assert_eq(tile_map.get_player_essence(), starting_essence, "opening purchase flow spends nothing")
 	assert_eq(tile_map.troop_manager.get_units_for_player(0).size(), 0, "shortcut cannot place a free unit")
+
+
+func test_live_move_target_flow_relocates_unit_and_spends_speed():
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	var destination := Vector2i(-999, -999)
+	for neighbor in tile_map._get_neighbors(origin):
+		var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
+		if terrain != null and terrain.terrain_name.to_lower() in ["field", "forest", "objective"]:
+			destination = neighbor
+			break
+	assert_ne(destination, Vector2i(-999, -999), "generated map offers an adjacent legal destination")
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	var unit = tile_map.troop_manager.get_unit_at_map_coord(origin)
+	var starting_movement: int = unit.movement_remaining
+	tile_map._begin_pending_action("move", unit, origin)
+	tile_map._resolve_pending_action(destination)
+	assert_same(tile_map.troop_manager.get_unit_at_map_coord(destination), unit)
+	assert_null(tile_map.troop_manager.get_unit_at_map_coord(origin))
+	assert_lt(unit.movement_remaining, starting_movement)
+	assert_true(tile_map.pending_action.is_empty())
+
+
+func test_right_click_cancels_live_move_targeting():
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	tile_map._begin_pending_action("move", tile_map.troop_manager.get_unit_at_map_coord(origin), origin)
+	assert_false(tile_map.pending_action.is_empty())
+	var cancel := InputEventMouseButton.new()
+	cancel.button_index = MOUSE_BUTTON_RIGHT
+	cancel.pressed = true
+	tile_map._unhandled_input(cancel)
+	assert_true(tile_map.pending_action.is_empty())
