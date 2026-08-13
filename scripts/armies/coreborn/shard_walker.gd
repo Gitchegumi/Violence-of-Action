@@ -5,7 +5,6 @@ class_name ShardWalker
 var map_pos: Vector2i
 
 signal selected(unit: ShardWalker)
-signal moved(unit: ShardWalker, from: Vector2i, to: Vector2i)
 
 func _ready():
 	if data == null:
