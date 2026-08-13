@@ -16,7 +16,8 @@ signal deploy_preview_ended
 
 # The radius of the hexagonal map in tiles.
 const MAP_RADIUS = 8
-const PLAYER_COUNT = 2 # Can be 2 or 3
+var player_count := 2
+var map_seed := 0
 
 ## An array to hold all the TerrainType resources (.tres files).
 ## Assign these in the Godot Inspector.
@@ -46,6 +47,9 @@ var player_essence: int = 10  # Mock starting resources
 # --- Built-in Godot Functions ---
 
 func _ready():
+	if GameSession.has_match_config():
+		player_count = int(GameSession.match_config.get("player_count", 2))
+		map_seed = int(GameSession.match_config.get("seed", 0))
 	_generate_map()
 	# Wire up the troop manager (keeps mechanics out of main.gd)
 	add_child(troop_manager)
@@ -92,7 +96,7 @@ func _generate_noise_terrain(center: Vector2i) -> Dictionary:
 	var noise = FastNoiseLite.new()
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = 0.03
-	noise.seed = randi()
+	noise.seed = map_seed if map_seed != 0 else randi()
 
 	var coordinates = _get_concentric_hex_rings(MAP_RADIUS, center)
 	var noise_data = []
@@ -195,7 +199,7 @@ func _get_deployment_zones(center: Vector2i) -> Array:
 	var zones = []
 	var r = MAP_RADIUS
 
-	if PLAYER_COUNT == 2:
+	if player_count == 2:
 		var zone_nw = []; var zone_se = []
 		for i in range(r + 1):
 			zone_nw.append(center + Vector2i(-r + i, -i))
