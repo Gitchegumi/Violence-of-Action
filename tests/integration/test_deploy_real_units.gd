@@ -14,7 +14,7 @@ func test_shard_walker_loads_from_catalog():
 	assert_true(tm.catalog.has("shard_walker"), "catalog loads the shard_walker UnitType")
 	var data = tm.catalog.get("shard_walker")
 	assert_eq(data.unit_name, "Shard Walker")
-	assert_eq(data.get_cost(0), 1, "Shard Walker costs 1 essence")
+	assert_eq(data.get_cost(0), 2, "Shard Walker cost matches GAME_RULES.md")
 
 func test_shard_walker_resource_fields():
 	var data = load("res://assets/data/armies/TheCoreborn/tier-1/shard_walker.tres")

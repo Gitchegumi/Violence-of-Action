@@ -41,13 +41,17 @@ var current_radial_unit_node = null  # Occupied-tile unit when in action mode
 var pending_action: Dictionary = {}  # Set when an action awaits target selection
 var _radial_is_deploy: bool = false  # True while a DEPLOY radial is open
 
-# --- Mock Resource System (for T018) ---
-var player_essence: int = 10  # Mock starting resources
+var resource_manager: ResourceManager
+const ACTIVE_PLAYER_ID := 0
 
 
 # --- Built-in Godot Functions ---
 
 func _ready():
+	resource_manager = get_node_or_null("../ResourceManager") as ResourceManager
+	if resource_manager == null:
+		resource_manager = ResourceManager.new()
+		add_child(resource_manager)
 	if GameSession.has_match_config():
 		player_count = int(GameSession.match_config.get("player_count", 2))
 		map_seed = int(GameSession.match_config.get("seed", 0))
@@ -585,7 +589,7 @@ func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
 		"unit_name": data.unit_name,
 		"unit_role": data.unit_role,
 		"unit_cost": cost,
-		"affordable": player_essence >= cost,
+		"affordable": resource_manager.can_afford(ACTIVE_PLAYER_ID, cost),
 		"stats_block": data.stats_block,
 		"abilities": data.special_abilities,
 		"unit_description": data.unit_description,
@@ -598,7 +602,7 @@ func _build_unit_actions(unit_node) -> Array:
 	if unit_node and unit_node.has_method("get_unit_data"):
 		data = unit_node.get_unit_data()
 	var can_upgrade := data != null and data.can_upgrade \
-		and data.upgrades_to != null and player_essence >= data.upgrade_cost
+		and data.upgrades_to != null and resource_manager.can_afford(ACTIVE_PLAYER_ID, data.upgrade_cost)
 	return [
 		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
 		{"action_id": "move", "label": "Move", "enabled": true, "description": "Move to another tile"},
@@ -609,7 +613,7 @@ func _build_unit_actions(unit_node) -> Array:
 func _build_placement_context() -> Dictionary:
 	"""Supply the radial menu with current validation context (T024)."""
 	return {
-		"resources": player_essence,
+		"resources": get_player_essence(),
 		"tile_valid": is_in_deployment_zone(radial_origin, 0),
 		"tile_occupied": troop_manager.get_unit_at_map_coord(radial_origin) != null,
 		"now_ms": Time.get_ticks_msec(),
@@ -623,18 +627,23 @@ func _on_radial_unit_unhovered():
 	emit_signal("deploy_preview_ended")
 
 func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
-	"""Successful placement: spawn the real unit via troop_manager, deduct
-	essence, re-validate affordability, then close the radial as 'placed'."""
+	"""Reserve essence, place the real unit, and refund any rejected placement."""
 	var unit := _find_radial_unit(unit_id)
-	var cost := int(unit.get("unit_cost", 0)) if not unit.is_empty() else 0
+	if unit.is_empty():
+		_deploy_log("Unknown deployment unit rejected: %s" % unit_id)
+		return
+	var cost := int(unit.get("unit_cost", 0))
+	if not resource_manager.try_spend(ACTIVE_PLAYER_ID, cost, "purchase:%s" % unit_id):
+		_deploy_log("Not enough essence to place %s" % unit_id)
+		return
 	troop_manager.set_current_unit(unit_id)
 	if troop_manager.place_unit(origin):
-		player_essence = maxi(0, player_essence - cost)
-		_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), player_essence])
+		_deploy_log("Placed %s at %s (essence=%d)" % [unit_id, str(origin), get_player_essence()])
 	else:
+		resource_manager.add_essence(ACTIVE_PLAYER_ID, cost, "purchase_refund:%s" % unit_id)
 		_deploy_log("troop_manager rejected placement of %s at %s" % [unit_id, str(origin)])
 	if radial_menu_instance:
-		radial_menu_instance.revalidate_affordability(player_essence)
+		radial_menu_instance.revalidate_affordability(get_player_essence())
 	emit_signal("deploy_unit_selected", unit_id, origin)
 	_close_radial_menu("placed")
 
@@ -660,12 +669,20 @@ func _upgrade_unit(unit_node, origin: Vector2i):
 	if data == null or not data.can_upgrade or data.upgrades_to == null:
 		_deploy_log("Upgrade unavailable for unit at %s" % str(origin))
 		return
-	if player_essence < data.upgrade_cost:
+	if not resource_manager.can_afford(ACTIVE_PLAYER_ID, data.upgrade_cost):
 		_deploy_log("Not enough essence to upgrade at %s" % str(origin))
 		return
-	player_essence -= data.upgrade_cost
+	if not resource_manager.try_purchase_upgrade(
+		ACTIVE_PLAYER_ID,
+		str(unit_node.get_instance_id()),
+		data.upgrade_cost,
+		false,
+		false
+	):
+		_deploy_log("Unit at %s cannot be upgraded again this turn" % str(origin))
+		return
 	unit_node.data = data.upgrades_to
-	_deploy_log("Upgraded unit at %s to %s (essence=%d)" % [str(origin), data.upgrades_to.unit_name, player_essence])
+	_deploy_log("Upgraded unit at %s to %s (essence=%d)" % [str(origin), data.upgrades_to.unit_name, get_player_essence()])
 
 func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 	# Move/Attack need a follow-up target-selection step. For now we record the
@@ -720,10 +737,8 @@ func _deploy_log(message: String) -> void:
 	GameLog.debug("deployment.radial", message)
 
 func set_player_essence(amount: int):
-	"""Set player essence for testing affordability (temporary for T018)"""
-	player_essence = amount
-	_deploy_log("Player essence set to: %d" % player_essence)
+	resource_manager.set_essence(ACTIVE_PLAYER_ID, amount, "debug_set")
+	_deploy_log("Player essence set to: %d" % get_player_essence())
 
 func get_player_essence() -> int:
-	"""Get current player essence"""
-	return player_essence
+	return resource_manager.get_essence(ACTIVE_PLAYER_ID) if resource_manager else 0

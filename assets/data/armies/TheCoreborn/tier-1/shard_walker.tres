@@ -11,7 +11,7 @@ can_upgrade = true
 upgrade_cost = 3
 unit_description = "Light troops augmented with crystal tech for standard mobility."
 unit_cost_type = "standard"
-unit_cost = 1
+unit_cost = 2
 stats_block = {
 "armor": 0,
 "attack": 1,

@@ -46,7 +46,7 @@ func get_cost(p_unit_count: int = 0) -> int:
 	if unit_cost_type == "standard":
 		return unit_cost
 	elif unit_cost_type == "fibonacci":
-		return fibonacci(p_unit_count + 1)
+		return fibonacci(p_unit_count + 2)
 	return 0  # Default case for unknown cost types
 
 
