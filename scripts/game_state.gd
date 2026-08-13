@@ -93,6 +93,8 @@ func advance_phase() -> bool:
 		return true
 	var ending_player := active_player_id
 	turn_ended.emit(ending_player, round_number)
+	if current_state != State.PLAYING:
+		return true
 	active_player_id = (active_player_id + 1) % player_count
 	if active_player_id == starting_player_id:
 		round_number += 1

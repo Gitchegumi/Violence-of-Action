@@ -65,14 +65,59 @@ func test_objective_capture_grants_bonus_only_when_control_changes():
 	assert_eq(manager.get_essence(0), 18)
 	assert_true(manager.capture_objective(1))
 	assert_eq(manager.get_essence(1), 18)
+	assert_eq(manager.objective_control_turns, 0)
 
 
-func test_objective_upkeep_pays_or_removes_control():
+func test_capture_turn_defers_upkeep_and_control_progress():
 	manager.capture_objective(0)
-	assert_true(manager.resolve_objective_upkeep(0))
-	assert_eq(manager.get_essence(0), 15)
+	var capture_turn := manager.resolve_objective_turn(0)
+	assert_true(capture_turn.retained)
+	assert_false(capture_turn.paid_upkeep)
+	assert_eq(capture_turn.turns, 0)
+	assert_eq(manager.get_essence(0), 18)
+
+
+func test_controller_turns_pay_upkeep_and_reach_victory_on_three():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
+	for expected_turn in range(1, 4):
+		var result := manager.resolve_objective_turn(0)
+		assert_true(result.paid_upkeep)
+		assert_eq(result.turns, expected_turn)
+		assert_eq(result.victory, expected_turn == 3)
+	assert_eq(manager.get_essence(0), 9)
+
+
+func test_opponent_turn_does_not_charge_or_advance_control():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
+	var opponent_turn := manager.resolve_objective_turn(1)
+	assert_false(opponent_turn.paid_upkeep)
+	assert_eq(opponent_turn.turns, 0)
+	assert_eq(manager.get_essence(0), 18)
+
+
+func test_opposing_capture_resets_progress_and_defers_new_controller_upkeep():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
+	manager.resolve_objective_turn(0)
+	assert_eq(manager.objective_control_turns, 1)
+	assert_true(manager.capture_objective(1))
+	assert_eq(manager.objective_controller, 1)
+	assert_eq(manager.objective_control_turns, 0)
+	var capture_turn := manager.resolve_objective_turn(1)
+	assert_false(capture_turn.paid_upkeep)
+	assert_eq(manager.get_essence(1), 18)
+
+
+func test_unaffordable_upkeep_removes_control_without_progress():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
 	manager.set_essence(0, 2)
-	assert_false(manager.resolve_objective_upkeep(0))
+	var result := manager.resolve_objective_turn(0)
+	assert_false(result.retained)
+	assert_false(result.victory)
+	assert_eq(result.turns, 0)
 	assert_eq(manager.objective_controller, ResourceManager.NO_PLAYER)
 
 

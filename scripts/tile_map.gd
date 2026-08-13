@@ -22,6 +22,7 @@ const MAP_RADIUS = 8
 var player_count := 2
 var map_seed := 0
 var map_rng := RandomNumberGenerator.new()
+var objective_position := Vector2i(6, 7)
 
 ## An array to hold all the TerrainType resources (.tres files).
 ## Assign these in the Godot Inspector.
@@ -77,7 +78,7 @@ func _generate_map():
 
 	clear()
 	var tile_set_source_id = 0
-	var center_pos = Vector2i(6, 7)
+	var center_pos = objective_position
 
 	# --- 1. Generate Noise-Based Terrain ---
 	var terrain_map = _generate_noise_terrain(center_pos)
