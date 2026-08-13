@@ -74,13 +74,15 @@ func _generate_map():
 	_ensure_paths_to_objective(terrain_map, deployment_zones_data, center_pos)
 
 	# --- 4. Place Tiles on the Map ---
-	self.terrain_data_map = terrain_map # Make the map data available for selection logic
+	self.terrain_data_map = terrain_map.duplicate() # Complete playable map for selection logic
 	for coord in terrain_map:
 		var terrain: TerrainType = terrain_map[coord]
 		set_cell(coord, tile_set_source_id, terrain.atlas_coord)
 
 	# --- 5. Place the Objective Tile ---
 	set_cell(center_pos, tile_set_source_id, objective_type.atlas_coord)
+	terrain_data_map[center_pos] = objective_type
+	_update_camera_bounds(terrain_data_map.keys())
 	
 	print("Total tiles placed: ", terrain_map.size() + 1)
 
@@ -282,13 +284,123 @@ func _get_line_path(start: Vector2i, end: Vector2i) -> Array:
 
 # --- Camera Controls ---
 
-@export var camera_speed = 400.0
-@onready var camera = $Camera2D
+@export var camera_speed := 400.0
+@export var camera_edge_margin := 24.0
+@export var camera_min_zoom := 0.5
+@export var camera_max_zoom := 2.0
+@export var camera_zoom_step := 0.15
+@export var camera_zoom_smoothing := 12.0
+@onready var camera: Camera2D = $Camera2D
+var camera_bounds := Rect2()
+var camera_target_zoom := 1.0
 
-func _process(delta):
+func _process(delta: float) -> void:
+	if not camera:
+		return
+
+	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	input_dir += Vector2(
+		float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
+		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
+	)
+	if input_dir.length_squared() > 1.0:
+		input_dir = input_dir.normalized()
+
+	# Edge scrolling pauses over UI so camera movement cannot disturb radial
+	# selection or placement controls.
+	if radial_menu_instance == null and get_viewport().gui_get_hovered_control() == null:
+		input_dir += get_edge_scroll_direction(
+			get_viewport().get_mouse_position(),
+			get_viewport_rect().size,
+			camera_edge_margin
+		)
+	if input_dir.length_squared() > 1.0:
+		input_dir = input_dir.normalized()
+
+	_move_camera(input_dir * camera_speed * delta / camera.zoom.x)
+	var zoom_weight := 1.0 - exp(-camera_zoom_smoothing * delta)
+	var next_zoom := lerpf(camera.zoom.x, camera_target_zoom, zoom_weight)
+	camera.zoom = Vector2.ONE * next_zoom
+	_clamp_camera_to_bounds()
+
+
+static func get_edge_scroll_direction(
+	mouse_position: Vector2,
+	viewport_size: Vector2,
+	edge_margin: float
+) -> Vector2:
+	if edge_margin <= 0.0 or viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return Vector2.ZERO
+	if mouse_position.x < 0.0 or mouse_position.y < 0.0 \
+		or mouse_position.x > viewport_size.x or mouse_position.y > viewport_size.y:
+		return Vector2.ZERO
+
+	var direction := Vector2.ZERO
+	if mouse_position.x <= edge_margin:
+		direction.x -= 1.0
+	elif mouse_position.x >= viewport_size.x - edge_margin:
+		direction.x += 1.0
+	if mouse_position.y <= edge_margin:
+		direction.y -= 1.0
+	elif mouse_position.y >= viewport_size.y - edge_margin:
+		direction.y += 1.0
+	return direction.normalized() if direction != Vector2.ZERO else direction
+
+
+static func get_clamped_camera_position(
+	target: Vector2,
+	world_bounds: Rect2,
+	viewport_size: Vector2,
+	zoom_level: float
+) -> Vector2:
+	if not world_bounds.has_area() or zoom_level <= 0.0:
+		return target
+	var half_view := viewport_size / (2.0 * zoom_level)
+	var center := world_bounds.get_center()
+	var min_position := world_bounds.position + half_view
+	var max_position := world_bounds.end - half_view
+	return Vector2(
+		center.x if min_position.x > max_position.x else clampf(target.x, min_position.x, max_position.x),
+		center.y if min_position.y > max_position.y else clampf(target.y, min_position.y, max_position.y)
+	)
+
+
+func _update_camera_bounds(map_coordinates: Array) -> void:
+	if map_coordinates.is_empty() or tile_set == null:
+		camera_bounds = Rect2()
+		return
+	var first_center := map_to_local(map_coordinates[0])
+	var minimum := first_center
+	var maximum := first_center
+	for coordinate in map_coordinates:
+		var tile_center := map_to_local(coordinate)
+		minimum = minimum.min(tile_center)
+		maximum = maximum.max(tile_center)
+	var half_tile := Vector2(tile_set.tile_size) / 2.0
+	camera_bounds = Rect2(minimum - half_tile, maximum - minimum + half_tile * 2.0)
+	_clamp_camera_to_bounds()
+
+
+func _move_camera(offset: Vector2) -> void:
+	if camera and offset != Vector2.ZERO:
+		camera.position += offset
+		_clamp_camera_to_bounds()
+
+
+func _clamp_camera_to_bounds() -> void:
 	if camera:
-		var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-		camera.position += input_dir * camera_speed * delta
+		camera.position = get_clamped_camera_position(
+			camera.position,
+			camera_bounds,
+			get_viewport_rect().size,
+			camera.zoom.x
+		)
+
+
+func center_camera_on_tile(tile: Vector2i) -> void:
+	if camera and terrain_data_map.has(tile):
+		camera.position = map_to_local(tile)
+		_clamp_camera_to_bounds()
 
 # --- Selection and Input Handling ---
 
@@ -303,10 +415,28 @@ func _unhandled_input(event):
 	# Handle right-click button press/release for camera dragging
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		is_dragging = event.is_pressed()
+		get_viewport().set_input_as_handled()
+
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			camera_target_zoom = clampf(
+				camera_target_zoom + camera_zoom_step,
+				camera_min_zoom,
+				camera_max_zoom
+			)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			camera_target_zoom = clampf(
+				camera_target_zoom - camera_zoom_step,
+				camera_min_zoom,
+				camera_max_zoom
+			)
+			get_viewport().set_input_as_handled()
 
 	# Handle mouse motion for dragging
 	if event is InputEventMouseMotion and is_dragging:
-		camera.position -= event.relative
+		_move_camera(-event.relative / camera.zoom.x)
+		get_viewport().set_input_as_handled()
 
 	# Handle left-click for tile selection and unit selection
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
@@ -348,6 +478,11 @@ func _unhandled_input(event):
 				get_viewport().set_input_as_handled()
 			else:
 				print("Cannot place unit outside of deployment zone.")
+
+	# F recenters on the selected hex (including a selected unit's hex).
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
+		center_camera_on_tile(selected_tile)
+		get_viewport().set_input_as_handled()
 	
 	# Debug keys for testing affordability (T018)
 	if event is InputEventKey and event.pressed and event.keycode == KEY_1:
