@@ -240,4 +240,4 @@ This cost scaling represents increasing resistance from the battlefield populati
 
 ## How to Play
 
-(Instructions on how to play will be added once the core mechanics are implemented.)
+See [How to Play](HOW_TO_PLAY.md) for current controls, initial deployment, turn-by-turn interactions, combat targeting, and victory instructions.

@@ -108,5 +108,16 @@ func test_rules_summary_is_scrollable_and_covers_required_sections():
 	var scroll = menu.get_node("RulesDialog/RulesScroll")
 	var text: String = menu.get_node("RulesDialog/RulesScroll/RulesText").text
 	assert_true(scroll is ScrollContainer)
-	for section in ["Map", "Turn Phases", "Victory", "Essence"]:
+	for section in [
+		"Start and Deployment",
+		"Controls",
+		"Turn Phases",
+		"Movement and Engagement",
+		"Combat",
+		"Objective",
+		"Victory",
+		"Essence",
+	]:
 		assert_true(text.contains(section), "rules include %s" % section)
+	assert_true(text.contains("Each unit may attack once per turn"))
+	assert_true(text.contains("Opponents' turns do not charge upkeep or advance it"))
