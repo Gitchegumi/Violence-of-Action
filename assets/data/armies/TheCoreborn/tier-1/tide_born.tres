@@ -11,7 +11,7 @@ can_upgrade = true
 upgrade_cost = 5
 unit_description = "Bio-engineered aquatic troopers with amphibious mobility."
 unit_cost_type = "standard"
-unit_cost = 2
+unit_cost = 4
 stats_block = {
 "armor": 0,
 "attack": 2,

@@ -10,7 +10,7 @@ unit_tier = 1
 can_upgrade = false
 upgrade_cost = -1
 unit_description = "A unit that profits from destruction on the battlefield."
-unit_cost_type = "fibonnacci"
+unit_cost_type = "fibonacci"
 unit_cost = 1
 stats_block = {
 "armor": 0,

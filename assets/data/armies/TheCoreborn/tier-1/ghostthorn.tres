@@ -11,7 +11,7 @@ can_upgrade = true
 upgrade_cost = 5
 unit_description = "Stealthy infiltrators using teleportation tech."
 unit_cost_type = "standard"
-unit_cost = 3
+unit_cost = 8
 stats_block = {
 "armor": 0,
 "attack": 2,
