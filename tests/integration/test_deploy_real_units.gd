@@ -30,6 +30,24 @@ func _gameplay_tile_map():
 func _place_passive_opposing_unit(tile_map) -> void:
 	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
 
+
+func _place_adjacent_opponents(tile_map) -> Array:
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	var target := Vector2i(-999, -999)
+	for neighbor in tile_map._get_neighbors(origin):
+		var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
+		if terrain != null and terrain.passable_by == "land":
+			target = neighbor
+			break
+	assert_ne(target, Vector2i(-999, -999), "generated map offers an adjacent combat target")
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	assert_true(tile_map.troop_manager.place_unit(target, 1))
+	return [
+		tile_map.troop_manager.get_unit_at_map_coord(origin),
+		tile_map.troop_manager.get_unit_at_map_coord(target),
+	]
+
 func test_shard_walker_loads_from_catalog():
 	var tm = TroopManagerScript.new()
 	add_child_autofree(tm)
@@ -64,8 +82,8 @@ func test_occupied_tile_actions_are_attack_move_upgrade_inspect():
 	for a in actions:
 		if a.action_id == "upgrade":
 			assert_false(a.enabled, "Upgrade disabled (Shard Walker has no upgrade target)")
-		elif a.action_id == "move":
-			assert_false(a.enabled, "Move disabled outside the active player's Movement phase")
+		elif a.action_id in ["move", "attack"]:
+			assert_false(a.enabled, "%s disabled outside its active phase" % a.action_id.capitalize())
 		else:
 			assert_true(a.enabled, "%s enabled" % a.action_id)
 	mock.free()
@@ -238,3 +256,49 @@ func test_phase_advance_automatically_clears_pending_action_for_next_player():
 	assert_true(GameState.advance_phase())
 	assert_true(tile_map.pending_action.is_empty(), "phase boundary cannot leak targeting state")
 	assert_false(main.get_node("CancelActionButton").visible)
+
+
+func test_live_attack_target_flow_uses_seeded_combat_resolution():
+	var tile_map = await _gameplay_tile_map()
+	var units := _place_adjacent_opponents(tile_map)
+	var attacker: Node = units[0]
+	var defender: Node = units[1]
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.COMBAT
+	tile_map.troop_manager.start_turn(0)
+	var expected_rng := RandomNumberGenerator.new()
+	expected_rng.seed = 424242
+	var expected_dice := [expected_rng.randi_range(1, 6), expected_rng.randi_range(1, 6)]
+	tile_map.map_rng.seed = 424242
+	var observed_results := []
+	tile_map.unit_attack_resolved.connect(func(_attacker, _defender, result): observed_results.append(result))
+	tile_map._begin_pending_action("attack", attacker, attacker.map_pos)
+	assert_eq(tile_map.pending_action.type, "attack")
+	tile_map._resolve_pending_action(defender.map_pos)
+	assert_true(tile_map.pending_action.is_empty())
+	assert_eq(observed_results.size(), 1)
+	assert_eq([observed_results[0].die_one, observed_results[0].die_two], expected_dice)
+	assert_eq(observed_results[0].attack_total, observed_results[0].natural_roll + 1)
+	assert_eq(observed_results[0].defense_target, 8)
+	assert_true(attacker.attacked_this_turn)
+	assert_true(tile_map.get_parent().get_node("CombatResultLabel").visible)
+	assert_true(tile_map.get_parent().get_node("CombatResultLabel").text.contains("Attack:"))
+
+
+func test_destroyed_unit_reaches_scavenger_reporting_exactly_once():
+	var tile_map = await _gameplay_tile_map()
+	var main = tile_map.get_parent()
+	var units := _place_adjacent_opponents(tile_map)
+	var attacker: Node = units[0]
+	var defender: Node = units[1]
+	defender.current_hp = 1
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.COMBAT
+	var result: Dictionary = tile_map.troop_manager.resolve_attack(attacker, defender, 6, 6)
+	assert_true(result.destroyed)
+	assert_eq(main.get_node("ResourceManager").pending_destructions[0].size(), 1)
+	assert_eq(main.get_node("ResourceManager").pending_destructions[1].size(), 1)
+	var repeated: Dictionary = tile_map.troop_manager.resolve_attack(attacker, defender, 6, 6)
+	assert_false(repeated.success)
+	assert_eq(main.get_node("ResourceManager").pending_destructions[0].size(), 1)
+	assert_eq(main.get_node("ResourceManager").pending_destructions[1].size(), 1)

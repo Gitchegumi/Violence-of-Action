@@ -13,6 +13,7 @@ func _ready():
 	tile_map.deploy_unit_hovered.connect(_on_deploy_unit_hovered)
 	tile_map.deploy_preview_ended.connect($UnitInfoPanel.hide_panel)
 	tile_map.pending_action_changed.connect(_on_pending_action_changed)
+	tile_map.unit_attack_resolved.connect(_on_unit_attack_resolved)
 	tile_map.troop_manager.unit_destroyed.connect(_on_unit_destroyed)
 	$AdvancePhaseButton.pressed.connect(_on_advance_phase_pressed)
 	$CancelActionButton.pressed.connect(tile_map.cancel_pending_action)
@@ -85,6 +86,18 @@ func _on_phase_changed(_previous, _current, _player_id: int, _round_number: int)
 func _on_pending_action_changed(active: bool, action_type: String) -> void:
 	$CancelActionButton.visible = active
 	$CancelActionButton.text = "Cancel %s" % action_type.capitalize() if active else "Cancel Action"
+
+
+func _on_unit_attack_resolved(_attacker: Node, _defender: Node, result: Dictionary) -> void:
+	$CombatResultLabel.visible = true
+	$CombatResultLabel.text = "Attack: %d + %d + %d vs %d - %s (%d HP)" % [
+		result.die_one,
+		result.die_two,
+		result.attack_value,
+		result.defense_target,
+		"Hit" if result.hit else "Miss",
+		result.remaining_hp,
+	]
 
 
 func _on_turn_started(player_id: int, _round_number: int) -> void:

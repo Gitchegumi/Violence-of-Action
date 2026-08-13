@@ -77,7 +77,7 @@ Each player's turn consists of the following phases:
 1.  **Start Turn:** Reset any persistent effects from the previous turn.
 2.  **Marshal Troops:** Spend any earned essence to improve existing units or add new units to the deployment zone.
 3.  **Movement:** Move any active units up to their maximum movement allowance.
-4.  **Combat:** Declare combat actions. (Detailed combat mechanics will be addressed in a separate section/issue.)
+4.  **Combat:** Declare combat actions against valid enemy targets.
 5.  **Resolve:** Resolve all declared combat actions.
 6.  **Clean Up:** Resolve any temporary effects that expire at the end of the turn, and establish any persistent effects that will carry over into the next turn. Finally, pass play to the next player.
 
@@ -90,6 +90,19 @@ Each player's turn consists of the following phases:
 - A unit adjacent to one enemy is **decisively engaged**. It may attack, or it may move as a **disengagement action**, but it cannot both disengage and take another action that turn.
 - If an engaged unit attacks and destroys the enemy so that it is no longer adjacent to an enemy, it may spend any remaining movement normally.
 - A unit adjacent to enemies from more than one direction is **pinned** and cannot move, including by disengagement.
+
+### Combat Resolution
+
+- Each unit may attack once per turn during the Combat/Resolve flow.
+- A target must be an enemy within the attacker's Range and line of sight.
+- An intervening Mountain hex blocks line of sight. Units, Field, Forest, Objective, and Water hexes do not block line of sight.
+- Roll **2d6 + the attacker's Attack** against **8 + the defender's Armor**.
+- A defender occupying a Forest hex adds **+1** to its Defense Target.
+- A natural 2 automatically misses. A natural 12 automatically hits. Otherwise, the attack hits when the Attack Total equals or exceeds the Defense Target.
+- A hit deals exactly **1 persistent HP damage**. HP does not automatically recover during Cleanup.
+- Armor raises the Defense Target; it is not a health pool and does not deplete or replenish.
+- A unit at 0 HP is destroyed and removed from the battlefield.
+- The initial combat implementation does not add critical damage, variable damage, counterattacks, friendly fire, cover, flanking, armor penetration, or status effects.
 
 ### 1. Deploying New Units
 

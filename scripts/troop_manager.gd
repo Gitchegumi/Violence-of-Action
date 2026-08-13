@@ -1,6 +1,9 @@
 extends Node
 
 signal unit_destroyed(unit: Node, player_id: int, destruction_id: String)
+signal attack_resolved(attacker: Node, defender: Node, result: Dictionary)
+
+const CombatResolverScript = preload("res://scripts/systems/combat_resolver.gd")
 
 # TroopManager is responsible for handling the placement of units on the map.
 # Keep mechanics out of main.gd; this node is created/owned by the TileMap scene.
@@ -224,6 +227,85 @@ func record_attack_resolution(unit: Node, destroyed_enemy: bool, was_decisively_
 		was_decisively_engaged and destroyed_enemy and get_adjacent_enemies(unit).is_empty()
 	)
 	return true
+
+
+func get_attack_validation(attacker: Node, defender: Node) -> Dictionary:
+	var start_validation := get_attack_start_validation(attacker)
+	if not start_validation.valid:
+		return start_validation
+	if not _is_live_unit(defender):
+		return {"valid": false, "reason": "invalid_target"}
+	if int(attacker.controller_player_id) == int(defender.controller_player_id):
+		return {"valid": false, "reason": "friendly_target"}
+	if _hex_distance(attacker.map_pos, defender.map_pos) > _unit_stat(attacker, "range"):
+		return {"valid": false, "reason": "out_of_range"}
+	if not tile_map.has_line_of_sight(attacker.map_pos, defender.map_pos):
+		return {"valid": false, "reason": "line_of_sight_blocked"}
+	return {"valid": true, "reason": ""}
+
+
+func get_attack_start_validation(attacker: Node) -> Dictionary:
+	if GameState.current_state != GameState.State.PLAYING \
+		or GameState.current_phase not in [GameState.TurnPhase.COMBAT, GameState.TurnPhase.RESOLVE]:
+		return {"valid": false, "reason": "not_combat_phase"}
+	if not _is_live_unit(attacker):
+		return {"valid": false, "reason": "invalid_attacker"}
+	if int(attacker.controller_player_id) != GameState.active_player_id:
+		return {"valid": false, "reason": "not_active_player"}
+	if bool(attacker.get("attacked_this_turn")):
+		return {"valid": false, "reason": "attack_already_used"}
+	if bool(attacker.get("disengaged_this_turn")):
+		return {"valid": false, "reason": "disengaged_this_turn"}
+	return {"valid": true, "reason": ""}
+
+
+func resolve_attack(attacker: Node, defender: Node, die_one: int, die_two: int) -> Dictionary:
+	var validation := get_attack_validation(attacker, defender)
+	if not validation.valid:
+		return {"success": false, "reason": validation.reason}
+	var was_decisively_engaged := get_adjacent_enemies(attacker).size() == 1
+	var result: Dictionary = CombatResolverScript.resolve_attack(
+		attacker,
+		defender,
+		die_one,
+		die_two,
+		_defense_terrain_modifier(defender.map_pos),
+	)
+	attacker.attacked_this_turn = true
+	if bool(result.destroyed):
+		destroy_unit(defender)
+	record_attack_resolution(attacker, bool(result.destroyed), was_decisively_engaged)
+	result["success"] = true
+	result["reason"] = ""
+	attack_resolved.emit(attacker, defender, result)
+	return result
+
+
+func roll_attack(attacker: Node, defender: Node, rng: RandomNumberGenerator) -> Dictionary:
+	var validation := get_attack_validation(attacker, defender)
+	if not validation.valid:
+		return {"success": false, "reason": validation.reason}
+	return resolve_attack(attacker, defender, rng.randi_range(1, 6), rng.randi_range(1, 6))
+
+
+func _is_live_unit(unit: Node) -> bool:
+	return is_instance_valid(unit) and int(unit.get("current_hp")) > 0 \
+		and units_on_map.get(unit.map_pos) == unit
+
+
+func _unit_stat(unit: Node, stat_name: String) -> int:
+	var data = unit.get_unit_data() if unit != null and unit.has_method("get_unit_data") else null
+	return int(data.stats_block.get(stat_name, 0)) if data != null else 0
+
+
+func _defense_terrain_modifier(coord: Vector2i) -> int:
+	var terrain: TerrainType = tile_map.terrain_data_map.get(coord)
+	return 1 if terrain != null and terrain.terrain_name.to_lower() == "forest" else 0
+
+
+func _hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var delta := a - b
+	return maxi(maxi(abs(delta.x), abs(delta.y)), abs(delta.x + delta.y))
 
 
 func _movement_cost(unit: Node, coord: Vector2i) -> int:
