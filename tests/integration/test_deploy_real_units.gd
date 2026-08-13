@@ -30,7 +30,7 @@ func test_shard_walker_loads_from_catalog():
 	await get_tree().process_frame  # let _ready populate the catalog
 	assert_true(tm.catalog.has("shard_walker"), "catalog loads the shard_walker UnitType")
 	var data = tm.catalog.get("shard_walker")
-	assert_eq(data.unit_name, "Shard Walker")
+	assert_eq(data.unit_name, "Shardwalker")
 	assert_eq(data.get_cost(0), 2, "Shard Walker cost matches GAME_RULES.md")
 
 func test_shard_walker_resource_fields():
@@ -38,7 +38,7 @@ func test_shard_walker_resource_fields():
 	assert_not_null(data, "shard_walker.tres loads")
 	assert_eq(data.unit_role, "Core Infantry")
 	assert_true(data.stats_block.has("health"), "stats_block has health")
-	assert_true(data.can_upgrade, "Shard Walker can upgrade")
+	assert_false(data.can_upgrade, "upgrade mechanics remain disabled while GAME_RULES.md marks them TBD")
 	# No upgrade target wired yet -> the Upgrade action should render disabled.
 	assert_null(data.upgrades_to, "no upgrade target set yet")
 

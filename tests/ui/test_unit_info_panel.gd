@@ -35,7 +35,7 @@ func test_show_unit_type_binds_from_resource():
 	var data = load("res://assets/data/armies/TheCoreborn/tier-1/shard_walker.tres")
 	unit_info_panel_instance.show_unit_type(data)
 	assert_true(unit_info_panel_instance.visible, "panel visible after show_unit_type()")
-	assert_true(unit_info_panel_instance.unit_name_label.text.contains("Shard Walker"),
+	assert_true(unit_info_panel_instance.unit_name_label.text.contains("Shardwalker"),
 		"name label shows the unit name")
 	assert_true(unit_info_panel_instance.health_label.text.contains("3"),
 		"health stat bound from the resource")
