@@ -18,6 +18,7 @@ signal deploy_preview_ended
 const MAP_RADIUS = 8
 var player_count := 2
 var map_seed := 0
+var map_rng := RandomNumberGenerator.new()
 
 ## An array to hold all the TerrainType resources (.tres files).
 ## Assign these in the Godot Inspector.
@@ -50,6 +51,11 @@ func _ready():
 	if GameSession.has_match_config():
 		player_count = int(GameSession.match_config.get("player_count", 2))
 		map_seed = int(GameSession.match_config.get("seed", 0))
+	else:
+		var random_seed_source := RandomNumberGenerator.new()
+		random_seed_source.randomize()
+		map_seed = random_seed_source.randi()
+	map_rng.seed = map_seed
 	_generate_map()
 	# Wire up the troop manager (keeps mechanics out of main.gd)
 	add_child(troop_manager)
@@ -96,7 +102,7 @@ func _generate_noise_terrain(center: Vector2i) -> Dictionary:
 	var noise = FastNoiseLite.new()
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = 0.03
-	noise.seed = map_seed if map_seed != 0 else randi()
+	noise.seed = map_seed
 
 	var coordinates = _get_concentric_hex_rings(MAP_RADIUS, center)
 	var noise_data = []
@@ -153,7 +159,7 @@ func _carve_path(start: Vector2i, end: Vector2i, terrain_map: Dictionary):
 		if type.passable_by == "land":
 			swappable_coords.append(coord)
 	
-	swappable_coords.shuffle()
+	_shuffle_with_map_rng(swappable_coords)
 
 	for coord in path_coords:
 		if terrain_map.has(coord):
@@ -229,7 +235,7 @@ func _ensure_passable_zones(terrain_map: Dictionary, zones: Array):
 			if type.passable_by == "land":
 				swappable_coords.append(coord)
 	
-	swappable_coords.shuffle()
+	_shuffle_with_map_rng(swappable_coords)
 
 	for zone in zones:
 		for coord in zone:
@@ -243,6 +249,14 @@ func _ensure_passable_zones(terrain_map: Dictionary, zones: Array):
 					else:
 						print("Warning: Ran out of swappable tiles for deployment zone.")
 						break
+
+
+func _shuffle_with_map_rng(items: Array) -> void:
+	for index in range(items.size() - 1, 0, -1):
+		var swap_index := map_rng.randi_range(0, index)
+		var value = items[index]
+		items[index] = items[swap_index]
+		items[swap_index] = value
 
 # Returns an array of Vector2i coordinates for all tiles in concentric hex rings.
 func _get_concentric_hex_rings(radius: int, center: Vector2i) -> Array[Vector2i]:
