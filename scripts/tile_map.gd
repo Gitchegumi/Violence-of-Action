@@ -12,6 +12,8 @@ signal deploy_radial_closed(reason: String)
 signal deploy_action_selected(action_id: String, origin: Vector2i)
 signal unit_moved(unit: Node, path: Array, movement_cost: int, movement_remaining: int)
 signal unit_move_rejected(reason: String, destination: Vector2i)
+signal unit_attack_resolved(attacker: Node, defender: Node, result: Dictionary)
+signal unit_attack_rejected(reason: String, destination: Vector2i)
 signal pending_action_changed(active: bool, action_type: String)
 # Emitted when a DEPLOY radial closes, so the shared info panel can hide its
 # hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
@@ -406,6 +408,22 @@ func _get_hex_line_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	return line
 
 
+func has_line_of_sight(start: Vector2i, end: Vector2i) -> bool:
+	# Adjacent targets never have an intervening hex. Blocking policy for longer
+	# lines is intentionally centralized here so terrain/unit rules are not
+	# duplicated in combat validation.
+	return _get_hex_line_path(start, end).size() <= 2 or not _line_of_sight_has_blocker(start, end)
+
+
+func _line_of_sight_has_blocker(_start: Vector2i, _end: Vector2i) -> bool:
+	var line := _get_hex_line_path(_start, _end)
+	for index in range(1, line.size() - 1):
+		var terrain: TerrainType = terrain_data_map.get(line[index])
+		if terrain != null and terrain.terrain_name.to_lower() == "mountain":
+			return true
+	return false
+
+
 static func _hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var delta := a - b
 	return floori((absi(delta.x) + absi(delta.y) + absi(delta.x + delta.y)) / 2.0)
@@ -739,8 +757,16 @@ func _build_unit_actions(unit_node) -> Array:
 		and data != null and data.can_upgrade \
 		and data.upgrades_to != null and resource_manager.can_afford(GameState.active_player_id, data.upgrade_cost)
 	var move_validation: Dictionary = troop_manager.get_move_validation(unit_node)
+	var attack_validation: Dictionary = troop_manager.get_attack_start_validation(unit_node)
 	return [
-		{"action_id": "attack", "label": "Attack", "enabled": true, "description": "Attack a target"},
+		{
+			"action_id": "attack",
+			"label": "Attack",
+			"enabled": attack_validation.valid,
+			"description": "Attack a target" if attack_validation.valid else (
+				"Attack unavailable: %s" % String(attack_validation.reason).replace("_", " ")
+			),
+		},
 		{"action_id": "move", "label": "Move", "enabled": move_validation.valid, "description": _move_description(move_validation)},
 		{"action_id": "upgrade", "label": "Upgrade", "enabled": can_upgrade, "description": "Upgrade this unit"},
 		{"action_id": "inspect", "label": "Inspect", "enabled": true, "description": "View unit details"},
@@ -829,9 +855,9 @@ func _upgrade_unit(unit_node, origin: Vector2i):
 		return
 
 func _has_authoritative_upgrade_safety_state(_unit_node) -> bool:
-	# Issue #8 owns combat engagement and enemy-adjacency state. Until that
-	# production state exists, upgrades must fail closed instead of assuming safe.
-	return false
+	return _unit_node != null \
+		and troop_manager.get_unit_at_map_coord(_unit_node.map_pos) == _unit_node \
+		and troop_manager.get_adjacent_enemies(_unit_node).is_empty()
 
 func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 	if kind == "move":
@@ -840,6 +866,12 @@ func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 			unit_move_rejected.emit(validation.reason, origin)
 			_deploy_log("Move rejected: %s" % validation.reason)
 			return
+	elif kind == "attack":
+		var validation := troop_manager.get_attack_start_validation(unit_node)
+		if not validation.valid:
+			unit_attack_rejected.emit(validation.reason, origin)
+			_deploy_log("Attack rejected: %s" % validation.reason)
+			return
 	# Move/Attack use a follow-up target-selection step.
 	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
 	pending_action_changed.emit(true, kind)
@@ -847,7 +879,11 @@ func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 
 
 func _resolve_pending_action(destination: Vector2i) -> void:
-	if pending_action.get("type") != "move":
+	var action_type: String = pending_action.get("type", "")
+	if action_type == "attack":
+		_resolve_pending_attack(destination)
+		return
+	if action_type != "move":
 		return
 	var unit: Node = pending_action.get("unit")
 	var result := troop_manager.move_unit(unit, destination)
@@ -861,6 +897,27 @@ func _resolve_pending_action(destination: Vector2i) -> void:
 	emit_signal("unit_selected", unit)
 	_deploy_log("Moved to %s for %d points (%d remaining)" % [
 		str(destination), result.cost, unit.movement_remaining
+	])
+
+
+func _resolve_pending_attack(destination: Vector2i) -> void:
+	var attacker: Node = pending_action.get("unit")
+	var defender := troop_manager.get_unit_at_map_coord(destination)
+	var result := troop_manager.roll_attack(attacker, defender, map_rng)
+	if not result.success:
+		unit_attack_rejected.emit(result.reason, destination)
+		_deploy_log("Attack rejected at %s: %s" % [str(destination), result.reason])
+		return
+	pending_action.clear()
+	pending_action_changed.emit(false, "")
+	unit_attack_resolved.emit(attacker, defender, result)
+	if not result.destroyed:
+		emit_signal("unit_selected", defender)
+	_deploy_log("Attack rolled %d + %d: %s (%d HP remaining)" % [
+		result.die_one,
+		result.die_two,
+		"hit" if result.hit else "miss",
+		result.remaining_hp,
 	])
 
 

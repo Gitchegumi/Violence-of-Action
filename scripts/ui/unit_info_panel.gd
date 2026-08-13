@@ -31,6 +31,7 @@ func show_unit(unit: Node):
 	if unit.has_method("get_artwork_node"):
 		artwork = unit.get_artwork_node()
 	show_unit_type(unit_data, artwork)
+	health_label.text = "Health: %d/%d" % [int(unit.get("current_hp")), int(unit.get("maximum_hp"))]
 
 ## Show unit details directly from data (UnitType resource or a data dict),
 ## with optional artwork. Used by the deploy radial to preview an unplaced unit
