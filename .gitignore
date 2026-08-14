@@ -28,7 +28,8 @@ obj/
 ############################################
 # Build / Export Artifacts
 ############################################
-export_presets.cfg
+/build/
+/dist/
 *.binary
 *.zip
 *.exe

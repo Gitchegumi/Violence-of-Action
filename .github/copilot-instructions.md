@@ -1,45 +1,28 @@
-# Copilot Context: Radial Deployment Menu (Feature 002)
+# Violence of Action contributor context
 
-## Overview
-Implement radial deployment menu + unit info panel for deployment phase in Godot 4.4.1 with GUT test-first approach.
+Violence of Action is a local hot-seat tactical game built with GDScript and the
+standard Godot Engine 4.5 release.
 
-## New Components
-- scenes/ui/radial_menu.tscn
-- scenes/ui/unit_info_panel.tscn
-- scripts/ui/radial_menu.gd
-- scripts/ui/unit_info_panel.gd
-- (optional) scripts/ui/deployment_controller.gd (extract logic if tile_map.gd grows too large)
+## Sources of truth
 
-## Signals (contract)
-- deploy_tile_clicked(position: Vector2i)
-- deploy_radial_opened(origin: Vector2i)
-- deploy_unit_hovered(unit_id: String)
-- deploy_unit_selected(unit_id: String, origin: Vector2i)
-- deploy_placement_failed(reason: String, origin: Vector2i, unit_id: String?)
-- deploy_radial_closed(reason: String)
+- Treat `docs/GAME_RULES.md` as authoritative for mechanics and design intent.
+- Use `docs/HOW_TO_PLAY.md` for the player-facing match flow.
+- Do not invent or revise creative rules when those documents are silent; request
+  creative direction in the related issue or pull request.
 
-## Key Rules
-- Single radial instance at a time.
-- Ring capacity 12 icons/page; paginate >12.
-- Affordability check then tile validity (failure precedence: insufficient_resources > tile issues).
-- Debounce placement 250 ms.
-- Edge reposition to keep ring fully visible.
-- Disabled units shown (desaturated) but hoverable for info.
+## Implementation expectations
 
-## Testing
-New failing tests added:
-- tests/unit/test_radial_signals.gd
-- tests/ui/test_radial_menu_scene.gd
+- Work on a focused branch from `main` and link changes to an issue.
+- Preserve deterministic behavior where tests provide a fixed match or dice seed.
+- Use `logger.gd` instead of raw debug prints in gameplay code.
+- Keep scenes thin when logic can live in a focused GDScript class.
+- Revalidate game state when an action is confirmed; never trust stale UI state.
+- Add or update GUT tests for behavior changes.
 
-Implement until they pass; add integration tests for scenarios after base signals and scenes exist.
+## Validation
 
-## Logging & Determinism
-Use logger.gd (no raw print). Re-validate tile + resources at selection.
+Run the Godot 4.5 import, complete GUT suite, and main-scene smoke commands in the
+README before opening a pull request. Pull requests run the same checks in GitHub
+Actions.
 
-## MCP Fallback
-Attempt Godot MCP for scene creation; otherwise manual creation guided by quickstart.
-
-## Recent Changes
-- Added plan, research, data model, signal contracts, quickstart docs.
-- Added failing tests for signals & scene presence.
-
+Use Conventional Commits so Release Please can derive versions and release notes.
