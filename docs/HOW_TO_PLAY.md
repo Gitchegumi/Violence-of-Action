@@ -6,8 +6,9 @@ This guide covers the controls and complete match flow available in the current 
 
 1. Select **Start Game** from the main menu.
 2. Choose **2 Players** or **3 Players**.
-3. Optionally enter an integer map seed. Reusing a seed generates the same battlefield; leaving it blank generates a random seed.
-4. Select **Start**.
+3. Enter a name and choose a unique color for each player. The game will not start with a missing name, missing color, or duplicate color.
+4. Optionally enter an integer map seed. Reusing a seed generates the same battlefield; leaving it blank generates a random seed.
+5. Select **Start**. Each player's chosen color tints every unit they control, and their chosen name appears in turn information.
 
 The game is local hotseat: players take turns using the same screen.
 
@@ -45,8 +46,8 @@ The top status line shows the round, active player, and current phase. Select **
 
 1. **Start Turn:** The game resets per-turn unit actions and awards essence automatically.
 2. **Marshal Troops:** Purchase units by left-clicking an empty hex in your deployment zone. New units cannot be placed outside that zone.
-3. **Movement:** Left-click one of your units, choose **Move**, then select a destination. The game automatically uses the cheapest valid path and deducts its terrain cost. A unit may move more than once while it has movement remaining.
-4. **Combat:** Left-click one of your units, choose **Attack**, then select an enemy in Range and line of sight. Each unit may attack once per turn.
+3. **Movement:** Left-click one of your units and choose **Move**. Every legal destination is shaded light blue. Select one to move there; the game automatically uses the cheapest valid path and deducts its terrain cost. A unit may move more than once while it has movement remaining.
+4. **Combat:** Left-click one of your units and choose **Attack**. Every legal enemy target is shaded red. Select an enemy in Range and line of sight to resolve the attack. Each unit may attack once per turn.
 5. **Resolve:** Any unit that has not attacked yet may still attack here.
 6. **Clean Up:** End-of-turn Objective control and upkeep resolve, then play passes to the next player.
 

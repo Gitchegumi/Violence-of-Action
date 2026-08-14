@@ -4,6 +4,7 @@ class_name ShardWalker
 @export var data: UnitType
 var map_pos: Vector2i
 var controller_player_id := 0
+var player_color := Color.WHITE
 var movement_remaining := 0
 var took_non_movement_action := false
 var disengaged_this_turn := false
@@ -25,8 +26,10 @@ func _ready():
 	if $UnitArtwork and data.artwork_region.has_area():
 		$UnitArtwork.region_enabled = true
 		$UnitArtwork.region_rect = data.artwork_region
+	_apply_player_color()
 
-	# C	if $UnitSelection:
+	# Configure click handling.
+	if $UnitSelection:
 		$UnitSelection.input_pickable = true
 		$UnitSelection.input_event.connect(_on_input)
 
@@ -41,6 +44,16 @@ func set_selected(on: bool) -> void:
 
 func get_unit_data() -> UnitType:
 	return data
+
+
+func set_player_color(color: Color) -> void:
+	player_color = color
+	_apply_player_color()
+
+
+func _apply_player_color() -> void:
+	if has_node("UnitArtwork"):
+		$UnitArtwork.modulate = player_color
 
 
 func reset_turn_state() -> void:

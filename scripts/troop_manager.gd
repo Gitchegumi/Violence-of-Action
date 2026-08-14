@@ -72,6 +72,7 @@ func place_unit(map_pos: Vector2i, player_id: int) -> bool:
 	u.data = catalog[current_unit_id]
 	u.map_pos = map_pos
 	u.controller_player_id = player_id
+	u.player_color = GameSession.get_player_color(player_id)
 	u.position = _center_of_tile(map_pos)
 	# Scale the unit down for tile map placement
 	u.scale = Vector2(0.15, 0.15)
@@ -179,6 +180,20 @@ func find_cheapest_path(unit: Node, destination: Vector2i) -> Dictionary:
 	return {"success": true, "reason": "", "path": path, "cost": int(costs[destination])}
 
 
+func get_valid_move_destinations(unit: Node) -> Array[Vector2i]:
+	var destinations: Array[Vector2i] = []
+	if not get_move_validation(unit).valid:
+		return destinations
+	for coordinate in tile_map.terrain_data_map.keys():
+		var destination := coordinate as Vector2i
+		if find_cheapest_path(unit, destination).success:
+			destinations.append(destination)
+	destinations.sort_custom(func(a: Vector2i, b: Vector2i):
+		return a.x < b.x or (a.x == b.x and a.y < b.y)
+	)
+	return destinations
+
+
 func get_adjacent_enemies(unit: Node) -> Array:
 	return _get_enemies_adjacent_to(unit, unit.map_pos)
 
@@ -257,6 +272,19 @@ func get_attack_start_validation(attacker: Node) -> Dictionary:
 	if bool(attacker.get("disengaged_this_turn")):
 		return {"valid": false, "reason": "disengaged_this_turn"}
 	return {"valid": true, "reason": ""}
+
+
+func get_valid_attack_targets(attacker: Node) -> Array[Vector2i]:
+	var targets: Array[Vector2i] = []
+	if not get_attack_start_validation(attacker).valid:
+		return targets
+	for defender in units_on_map.values():
+		if get_attack_validation(attacker, defender).valid:
+			targets.append(defender.map_pos)
+	targets.sort_custom(func(a: Vector2i, b: Vector2i):
+		return a.x < b.x or (a.x == b.x and a.y < b.y)
+	)
+	return targets
 
 
 func resolve_attack(attacker: Node, defender: Node, die_one: int, die_two: int) -> Dictionary:

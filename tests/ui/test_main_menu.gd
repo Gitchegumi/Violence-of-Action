@@ -15,6 +15,13 @@ func after_each():
 	GameSession.clear_match_config()
 
 
+func _configure_player_identities(player_count: int) -> void:
+	var colors := [Color(0.3, 0.7, 1.0), Color(1.0, 0.3, 0.3), Color(0.4, 1.0, 0.4)]
+	for player_id in range(player_count):
+		menu.player_name_inputs[player_id].text = "Commander %d" % (player_id + 1)
+		menu.player_color_inputs[player_id].color_changed.emit(colors[player_id])
+
+
 func test_menu_exposes_required_options():
 	assert_eq(menu.start_button.text, "Start Game")
 	assert_eq(menu.rules_button.text, "Rules")
@@ -37,11 +44,41 @@ func test_explicit_zero_seed_is_preserved():
 func test_setup_submission_emits_and_stores_match_config():
 	watch_signals(menu)
 	menu.player_count_option.select(1)
+	_configure_player_identities(3)
 	menu.seed_input.text = "13579"
 	var config: Dictionary = menu.submit_setup(false)
-	assert_eq(config, {"player_count": 3, "seed": 13579})
+	assert_eq(config.player_count, 3)
+	assert_eq(config.seed, 13579)
+	assert_eq(config.players.size(), 3)
+	assert_eq(config.players[0].name, "Commander 1")
+	assert_eq(config.players[2].color, Color(0.4, 1.0, 0.4))
 	assert_eq(GameSession.match_config, config)
 	assert_signal_emitted_with_parameters(menu, "match_config_created", [config])
+
+
+func test_setup_requires_names_and_unique_selected_colors():
+	menu.player_count_option.select(0)
+	assert_true(menu.submit_setup(false).is_empty())
+	assert_true(menu.setup_error.text.contains("enter a name"))
+	menu.player_name_inputs[0].text = "Alpha"
+	menu.player_name_inputs[1].text = "Bravo"
+	menu.player_color_inputs[0].color_changed.emit(Color(1, 0, 0, 0))
+	menu.player_color_inputs[1].color_changed.emit(Color(1, 0, 0, 0))
+	assert_eq(menu.player_color_inputs[0].color.a, 1.0, "picker selection becomes opaque")
+	assert_true(menu.player_color_selected[0], "picker signal records an explicit selection")
+	assert_true(menu.submit_setup(false).is_empty())
+	assert_true(menu.setup_error.text.contains("different color"))
+	menu.player_color_inputs[1].color_changed.emit(Color(0, 0, 1, 0))
+	assert_false(menu.submit_setup(false).is_empty())
+
+
+func test_player_count_controls_visible_identity_prompts():
+	menu._on_player_count_selected(0)
+	assert_true(menu.identity_rows[0].visible)
+	assert_true(menu.identity_rows[1].visible)
+	assert_false(menu.identity_rows[2].visible)
+	menu._on_player_count_selected(1)
+	assert_true(menu.identity_rows[2].visible)
 
 
 func test_gameplay_tile_map_consumes_session_config_on_ready():

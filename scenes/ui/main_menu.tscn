@@ -58,7 +58,7 @@ initial_position = 1
 ok_button_text = "Start"
 
 [node name="SetupFields" type="VBoxContainer" parent="SetupDialog"]
-custom_minimum_size = Vector2(360, 130)
+custom_minimum_size = Vector2(500, 330)
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -73,6 +73,78 @@ popup/item_0/text = "2 Players"
 popup/item_0/id = 2
 popup/item_1/text = "3 Players"
 popup/item_1/id = 3
+
+[node name="IdentityPrompt" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+text = "Enter each player's name and choose a unique color."
+
+[node name="Player1Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player1Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 1"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player1Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player1Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 1's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="Player2Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player2Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 2"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player2Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player2Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 2's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="Player3Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player3Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 3"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player3Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player3Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 3's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="SetupError" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+autowrap_mode = 2
 
 [node name="SeedLabel" type="Label" parent="SetupDialog/SetupFields"]
 layout_mode = 2

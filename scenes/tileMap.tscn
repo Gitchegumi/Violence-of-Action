@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://c6i7i5yoovjsh"]
+[gd_scene load_steps=17 format=3 uid="uid://c6i7i5yoovjsh"]
 
 [ext_resource type="Texture2D" uid="uid://bmcm0no38b5ve" path="res://assets/images/tile-sets/Placeholder Tiles.png" id="1_vai0s"]
 [ext_resource type="Script" uid="uid://dcdpjggtfn1pj" path="res://scripts/tile_map.gd" id="2_vai0s"]
@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://bxckqesd81gew" path="res://assets/data/terrain_types/mountain.tres" id="6_f7cwn"]
 [ext_resource type="Resource" uid="uid://bh866jqvm2hwk" path="res://assets/data/terrain_types/water.tres" id="7_n5a11"]
 [ext_resource type="Resource" uid="uid://dqxpnjb4qsx1f" path="res://assets/data/terrain_types/objective.tres" id="8_1c8m6"]
+[ext_resource type="Texture2D" path="res://assets/images/tile-sets/hex_action_highlight.svg" id="9_action"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_r4mkq"]
 texture = ExtResource("1_vai0s")
@@ -59,6 +60,17 @@ tile_layout = 2
 tile_size = Vector2i(77, 63)
 sources/0 = SubResource("TileSetAtlasSource_fxfuy")
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_action"]
+texture = ExtResource("9_action")
+texture_region_size = Vector2i(77, 63)
+0:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_action"]
+tile_shape = 3
+tile_layout = 2
+tile_size = Vector2i(77, 63)
+sources/0 = SubResource("TileSetAtlasSource_action")
+
 [node name="TileMapLayer" type="TileMapLayer"]
 tile_set = SubResource("TileSet_ha2v4")
 script = ExtResource("2_vai0s")
@@ -68,5 +80,10 @@ objective_type = ExtResource("8_1c8m6")
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(576, 324)
 
+[node name="ActionHighlightLayer" type="TileMapLayer" parent="."]
+z_index = 1
+tile_set = SubResource("TileSet_action")
+
 [node name="SelectionLayer" type="TileMapLayer" parent="."]
+z_index = 2
 tile_set = SubResource("TileSet_cfsgv")

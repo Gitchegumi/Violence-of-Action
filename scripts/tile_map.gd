@@ -15,12 +15,15 @@ signal unit_move_rejected(reason: String, destination: Vector2i)
 signal unit_attack_resolved(attacker: Node, defender: Node, result: Dictionary)
 signal unit_attack_rejected(reason: String, destination: Vector2i)
 signal pending_action_changed(active: bool, action_type: String)
+signal action_highlights_changed(action_type: String, coordinates: Array[Vector2i])
 # Emitted when a DEPLOY radial closes, so the shared info panel can hide its
 # hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
 signal deploy_preview_ended
 
 # The radius of the hexagonal map in tiles.
 const MAP_RADIUS = 8
+const MOVE_HIGHLIGHT_COLOR := Color(0.35, 0.75, 1.0, 0.52)
+const ATTACK_HIGHLIGHT_COLOR := Color(1.0, 0.2, 0.2, 0.52)
 var player_count := 2
 var map_seed := 0
 var map_rng := RandomNumberGenerator.new()
@@ -577,6 +580,7 @@ func center_camera_on_tile(tile: Vector2i) -> void:
 # --- Selection and Input Handling ---
 
 @onready var selection_layer = get_node("SelectionLayer")
+@onready var action_highlight_layer: TileMapLayer = get_node("ActionHighlightLayer")
 var selected_tile = Vector2i(-1, -1) # Off-map coordinate by default
 var is_dragging = false
 
@@ -865,6 +869,7 @@ func _has_authoritative_upgrade_safety_state(_unit_node) -> bool:
 		and troop_manager.get_adjacent_enemies(_unit_node).is_empty()
 
 func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
+	clear_action_highlights()
 	if kind == "move":
 		var validation := troop_manager.get_move_validation(unit_node)
 		if not validation.valid:
@@ -879,6 +884,7 @@ func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 			return
 	# Move/Attack use a follow-up target-selection step.
 	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
+	_show_action_highlights(kind, unit_node)
 	pending_action_changed.emit(true, kind)
 	_deploy_log("%s requested for unit at %s (awaiting target tile)" % [kind.capitalize(), str(origin)])
 
@@ -896,6 +902,7 @@ func _resolve_pending_action(destination: Vector2i) -> void:
 		unit_move_rejected.emit(result.reason, destination)
 		_deploy_log("Move rejected at %s: %s" % [str(destination), result.reason])
 		return
+	clear_action_highlights()
 	pending_action.clear()
 	pending_action_changed.emit(false, "")
 	unit_moved.emit(unit, result.path, result.cost, unit.movement_remaining)
@@ -913,6 +920,7 @@ func _resolve_pending_attack(destination: Vector2i) -> void:
 		unit_attack_rejected.emit(result.reason, destination)
 		_deploy_log("Attack rejected at %s: %s" % [str(destination), result.reason])
 		return
+	clear_action_highlights()
 	pending_action.clear()
 	pending_action_changed.emit(false, "")
 	unit_attack_resolved.emit(attacker, defender, result)
@@ -928,10 +936,38 @@ func _resolve_pending_attack(destination: Vector2i) -> void:
 
 func cancel_pending_action() -> void:
 	if pending_action.is_empty():
+		clear_action_highlights()
 		return
 	_deploy_log("%s target selection cancelled" % String(pending_action.get("type", "action")).capitalize())
+	clear_action_highlights()
 	pending_action.clear()
 	pending_action_changed.emit(false, "")
+
+
+func _show_action_highlights(action_type: String, unit: Node) -> void:
+	var coordinates: Array[Vector2i] = []
+	match action_type:
+		"move":
+			action_highlight_layer.modulate = MOVE_HIGHLIGHT_COLOR
+			coordinates = troop_manager.get_valid_move_destinations(unit)
+		"attack":
+			action_highlight_layer.modulate = ATTACK_HIGHLIGHT_COLOR
+			coordinates = troop_manager.get_valid_attack_targets(unit)
+	for coordinate in coordinates:
+		action_highlight_layer.set_cell(coordinate, 0, Vector2i.ZERO)
+	action_highlights_changed.emit(action_type, coordinates)
+
+
+func clear_action_highlights() -> void:
+	action_highlight_layer.clear()
+	action_highlights_changed.emit("", [])
+
+
+func get_action_highlighted_cells() -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for coordinate in action_highlight_layer.get_used_cells():
+		cells.append(coordinate)
+	return cells
 
 
 func _move_description(validation: Dictionary) -> String:
