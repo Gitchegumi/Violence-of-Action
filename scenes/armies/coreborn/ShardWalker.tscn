@@ -14,7 +14,7 @@ script = ExtResource("1_6ckio")
 [node name="UnitArtwork" type="Sprite2D" parent="."]
 texture = ExtResource("1_l236m")
 region_enabled = true
-region_rect = Rect2(225, 520, 300, 320)
+region_rect = Rect2(258, 548, 236, 301)
 
 [node name="UnitSelection" type="Area2D" parent="."]
 

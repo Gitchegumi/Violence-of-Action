@@ -9,13 +9,13 @@ var MockUnit = preload("res://tests/unit/mock_unit.gd")
 var MainScene = preload("res://scenes/main.tscn")
 
 const EXPECTED_ARTWORK_REGIONS := {
-	"battlefield_scavenger": Rect2(0, 520, 300, 320),
+	"battlefield_scavenger": Rect2(35, 545, 210, 285),
 	"fluxsmith": Rect2(20, 80, 300, 320),
 	"ghostthorn": Rect2(360, 80, 300, 320),
 	"golemancer_hull": Rect2(690, 80, 300, 320),
-	"shard_walker": Rect2(225, 520, 300, 320),
+	"shard_walker": Rect2(258, 548, 236, 301),
 	"sky_render": Rect2(500, 520, 300, 320),
-	"tide_born": Rect2(724, 520, 300, 320),
+	"tide_born": Rect2(790, 570, 205, 260),
 }
 
 

@@ -26,5 +26,5 @@ terrain_type_matrix = {
 "water": -1
 }
 special_abilities = Array[String]([])
-artwork_region = Rect2(225, 520, 300, 320)
+artwork_region = Rect2(258, 548, 236, 301)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
