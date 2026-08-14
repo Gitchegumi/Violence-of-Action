@@ -27,6 +27,7 @@ const GAMEPLAY_SCENE := "res://scenes/main.tscn"
 ]
 @onready var setup_error: Label = $SetupDialog/SetupFields/SetupError
 @onready var rules_dialog: AcceptDialog = $RulesDialog
+var player_color_selected: Array[bool] = [false, false, false]
 
 
 func _ready() -> void:
@@ -38,6 +39,8 @@ func _ready() -> void:
 	setup_dialog.canceled.connect(_focus_start_button)
 	rules_dialog.confirmed.connect(_focus_rules_button)
 	player_count_option.item_selected.connect(_on_player_count_selected)
+	for player_id in range(player_color_inputs.size()):
+		player_color_inputs[player_id].color_changed.connect(_on_player_color_changed.bind(player_id))
 	player_count_option.select(0)
 	_refresh_player_identity_rows(2)
 	start_button.grab_focus()
@@ -119,14 +122,22 @@ func _refresh_player_identity_rows(player_count: int) -> void:
 		identity_rows[player_id].visible = player_id < player_count
 
 
+func _on_player_color_changed(color: Color, player_id: int) -> void:
+	player_color_selected[player_id] = true
+	var opaque_color := color
+	opaque_color.a = 1.0
+	if not player_color_inputs[player_id].color.is_equal_approx(opaque_color):
+		player_color_inputs[player_id].color = opaque_color
+
+
 func _get_identity_validation_error(player_count: int) -> String:
 	var selected_colors: Array[Color] = []
 	for player_id in range(player_count):
 		if player_name_inputs[player_id].text.strip_edges().is_empty():
 			return "Player %d must enter a name." % (player_id + 1)
-		var color := player_color_inputs[player_id].color
-		if color.a <= 0.0:
+		if not player_color_selected[player_id]:
 			return "Player %d must choose a color." % (player_id + 1)
+		var color := player_color_inputs[player_id].color
 		for selected_color in selected_colors:
 			if color.is_equal_approx(selected_color):
 				return "Each player must choose a different color."

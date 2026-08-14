@@ -19,7 +19,7 @@ func _configure_player_identities(player_count: int) -> void:
 	var colors := [Color(0.3, 0.7, 1.0), Color(1.0, 0.3, 0.3), Color(0.4, 1.0, 0.4)]
 	for player_id in range(player_count):
 		menu.player_name_inputs[player_id].text = "Commander %d" % (player_id + 1)
-		menu.player_color_inputs[player_id].color = colors[player_id]
+		menu.player_color_inputs[player_id].color_changed.emit(colors[player_id])
 
 
 func test_menu_exposes_required_options():
@@ -62,11 +62,13 @@ func test_setup_requires_names_and_unique_selected_colors():
 	assert_true(menu.setup_error.text.contains("enter a name"))
 	menu.player_name_inputs[0].text = "Alpha"
 	menu.player_name_inputs[1].text = "Bravo"
-	menu.player_color_inputs[0].color = Color.RED
-	menu.player_color_inputs[1].color = Color.RED
+	menu.player_color_inputs[0].color_changed.emit(Color(1, 0, 0, 0))
+	menu.player_color_inputs[1].color_changed.emit(Color(1, 0, 0, 0))
+	assert_eq(menu.player_color_inputs[0].color.a, 1.0, "picker selection becomes opaque")
+	assert_true(menu.player_color_selected[0], "picker signal records an explicit selection")
 	assert_true(menu.submit_setup(false).is_empty())
 	assert_true(menu.setup_error.text.contains("different color"))
-	menu.player_color_inputs[1].color = Color.BLUE
+	menu.player_color_inputs[1].color_changed.emit(Color(0, 0, 1, 0))
 	assert_false(menu.submit_setup(false).is_empty())
 
 
