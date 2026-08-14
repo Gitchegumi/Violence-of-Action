@@ -311,6 +311,9 @@ func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	assert_same(tile_map.troop_manager.get_unit_at_map_coord(destination), unit)
 	assert_null(tile_map.troop_manager.get_unit_at_map_coord(origin))
 	assert_lt(unit.movement_remaining, starting_movement)
+	var movement_label: Label = tile_map.get_parent().get_node("UnitInfoPanel/Panel/MovementLabel")
+	assert_true(movement_label.visible)
+	assert_eq(movement_label.text, "Movement: %d/%d" % [unit.movement_remaining, starting_movement])
 	assert_true(tile_map.pending_action.is_empty())
 	assert_true(tile_map.get_action_highlighted_cells().is_empty())
 
