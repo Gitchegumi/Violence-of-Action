@@ -46,7 +46,7 @@ The top status line shows the round, active player, and current phase. Select **
 
 1. **Start Turn:** The game resets per-turn unit actions and awards essence automatically.
 2. **Marshal Troops:** Purchase units by left-clicking an empty hex in your deployment zone. New units cannot be placed outside that zone.
-3. **Movement:** Left-click one of your units and choose **Move**. Every legal destination is shaded light blue. Select one to move there; the game automatically uses the cheapest valid path and deducts its terrain cost. A unit may move more than once while it has movement remaining.
+3. **Movement:** Left-click one of your units and choose **Move**. Every legal destination is shaded light blue. Select one to move there; the game automatically uses the cheapest valid path and deducts its terrain cost. A unit may move more than once while it has movement remaining. The selected unit's information panel shows its live movement as current points over maximum Speed.
 4. **Combat:** Left-click one of your units and choose **Attack**. Every legal enemy target is shaded red. Select an enemy in Range and line of sight to resolve the attack. Each unit may attack once per turn.
 5. **Resolve:** Any unit that has not attacked yet may still attack here.
 6. **Clean Up:** End-of-turn Objective control and upkeep resolve, then play passes to the next player.

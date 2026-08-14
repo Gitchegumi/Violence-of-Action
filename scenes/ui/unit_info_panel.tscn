@@ -90,3 +90,12 @@ offset_top = 80.0
 offset_right = 142.0
 offset_bottom = 103.0
 text = "speed"
+
+[node name="MovementLabel" type="Label" parent="Panel"]
+visible = false
+layout_mode = 0
+offset_left = 95.0
+offset_top = 125.0
+offset_right = 220.0
+offset_bottom = 148.0
+text = "movement"

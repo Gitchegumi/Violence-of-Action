@@ -9,6 +9,9 @@ extends Control
 @onready var range_label: Label = get_node("Panel/RangeLabel")
 @onready var armor_label: Label = get_node("Panel/ArmorLabel")
 @onready var speed_label: Label = get_node("Panel/SpeedLabel")
+@onready var movement_label: Label = get_node("Panel/MovementLabel")
+
+var current_unit: Node = null
 
 func _ready():
 	# Hide the panel by default
@@ -31,7 +34,8 @@ func show_unit(unit: Node):
 	if unit.has_method("get_artwork_node"):
 		artwork = unit.get_artwork_node()
 	show_unit_type(unit_data, artwork)
-	health_label.text = "Health: %d/%d" % [int(unit.get("current_hp")), int(unit.get("maximum_hp"))]
+	current_unit = unit
+	refresh_current_unit()
 
 ## Show unit details directly from data (UnitType resource or a data dict),
 ## with optional artwork. Used by the deploy radial to preview an unplaced unit
@@ -40,6 +44,7 @@ func show_unit_type(unit_data, artwork: Node = null):
 	if not unit_data:
 		hide_panel()
 		return
+	current_unit = null
 
 	# Populate labels
 	unit_name_label.text = "Unit Name: " + str(unit_data.unit_name)
@@ -50,6 +55,8 @@ func show_unit_type(unit_data, artwork: Node = null):
 	range_label.text = "Range: " + str(unit_data.stats_block.range)
 	armor_label.text = "Armor: " + str(unit_data.stats_block.armor)
 	speed_label.text = "Speed: " + str(unit_data.stats_block.speed)
+	movement_label.text = ""
+	movement_label.visible = false
 
 	# Set unit image
 	for child in unit_viewport.get_children():
@@ -64,9 +71,28 @@ func show_unit_type(unit_data, artwork: Node = null):
 
 	visible = true
 
+
+## Refresh values that belong to a live placed unit rather than its profile.
+func refresh_current_unit() -> void:
+	if current_unit == null or not is_instance_valid(current_unit):
+		return
+	var unit_data = current_unit.get_unit_data()
+	if unit_data == null:
+		return
+	health_label.text = "Health: %d/%d" % [
+		int(current_unit.get("current_hp")),
+		int(current_unit.get("maximum_hp")),
+	]
+	movement_label.text = "Movement: %d/%d" % [
+		int(current_unit.get("movement_remaining")),
+		int(unit_data.stats_block.get("speed", 0)),
+	]
+	movement_label.visible = true
+
 ## Hides the unit information panel and clears its contents.
 func hide_panel():
 	print("hide_panel called.")
+	current_unit = null
 	visible = false
 	# Optionally clear labels when hidden
 	unit_name_label.text = "Unit Name: "
@@ -77,5 +103,7 @@ func hide_panel():
 	range_label.text = "Range: "
 	armor_label.text = "Armor: "
 	speed_label.text = "Speed: "
+	movement_label.text = ""
+	movement_label.visible = false
 	for child in unit_viewport.get_children():
 		child.queue_free()

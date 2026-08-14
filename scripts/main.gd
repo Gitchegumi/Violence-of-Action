@@ -129,6 +129,7 @@ func _on_special_action_resolved(action_type: String, result: Dictionary) -> voi
 func _on_turn_started(player_id: int, _round_number: int) -> void:
 	$TileMapLayer.troop_manager.start_turn(player_id)
 	$ResourceManager.start_turn(player_id, $TileMapLayer.troop_manager.get_units_for_player(player_id))
+	$UnitInfoPanel.refresh_current_unit()
 
 
 func _on_turn_ended(player_id: int, _round_number: int) -> void:
