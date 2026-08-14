@@ -16,6 +16,7 @@ signal unit_attack_resolved(attacker: Node, defender: Node, result: Dictionary)
 signal unit_attack_rejected(reason: String, destination: Vector2i)
 signal pending_action_changed(active: bool, action_type: String)
 signal action_highlights_changed(action_type: String, coordinates: Array[Vector2i])
+signal special_action_resolved(action_type: String, result: Dictionary)
 # Emitted when a DEPLOY radial closes, so the shared info panel can hide its
 # hover preview. (Action radials do not emit this — see _on_radial_self_closed.)
 signal deploy_preview_ended
@@ -56,6 +57,7 @@ var radial_menu_instance = null
 var radial_origin: Vector2i = Vector2i(-1, -1)
 var current_radial_units: Array = []
 var current_radial_unit_node = null  # Occupied-tile unit when in action mode
+var current_radial_barrier: TacticalBarrier = null
 var pending_action: Dictionary = {}  # Set when an action awaits target selection
 var _radial_is_deploy: bool = false  # True while a DEPLOY radial is open
 
@@ -433,6 +435,8 @@ func _line_of_sight_has_blocker(_start: Vector2i, _end: Vector2i) -> bool:
 		var terrain: TerrainType = terrain_data_map.get(line[index])
 		if terrain != null and terrain.terrain_name.to_lower() == "mountain":
 			return true
+		if troop_manager != null and troop_manager.get_barrier_at(line[index]) != null:
+			return true
 	return false
 
 
@@ -632,6 +636,7 @@ func _unhandled_input(event):
 		# Route the click: occupied tile -> action radial; empty deployment
 		# tile -> deploy radial; anything else -> plain selection.
 		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
+		var barrier_on_tile: TacticalBarrier = troop_manager.get_barrier_at(map_pos)
 
 		if not pending_action.is_empty():
 			_resolve_pending_action(map_pos)
@@ -639,6 +644,9 @@ func _unhandled_input(event):
 			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
 			_show_action_radial(map_pos, unit_on_tile)
 			emit_signal("unit_selected", unit_on_tile)
+		elif barrier_on_tile != null and barrier_on_tile.owner_player_id == GameState.active_player_id:
+			_show_barrier_radial(map_pos, barrier_on_tile)
+			emit_signal("unit_selected", null)
 		elif _can_deploy_at(map_pos):
 			_deploy_log("Empty deployment tile %s" % str(map_pos))
 			_show_radial_menu(map_pos)
@@ -678,6 +686,7 @@ func _show_radial_menu(origin_tile: Vector2i):
 
 	current_radial_units = _get_deployable_units()
 	current_radial_unit_node = null
+	current_radial_barrier = null
 	radial_origin = origin_tile
 	_radial_is_deploy = true
 
@@ -709,6 +718,7 @@ func _show_action_radial(origin_tile: Vector2i, unit_node):
 
 	radial_origin = origin_tile
 	current_radial_unit_node = unit_node
+	current_radial_barrier = troop_manager.get_barrier_at(origin_tile)
 	current_radial_units = []
 	_radial_is_deploy = false
 
@@ -725,6 +735,28 @@ func _show_action_radial(origin_tile: Vector2i, unit_node):
 
 	emit_signal("deploy_radial_opened", origin_tile)
 	_deploy_log("Action radial opened at %s" % str(origin_tile))
+
+
+func _show_barrier_radial(origin_tile: Vector2i, barrier: TacticalBarrier) -> void:
+	if radial_menu_instance:
+		_close_radial_menu("new_location")
+	radial_origin = origin_tile
+	current_radial_unit_node = null
+	current_radial_barrier = barrier
+	current_radial_units = []
+	_radial_is_deploy = false
+	radial_menu_instance = radial_menu_scene.instantiate()
+	add_child(radial_menu_instance)
+	radial_menu_instance.position = map_to_local(origin_tile)
+	radial_menu_instance.reposition_within_viewport(get_viewport_rect().size)
+	radial_menu_instance.deploy_action_selected.connect(_on_radial_action_selected)
+	radial_menu_instance.deploy_radial_closed.connect(_on_radial_self_closed)
+	radial_menu_instance.open_actions(origin_tile, [{
+		"action_id": "dismantle_barrier",
+		"label": "Dismantle",
+		"enabled": barrier.owner_player_id == GameState.active_player_id,
+		"description": "Remove this friendly barrier at no cost",
+	}])
 
 func _get_deployable_units() -> Array:
 	"""Build the stat-only MVP roster in a stable player-facing order."""
@@ -767,7 +799,7 @@ func _build_unit_actions(unit_node) -> Array:
 		and data.upgrades_to != null and resource_manager.can_afford(GameState.active_player_id, data.upgrade_cost)
 	var move_validation: Dictionary = troop_manager.get_move_validation(unit_node)
 	var attack_validation: Dictionary = troop_manager.get_attack_start_validation(unit_node)
-	return [
+	var actions: Array = [
 		{
 			"action_id": "attack",
 			"label": "Attack",
@@ -777,9 +809,71 @@ func _build_unit_actions(unit_node) -> Array:
 			),
 		},
 		{"action_id": "move", "label": "Move", "enabled": move_validation.valid, "description": _move_description(move_validation)},
-		{"action_id": "upgrade", "label": "Upgrade", "enabled": can_upgrade, "description": "Upgrade this unit"},
-		{"action_id": "inspect", "label": "Inspect", "enabled": true, "description": "View unit details"},
 	]
+	var unit_id := String(unit_node.get("unit_type_id")) if unit_node != null else ""
+	if unit_id == "fluxsmith":
+		actions.append({
+			"action_id": "heal",
+			"label": "Heal",
+			"enabled": not troop_manager.get_heal_targets(unit_node).is_empty(),
+			"description": "Restore 1 HP to an adjacent ally",
+		})
+		actions.append({
+			"action_id": "build_barrier",
+			"label": "Barrier",
+			"enabled": not troop_manager.get_valid_barrier_destinations(unit_node).is_empty(),
+			"description": "Erect an adjacent barrier",
+		})
+	elif unit_id == "ghostthorn":
+		actions.append({
+			"action_id": "teleport",
+			"label": "Teleport",
+			"enabled": not troop_manager.get_valid_teleport_destinations(unit_node).is_empty(),
+			"description": "Teleport up to 3 hexes once per game",
+		})
+	elif unit_id == "sky_render":
+		if bool(unit_node.get("post_combat_move_available")):
+			var post_move_targets := troop_manager.get_valid_post_combat_move_destinations(unit_node)
+			actions.append({
+				"action_id": "post_combat_move",
+				"label": "Post Move",
+				"enabled": not post_move_targets.is_empty(),
+				"description": "Spend this Skyrender's once-per-game full-speed move",
+			})
+		if unit_node.get("transported_unit") == null:
+			actions.append({
+				"action_id": "load_transport",
+				"label": "Load",
+				"enabled": not troop_manager.get_valid_load_targets(unit_node).is_empty(),
+				"description": "Load one adjacent infantry unit (3 movement)",
+			})
+		else:
+			actions.append({
+				"action_id": "unload_transport",
+				"label": "Unload",
+				"enabled": not troop_manager.get_valid_unload_destinations(unit_node).is_empty(),
+				"description": "Unload infantry to an adjacent hex (3 movement)",
+			})
+	var barrier := troop_manager.get_barrier_at(unit_node.map_pos) if unit_node != null else null
+	if barrier != null:
+		if barrier.owner_player_id == GameState.active_player_id:
+			actions.append({
+				"action_id": "dismantle_barrier",
+				"label": "Dismantle",
+				"enabled": true,
+				"description": "Remove this friendly barrier at no cost",
+			})
+		else:
+			var barrier_attack := troop_manager.get_barrier_attack_validation(unit_node, barrier)
+			actions.append({
+				"action_id": "attack_barrier",
+				"label": "Attack Barrier",
+				"enabled": barrier_attack.valid,
+				"description": "Attack the enemy barrier on this hex",
+			})
+	actions.append({"action_id": "upgrade", "label": "Upgrade", "enabled": can_upgrade, "description": "Upgrade this unit"})
+	actions.append({"action_id": "inspect", "label": "Inspect", "enabled": true, "description": "View unit details"})
+	return actions
 
 func _build_placement_context() -> Dictionary:
 	"""Supply the radial menu with current validation context (T024)."""
@@ -829,7 +923,8 @@ func _on_radial_unit_selected(unit_id: String, origin: Vector2i):
 func _can_deploy_at(origin: Vector2i) -> bool:
 	return _is_deployment_phase() \
 		and is_in_deployment_zone(origin, GameState.active_player_id) \
-		and troop_manager.get_unit_at_map_coord(origin) == null
+		and troop_manager.get_unit_at_map_coord(origin) == null \
+		and troop_manager.get_barrier_at(origin) == null
 
 
 func _is_deployment_phase() -> bool:
@@ -850,6 +945,16 @@ func _on_radial_action_selected(action_id: String, origin: Vector2i):
 			_begin_pending_action("move", unit_node, origin)
 		"attack":
 			_begin_pending_action("attack", unit_node, origin)
+		"heal", "build_barrier", "teleport", "load_transport", "unload_transport", "post_combat_move":
+			_begin_pending_action(action_id, unit_node, origin)
+		"attack_barrier":
+			_resolve_barrier_attack(unit_node, current_radial_barrier)
+		"dismantle_barrier":
+			var barrier := current_radial_barrier
+			if barrier == null and unit_node != null:
+				barrier = troop_manager.get_barrier_at(unit_node.map_pos)
+			var dismantled := troop_manager.dismantle_barrier(barrier, GameState.active_player_id)
+			special_action_resolved.emit("dismantle_barrier", {"success": dismantled})
 	_close_radial_menu("action:%s" % action_id)
 
 func _upgrade_unit(unit_node, origin: Vector2i):
@@ -882,6 +987,15 @@ func _begin_pending_action(kind: String, unit_node, origin: Vector2i):
 			unit_attack_rejected.emit(validation.reason, origin)
 			_deploy_log("Attack rejected: %s" % validation.reason)
 			return
+	elif kind == "post_combat_move":
+		var validation := troop_manager.get_post_combat_move_validation(unit_node)
+		if not validation.valid:
+			unit_move_rejected.emit(validation.reason, origin)
+			_deploy_log("Post-combat move rejected: %s" % validation.reason)
+			return
+	elif _get_special_action_targets(kind, unit_node).is_empty():
+		_deploy_log("%s rejected: no valid targets" % kind.capitalize())
+		return
 	# Move/Attack use a follow-up target-selection step.
 	pending_action = {"type": kind, "unit": unit_node, "origin": origin}
 	_show_action_highlights(kind, unit_node)
@@ -893,6 +1007,12 @@ func _resolve_pending_action(destination: Vector2i) -> void:
 	var action_type: String = pending_action.get("type", "")
 	if action_type == "attack":
 		_resolve_pending_attack(destination)
+		return
+	if action_type in ["heal", "build_barrier", "teleport", "load_transport", "unload_transport"]:
+		_resolve_pending_special(action_type, destination)
+		return
+	if action_type == "post_combat_move":
+		_resolve_pending_post_combat_move(destination)
 		return
 	if action_type != "move":
 		return
@@ -953,9 +1073,74 @@ func _show_action_highlights(action_type: String, unit: Node) -> void:
 		"attack":
 			action_highlight_layer.modulate = ATTACK_HIGHLIGHT_COLOR
 			coordinates = troop_manager.get_valid_attack_targets(unit)
+		"heal", "build_barrier", "teleport", "load_transport", "unload_transport":
+			action_highlight_layer.modulate = MOVE_HIGHLIGHT_COLOR
+			coordinates = _get_special_action_targets(action_type, unit)
+		"post_combat_move":
+			action_highlight_layer.modulate = MOVE_HIGHLIGHT_COLOR
+			coordinates = troop_manager.get_valid_post_combat_move_destinations(unit)
 	for coordinate in coordinates:
 		action_highlight_layer.set_cell(coordinate, 0, Vector2i.ZERO)
 	action_highlights_changed.emit(action_type, coordinates)
+
+
+func _get_special_action_targets(action_type: String, unit: Node) -> Array[Vector2i]:
+	match action_type:
+		"heal":
+			return troop_manager.get_heal_targets(unit)
+		"build_barrier":
+			return troop_manager.get_valid_barrier_destinations(unit)
+		"teleport":
+			return troop_manager.get_valid_teleport_destinations(unit)
+		"load_transport":
+			return troop_manager.get_valid_load_targets(unit)
+		"unload_transport":
+			return troop_manager.get_valid_unload_destinations(unit)
+	return []
+
+
+func _resolve_pending_special(action_type: String, destination: Vector2i) -> void:
+	var unit: Node = pending_action.get("unit")
+	var result: Dictionary
+	match action_type:
+		"heal":
+			result = troop_manager.heal_unit(unit, troop_manager.get_unit_at_map_coord(destination))
+		"build_barrier":
+			result = troop_manager.create_barrier(unit, destination)
+		"teleport":
+			result = troop_manager.teleport_unit(unit, destination)
+		"load_transport":
+			result = troop_manager.load_transport(unit, troop_manager.get_unit_at_map_coord(destination))
+		"unload_transport":
+			result = troop_manager.unload_transport(unit, destination)
+	if not bool(result.get("success", false)):
+		_deploy_log("%s rejected: %s" % [action_type.capitalize(), result.get("reason", "invalid")])
+		return
+	clear_action_highlights()
+	pending_action.clear()
+	pending_action_changed.emit(false, "")
+	special_action_resolved.emit(action_type, result)
+	emit_signal("unit_selected", unit)
+
+
+func _resolve_pending_post_combat_move(destination: Vector2i) -> void:
+	var unit: Node = pending_action.get("unit")
+	var result := troop_manager.move_unit_post_combat(unit, destination)
+	if not result.success:
+		unit_move_rejected.emit(result.reason, destination)
+		_deploy_log("Post-combat move rejected at %s: %s" % [str(destination), result.reason])
+		return
+	clear_action_highlights()
+	pending_action.clear()
+	pending_action_changed.emit(false, "")
+	unit_moved.emit(unit, result.path, result.cost, unit.movement_remaining)
+	emit_signal("unit_selected", unit)
+
+
+func _resolve_barrier_attack(attacker: Node, barrier: TacticalBarrier) -> void:
+	var result := troop_manager.roll_barrier_attack(attacker, barrier, map_rng)
+	if bool(result.get("success", false)):
+		special_action_resolved.emit("attack_barrier", result)
 
 
 func clear_action_highlights() -> void:
@@ -1006,6 +1191,7 @@ func _dispose_radial_instance():
 		radial_menu_instance.queue_free()
 		radial_menu_instance = null
 	current_radial_units = []
+	current_radial_barrier = null
 	current_radial_unit_node = null
 	radial_origin = Vector2i(-1, -1)
 	_radial_is_deploy = false

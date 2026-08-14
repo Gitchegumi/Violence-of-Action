@@ -25,6 +25,6 @@ terrain_type_matrix = {
 "mountain": 10,
 "water": -1
 }
-special_abilities = Array[String](["Splash damage in adjacent hexes"])
+special_abilities = Array[String](["A primary hit checks the same attack roll against adjacent enemies"])
 artwork_region = Rect2(690, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

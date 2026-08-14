@@ -25,6 +25,6 @@ terrain_type_matrix = {
 "mountain": 1,
 "water": 1
 }
-special_abilities = Array[String](["Ignores terrain penalties", "May move again after combat once per game"])
+special_abilities = Array[String](["Ignores terrain penalties", "Once per game, may take one unsplittable full-speed move after attacking", "Carries one Shardwalker, Ghostthorn, or Fluxsmith; load and unload each cost 3 movement"])
 artwork_region = Rect2(500, 520, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

@@ -24,6 +24,6 @@ terrain_type_matrix = {
 "mountain": -1,
 "water": -1
 }
-special_abilities = Array[String](["Heals adjacent allies", "Can construct temporary barriers"])
+special_abilities = Array[String](["Heal 1 HP on an adjacent ally instead of attacking", "Erect an adjacent 1 HP / 2 Armor barrier instead of attacking"])
 artwork_region = Rect2(20, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

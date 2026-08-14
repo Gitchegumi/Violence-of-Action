@@ -17,9 +17,9 @@ The game is local hotseat: players take turns using the same screen.
 | Input | Action |
 | --- | --- |
 | Left-click a hex | Select the hex, open deployment on an eligible empty hex, or open actions for an occupied hex |
-| Left-click a destination | Confirm a pending Move or Attack target |
-| Right-click while choosing a target | Cancel the pending Move or Attack |
-| **Cancel Move/Attack** button | Cancel the pending action |
+| Left-click a destination | Confirm a pending Move, Attack, or special-ability target |
+| Right-click while choosing a target | Cancel the pending action |
+| **Cancel Action** button | Cancel the pending action |
 | Right mouse drag | Pan the battlefield |
 | Mouse wheel | Zoom in or out |
 | Arrow keys or WASD | Pan the battlefield |
@@ -38,7 +38,7 @@ Each player begins with **12 essence** and deploys within their highlighted depl
 4. Repeat as desired. Unspent essence is saved.
 5. Select **Ready Player N** when finished.
 
-Every player must place at least one unit before declaring Ready. After all players are ready, round one begins. The MVP deployment menu offers all seven Coreborn profiles: Battlefield Scavenger, Fluxsmith, Ghostthorn, Golemancer Hull, Shardwalker, Skyrender, and Tideborn. Their listed special abilities are reserved for later feature updates unless the mechanic is already active in the game.
+Every player must place at least one unit before declaring Ready. After all players are ready, round one begins. The MVP deployment menu offers all seven Coreborn profiles: Battlefield Scavenger, Fluxsmith, Ghostthorn, Golemancer Hull, Shardwalker, Skyrender, and Tideborn.
 
 ## Take a Turn
 
@@ -54,6 +54,13 @@ The top status line shows the round, active player, and current phase. Select **
 A player with no units remains in the turn rotation and gains 1 essence at Start Turn, allowing them to save toward or immediately purchase a new unit during Marshal Troops.
 
 An invalid destination or target leaves the action active so you can choose another. Use right-click, Escape, or the visible Cancel button to abandon it.
+
+## Coreborn Special Actions
+
+- **Fluxsmith:** In Combat or Resolve, choose **Heal** to restore 1 HP to an adjacent ally or **Barrier** to erect a barrier on a highlighted adjacent hex. Either choice consumes the Fluxsmith's combat action. Barriers cannot be placed on occupied, Water, or Mountain hexes. Entering a barrier hex costs 3 movement, and barriers block line of sight. Select a friendly barrier to dismantle it for free. An enemy unit must enter its hex before selecting **Attack Barrier**.
+- **Ghostthorn:** Choose **Teleport** during any phase to move up to 3 hexes to a highlighted unoccupied, non-Water destination. This is a free action usable once per Ghostthorn per game, including after that Ghostthorn attacks.
+- **Golemancer Hull:** A successful primary attack automatically checks the same attack roll against each enemy adjacent to the primary target. Each target still applies its own Armor and terrain defense.
+- **Skyrender:** After attacking, an optional once-per-game **Post Move** action becomes available later that turn at full speed, whether the attack hit or missed. Normal engagement rules apply, and the move cannot be split. During Movement or Resolve, choose **Load** beside a friendly Shardwalker, Ghostthorn, or Fluxsmith, then **Unload** beside a valid destination. Each action costs 3 movement. If the carrier is destroyed, the passenger survives only on a 2d6 result above 8 and is placed on the carrier's former hex; a passenger that cannot cross Water is destroyed automatically when the carrier is destroyed over Water.
 
 ## Movement and Engagement
 
