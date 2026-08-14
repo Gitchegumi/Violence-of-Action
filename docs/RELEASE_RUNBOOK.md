@@ -26,7 +26,8 @@ checks.
 3. Review the generated notes and confirm the Godot CI check passes.
 4. Merge the release pull request.
 5. The release workflow creates the tag and GitHub release, exports both desktop
-   builds with Godot 4.5, smoke-tests the Linux executable, and uploads:
+   builds with Godot 4.5, smoke-tests each executable on its target operating
+   system, and uploads:
    - `violence-of-action-v<version>-windows-x86_64.zip`
    - `violence-of-action-v<version>-linux-x86_64.zip`
    - `SHA256SUMS.txt`
@@ -47,8 +48,16 @@ Before announcing a release:
 
 ## Recovery
 
-- If export or upload fails, fix the workflow on a feature branch and rerun the
-  failed release workflow after merge.
+- If a release build, smoke test, or upload fails because of the workflow, fix the
+  workflow on a feature branch and merge that fix into `main`.
+- In GitHub Actions, open the **Release** workflow, choose **Run workflow**, select
+  `main`, and enter the existing immutable release tag (for example `v0.1.0`).
+- The recovery run verifies that the GitHub release exists, checks out the game
+  source at that tag, rebuilds both archives, smoke-tests them on Windows and
+  Linux, regenerates `SHA256SUMS.txt`, and replaces the release assets with
+  `gh release upload --clobber`.
+- A recovery run changes artifacts only. It does not move the tag or rebuild from
+  the newer `main` source.
 - Do not reuse or move a published version tag. Publish a patch release for code
   changes.
 - If release notes alone are wrong, edit the GitHub release text without replacing

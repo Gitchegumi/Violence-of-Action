@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to rebuild, such as v0.1.0
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,8 +21,9 @@ env:
   GODOT_TEMPLATES_DIR: /home/runner/.local/share/godot/export_templates/4.5.stable
 
 jobs:
-  release-please:
+  release_please:
     name: Create or update release
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -36,10 +42,66 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  release_context:
+    name: Resolve release context
+    needs: release_please
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.release_please.result == 'success')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      release_created: ${{ steps.context.outputs.release_created }}
+      tag_name: ${{ steps.context.outputs.tag_name }}
+      version: ${{ steps.context.outputs.version }}
+    steps:
+      - name: Resolve automatic or recovery release
+        id: context
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          AUTOMATED_RELEASE_CREATED: ${{ needs.release_please.outputs.release_created }}
+          AUTOMATED_TAG_NAME: ${{ needs.release_please.outputs.tag_name }}
+          AUTOMATED_VERSION: ${{ needs.release_please.outputs.version }}
+        run: |
+          release_created="$AUTOMATED_RELEASE_CREATED"
+          tag_name="$AUTOMATED_TAG_NAME"
+          version="$AUTOMATED_VERSION"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Recovery tag must use the v<semver> format."
+              exit 1
+            fi
+            gh release view "$INPUT_TAG" >/dev/null
+            release_created="true"
+            tag_name="$INPUT_TAG"
+            version="${INPUT_TAG#v}"
+          fi
+
+          if [[ "$release_created" == "true" ]]; then
+            if [[ ! "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Release Please returned an invalid or empty tag."
+              exit 1
+            fi
+            if [[ -z "$version" ]]; then
+              echo "::error::Release version is empty."
+              exit 1
+            fi
+          fi
+
+          {
+            echo "release_created=$release_created"
+            echo "tag_name=$tag_name"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+
   build:
     name: Export ${{ matrix.label }}
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: release_context
+    if: needs.release_context.outputs.release_created == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -60,8 +122,10 @@ jobs:
             archive_platform: linux-x86_64
 
     steps:
-      - name: Check out repository
+      - name: Check out release tag
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.release_context.outputs.tag_name }}
 
       - name: Restore Godot editor cache
         id: godot-cache
@@ -115,17 +179,10 @@ jobs:
             "${{ matrix.preset }}" \
             "build/${{ matrix.directory }}/${{ matrix.output }}"
 
-      - name: Smoke-test Linux export
-        if: matrix.archive_platform == 'linux-x86_64'
-        shell: bash
-        run: |
-          chmod +x "build/${{ matrix.directory }}/${{ matrix.output }}"
-          "build/${{ matrix.directory }}/${{ matrix.output }}" --headless --quit-after 5
-
       - name: Package export
         shell: bash
         env:
-          VERSION: ${{ needs.release-please.outputs.version }}
+          VERSION: ${{ needs.release_context.outputs.version }}
           PLATFORM: ${{ matrix.archive_platform }}
         run: |
           mkdir -p dist
@@ -141,12 +198,70 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  smoke:
+    name: Smoke-test ${{ matrix.label }}
+    needs:
+      - release_context
+      - build
+    if: needs.release_context.outputs.release_created == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x86_64
+            runner: windows-2025
+            artifact: release-windows-x86_64
+            platform: windows
+          - label: Linux x86_64
+            runner: ubuntu-24.04
+            artifact: release-linux-x86_64
+            platform: linux
+
+    steps:
+      - name: Download packaged export
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist
+
+      - name: Smoke-test Windows export
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem -LiteralPath dist -Filter '*.zip' | Select-Object -First 1
+          if ($null -eq $archive) {
+            throw 'Windows release archive was not downloaded.'
+          }
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath smoke
+          & '.\smoke\ViolenceOfAction.exe' --headless --quit-after 5
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Smoke-test Linux export
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          archive="$(find dist -maxdepth 1 -name '*.zip' -print -quit)"
+          if [[ -z "$archive" ]]; then
+            echo "::error::Linux release archive was not downloaded."
+            exit 1
+          fi
+          unzip -q "$archive" -d smoke
+          chmod +x smoke/ViolenceOfAction.x86_64
+          smoke/ViolenceOfAction.x86_64 --headless --quit-after 5
+
   publish:
     name: Attach builds to GitHub release
     needs:
-      - release-please
+      - release_context
       - build
-    if: needs.release-please.outputs.release_created == 'true'
+      - smoke
+    if: needs.release_context.outputs.release_created == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -162,7 +277,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ needs.release_context.outputs.tag_name }}
         run: |
           cd dist
           sha256sum *.zip > SHA256SUMS.txt
