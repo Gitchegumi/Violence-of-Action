@@ -653,14 +653,6 @@ func _unhandled_input(event):
 		center_camera_on_tile(selected_tile)
 		get_viewport().set_input_as_handled()
 	
-	# Debug keys for testing affordability (T018)
-	if event is InputEventKey and event.pressed and event.keycode == KEY_1:
-		set_player_essence(5)  # Low resources - some units unaffordable
-	if event is InputEventKey and event.pressed and event.keycode == KEY_2:
-		set_player_essence(10)  # Medium resources 
-	if event is InputEventKey and event.pressed and event.keycode == KEY_3:
-		set_player_essence(20)  # High resources - all affordable
-
 # --- Radial Menu Functions ---
 
 func _show_radial_menu(origin_tile: Vector2i):
@@ -979,10 +971,6 @@ func get_unit_artwork(unit_id: String) -> Node:
 
 func _deploy_log(message: String) -> void:
 	GameLog.debug("deployment.radial", message)
-
-func set_player_essence(amount: int):
-	resource_manager.set_essence(GameState.active_player_id, amount, "debug_set")
-	_deploy_log("Player essence set to: %d" % get_player_essence())
 
 func get_player_essence() -> int:
 	return resource_manager.get_essence(GameState.active_player_id) if resource_manager else 0
