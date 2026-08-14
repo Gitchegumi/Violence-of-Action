@@ -123,7 +123,7 @@ func test_every_coreborn_profile_places_with_its_own_stats_and_artwork_region():
 		artwork.free()
 
 
-func test_scavenger_roster_quote_uses_live_fibonacci_cost():
+func test_scavenger_roster_quote_tracks_live_on_field_count():
 	var tile_map = await _gameplay_tile_map()
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
 	tile_map.troop_manager.set_current_unit("battlefield_scavenger")
@@ -131,6 +131,13 @@ func test_scavenger_roster_quote_uses_live_fibonacci_cost():
 	var roster: Array = tile_map._get_deployable_units()
 	var scavenger: Dictionary = roster.filter(func(unit): return unit.unit_id == "battlefield_scavenger")[0]
 	assert_eq(scavenger.unit_cost, 2, "second Scavenger preview uses the live Fibonacci cost")
+	assert_true(tile_map.troop_manager.destroy_unit(
+		tile_map.troop_manager.get_unit_at_map_coord(origin),
+		"destroyed_scavenger",
+	))
+	roster = tile_map._get_deployable_units()
+	scavenger = roster.filter(func(unit): return unit.unit_id == "battlefield_scavenger")[0]
+	assert_eq(scavenger.unit_cost, 1, "price drops when an on-field Scavenger is destroyed")
 
 
 func test_hover_panel_uses_the_live_roster_quote():

@@ -239,7 +239,8 @@ func test_zero_unit_player_stays_in_rotation_gains_one_essence_and_rebuilds():
 		"player_three_last_unit",
 	))
 	assert_null(tile_map.troop_manager.get_unit_at_map_coord(tile_map.objective_position))
-	assert_eq(resource_manager.objective_controller, 2, "unoccupied token follows persistence rules")
+	assert_eq(resource_manager.objective_controller, ResourceManager.NO_PLAYER, "last occupying unit removes control")
+	assert_eq(resource_manager.objective_control_turns, 0)
 	assert_eq(GameState.current_state, GameState.State.PLAYING)
 	for _phase in range(12):
 		assert_true(GameState.advance_phase())

@@ -140,13 +140,20 @@ func resolve_objective_turn(player_id: int) -> Dictionary:
 			"turns": objective_control_turns,
 			"victory": objective_control_turns >= OBJECTIVE_TURNS_TO_WIN,
 		}
+	clear_objective_control()
+	return {"retained": false, "paid_upkeep": false, "turns": 0, "victory": false}
+
+
+func clear_objective_control() -> bool:
+	if objective_controller == NO_PLAYER:
+		return false
 	var previous := objective_controller
 	objective_controller = NO_PLAYER
 	objective_control_turns = 0
 	objective_upkeep_due = false
 	objective_control_changed.emit(previous, NO_PLAYER)
 	objective_control_turns_changed.emit(NO_PLAYER, objective_control_turns)
-	return {"retained": false, "paid_upkeep": false, "turns": 0, "victory": false}
+	return true
 
 
 static func calculate_diversity_income(active_units: Array) -> int:

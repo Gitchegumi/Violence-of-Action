@@ -126,6 +126,18 @@ func test_unaffordable_upkeep_removes_control_without_progress():
 	assert_eq(manager.objective_controller, ResourceManager.NO_PLAYER)
 
 
+func test_clear_objective_control_removes_token_and_progress():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
+	manager.resolve_objective_turn(0)
+	assert_eq(manager.objective_control_turns, 1)
+	assert_true(manager.clear_objective_control())
+	assert_eq(manager.objective_controller, ResourceManager.NO_PLAYER)
+	assert_eq(manager.objective_control_turns, 0)
+	assert_false(manager.objective_upkeep_due)
+	assert_false(manager.clear_objective_control(), "clearing an uncontrolled Objective is a no-op")
+
+
 func test_scavenger_cost_uses_fibonacci_progression():
 	var scavenger: UnitType = load("res://assets/data/armies/TheCoreborn/tier-1/battlefield_scavenger.tres")
 	var costs: Array[int] = []

@@ -77,7 +77,7 @@ An intervening Mountain blocks line of sight. Other terrain and units do not. Th
 
 ## Objective and Victory
 
-The central Objective changes control when a player ends their turn occupying it. Capturing it grants **6 essence** and starts its control counter at 0. The token remains with that player after their unit leaves unless an opponent captures it or upkeep fails.
+The central Objective changes control when a player ends their turn occupying it. Capturing it grants **6 essence** and starts its control counter at 0. The token remains with that player after their unit leaves unless an opponent captures it, upkeep fails, or their last unit is destroyed while occupying the Objective. In that last case, the Objective immediately becomes uncontrolled.
 
 On each later turn of the controller:
 
