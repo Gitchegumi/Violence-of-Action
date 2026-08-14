@@ -6,6 +6,7 @@ signal objective_control_changed(previous_player_id: int, player_id: int)
 signal objective_control_turns_changed(player_id: int, turns: int)
 
 const INITIAL_ESSENCE := 12
+const MINIMUM_REBUILD_INCOME := 1
 const SCAVENGER_REWARD_PER_DESTRUCTION := 3
 const OBJECTIVE_CAPTURE_BONUS := 6
 const OBJECTIVE_UPKEEP := 3
@@ -74,6 +75,8 @@ func add_essence(player_id: int, amount: int, reason: String) -> int:
 func start_turn(player_id: int, active_units: Array) -> int:
 	upgraded_units_this_turn[player_id] = {}
 	var income := calculate_diversity_income(active_units)
+	if active_units.is_empty():
+		income = MINIMUM_REBUILD_INCOME
 	if _contains_scavenger(active_units):
 		income += SCAVENGER_REWARD_PER_DESTRUCTION * pending_destructions.get(player_id, {}).size()
 	pending_destructions[player_id] = {}
@@ -137,13 +140,20 @@ func resolve_objective_turn(player_id: int) -> Dictionary:
 			"turns": objective_control_turns,
 			"victory": objective_control_turns >= OBJECTIVE_TURNS_TO_WIN,
 		}
+	clear_objective_control()
+	return {"retained": false, "paid_upkeep": false, "turns": 0, "victory": false}
+
+
+func clear_objective_control() -> bool:
+	if objective_controller == NO_PLAYER:
+		return false
 	var previous := objective_controller
 	objective_controller = NO_PLAYER
 	objective_control_turns = 0
 	objective_upkeep_due = false
 	objective_control_changed.emit(previous, NO_PLAYER)
 	objective_control_turns_changed.emit(NO_PLAYER, objective_control_turns)
-	return {"retained": false, "paid_upkeep": false, "turns": 0, "victory": false}
+	return true
 
 
 static func calculate_diversity_income(active_units: Array) -> int:

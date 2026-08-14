@@ -25,8 +25,13 @@ func test_diversity_income_counts_each_non_scavenger_type_once():
 	assert_eq(manager.get_essence(0), 15)
 
 
-func test_no_units_and_only_scavengers_have_no_passive_income():
-	assert_eq(manager.start_turn(0, []), 0)
+func test_zero_unit_player_receives_minimum_rebuild_income():
+	manager.set_essence(0, 0, "test_depleted_army")
+	assert_eq(manager.start_turn(0, []), 1)
+	assert_eq(manager.get_essence(0), 1)
+
+
+func test_only_scavengers_have_no_passive_income():
 	assert_eq(manager.start_turn(0, [_unit("Battlefield Scavenger", 1)]), 0)
 	assert_eq(manager.get_essence(0), 12)
 
@@ -119,6 +124,18 @@ func test_unaffordable_upkeep_removes_control_without_progress():
 	assert_false(result.victory)
 	assert_eq(result.turns, 0)
 	assert_eq(manager.objective_controller, ResourceManager.NO_PLAYER)
+
+
+func test_clear_objective_control_removes_token_and_progress():
+	manager.capture_objective(0)
+	manager.resolve_objective_turn(0)
+	manager.resolve_objective_turn(0)
+	assert_eq(manager.objective_control_turns, 1)
+	assert_true(manager.clear_objective_control())
+	assert_eq(manager.objective_controller, ResourceManager.NO_PLAYER)
+	assert_eq(manager.objective_control_turns, 0)
+	assert_false(manager.objective_upkeep_due)
+	assert_false(manager.clear_objective_control(), "clearing an uncontrolled Objective is a no-op")
 
 
 func test_scavenger_cost_uses_fibonacci_progression():

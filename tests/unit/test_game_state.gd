@@ -219,6 +219,43 @@ func test_three_player_elimination_waits_until_only_one_player_remains():
 	assert_eq(GameState.winner_player_id, 0)
 
 
+func test_zero_unit_player_stays_in_rotation_gains_one_essence_and_rebuilds():
+	GameSession.set_match_config({"player_count": 3, "seed": 982451653})
+	GameState.begin_match(GameSession.match_config)
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var resource_manager: ResourceManager = main.get_node("ResourceManager")
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[0][0], 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.objective_position, 2))
+	GameState.start_playing_for_test(3)
+	assert_true(resource_manager.capture_objective(2))
+	resource_manager.set_essence(2, 0, "test_depleted_army")
+	assert_true(tile_map.troop_manager.destroy_unit(
+		tile_map.troop_manager.get_unit_at_map_coord(tile_map.objective_position),
+		"player_three_last_unit",
+	))
+	assert_null(tile_map.troop_manager.get_unit_at_map_coord(tile_map.objective_position))
+	assert_eq(resource_manager.objective_controller, ResourceManager.NO_PLAYER, "last occupying unit removes control")
+	assert_eq(resource_manager.objective_control_turns, 0)
+	assert_eq(GameState.current_state, GameState.State.PLAYING)
+	for _phase in range(12):
+		assert_true(GameState.advance_phase())
+	assert_eq(GameState.active_player_id, 2, "zero-unit player remains in turn rotation")
+	assert_eq(GameState.current_phase, GameState.TurnPhase.START_TURN)
+	assert_eq(resource_manager.get_essence(2), 1, "zero-unit Start Turn grants rebuild income")
+	assert_true(GameState.advance_phase())
+	var origin: Vector2i = tile_map.deployment_zones_data[2][0]
+	var scavenger: UnitType = tile_map.troop_manager.catalog.get("battlefield_scavenger")
+	tile_map.current_radial_units = [tile_map._unit_type_to_dict("battlefield_scavenger", scavenger)]
+	tile_map._on_radial_unit_selected("battlefield_scavenger", origin)
+	assert_eq(tile_map.troop_manager.get_units_for_player(2).size(), 1)
+	assert_eq(resource_manager.get_essence(2), 0)
+
+
 func test_ready_requires_each_player_to_deploy_at_least_one_unit():
 	GameSession.set_match_config({"player_count": 2, "seed": 982451653})
 	GameState.begin_match({"player_count": 2, "seed": 982451653})

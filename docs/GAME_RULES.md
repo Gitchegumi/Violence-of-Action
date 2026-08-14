@@ -65,6 +65,8 @@ For example:
 
 This system encourages diversity in unit composition while limiting passive income from spammed unit types.
 
+If a player starts their turn with no active units, they gain a minimum of **1 essence** instead. They remain in the turn rotation and may save or spend this income to rebuild their army in their deployment zone.
+
 **Exception:** The **Battlefield Scavenger** does not generate essence in this way. Its only source of essence is its special ability.
 
 
@@ -137,6 +139,7 @@ The Objective tile represents a critical point of interest on the battlefield. C
   Once gained, the **occupation token remains** with the controlling player, even if they no longer have a unit on the Objective tile. The token only changes hands if:
   - An **opposing player ends their turn** with a unit on the Objective tile.
   - The **current controller cannot afford the upkeep cost** (see below).
+  - The controller's **last unit is destroyed while occupying the Objective tile**; the Objective immediately becomes uncontrolled.
 
 - **Essence Bonus:**  
   When a player **gains control** of the Objective tile, they immediately gain **6 essence**.
@@ -181,6 +184,8 @@ Each Battlefield Scavenger a player controls increases the cost of the next one,
 - 4th Scavenger: **5 essence**
 - 5th Scavenger: **8 essence**
 - 6th and beyond: Continue the Fibonacci progression (13, 21, etc.)
+
+The price is based on how many Scavengers that player currently has on the battlefield, not how many they have purchased during the match. If one is destroyed, the next price drops to the appropriate level for the remaining on-field count.
 
 This cost scaling represents increasing resistance from the battlefield population and logistical strain in deploying additional scavengers.
 

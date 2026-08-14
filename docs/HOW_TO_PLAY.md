@@ -50,6 +50,8 @@ The top status line shows the round, active player, and current phase. Select **
 5. **Resolve:** Any unit that has not attacked yet may still attack here.
 6. **Clean Up:** End-of-turn Objective control and upkeep resolve, then play passes to the next player.
 
+A player with no units remains in the turn rotation and gains 1 essence at Start Turn, allowing them to save toward or immediately purchase a new unit during Marshal Troops.
+
 An invalid destination or target leaves the action active so you can choose another. Use right-click, Escape, or the visible Cancel button to abandon it.
 
 ## Movement and Engagement
@@ -75,7 +77,7 @@ An intervening Mountain blocks line of sight. Other terrain and units do not. Th
 
 ## Objective and Victory
 
-The central Objective changes control when a player ends their turn occupying it. Capturing it grants **6 essence** and starts its control counter at 0. The token remains with that player after their unit leaves unless an opponent captures it or upkeep fails.
+The central Objective changes control when a player ends their turn occupying it. Capturing it grants **6 essence** and starts its control counter at 0. The token remains with that player after their unit leaves unless an opponent captures it, upkeep fails, or their last unit is destroyed while occupying the Objective. In that last case, the Objective immediately becomes uncontrolled.
 
 On each later turn of the controller:
 
