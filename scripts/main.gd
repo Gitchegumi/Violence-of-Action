@@ -16,6 +16,7 @@ func _ready():
 	tile_map.deploy_preview_ended.connect($UnitInfoPanel.hide_panel)
 	tile_map.pending_action_changed.connect(_on_pending_action_changed)
 	tile_map.unit_attack_resolved.connect(_on_unit_attack_resolved)
+	tile_map.special_action_resolved.connect(_on_special_action_resolved)
 	tile_map.troop_manager.unit_destroyed.connect(_on_unit_destroyed)
 	$AdvancePhaseButton.pressed.connect(_on_advance_phase_pressed)
 	$CancelActionButton.pressed.connect(tile_map.cancel_pending_action)
@@ -101,6 +102,28 @@ func _on_unit_attack_resolved(_attacker: Node, _defender: Node, result: Dictiona
 		"Hit" if result.hit else "Miss",
 		result.remaining_hp,
 	]
+	var splash_results: Array = result.get("splash_results", [])
+	if not splash_results.is_empty():
+		$CombatResultLabel.text += " - Splash: %d target(s)" % splash_results.size()
+
+
+func _on_special_action_resolved(action_type: String, result: Dictionary) -> void:
+	$CombatResultLabel.visible = true
+	match action_type:
+		"heal":
+			$CombatResultLabel.text = "Heal: restored 1 HP (%d HP)" % int(result.get("remaining_hp", 0))
+		"build_barrier":
+			$CombatResultLabel.text = "Barrier erected"
+		"teleport":
+			$CombatResultLabel.text = "Teleport complete"
+		"load_transport":
+			$CombatResultLabel.text = "Infantry loaded"
+		"unload_transport":
+			$CombatResultLabel.text = "Infantry unloaded"
+		"attack_barrier":
+			$CombatResultLabel.text = "Barrier attack: %s" % ("Hit" if result.get("hit", false) else "Miss")
+		"dismantle_barrier":
+			$CombatResultLabel.text = "Barrier dismantled"
 
 
 func _on_turn_started(player_id: int, _round_number: int) -> void:
@@ -115,6 +138,7 @@ func _on_turn_ended(player_id: int, _round_number: int) -> void:
 	var objective_result: Dictionary = $ResourceManager.resolve_objective_turn(player_id)
 	if bool(objective_result.victory):
 		GameState.declare_game_over(player_id, "objective_control")
+	$TileMapLayer.troop_manager.end_turn(player_id)
 
 
 func _on_unit_destroyed(unit: Node, player_id: int, destruction_id: String) -> void:

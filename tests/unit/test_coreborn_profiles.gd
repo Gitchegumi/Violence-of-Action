@@ -23,7 +23,7 @@ const EXPECTED_PROFILES := {
 		"cost_type": "standard",
 		"stats": {"health": 2, "attack": 1, "range": 1, "armor": 0, "speed": 3},
 		"terrain": {"field": 1, "forest": 2, "water": -1, "mountain": -1},
-		"abilities": ["Heals adjacent allies", "Can construct temporary barriers"],
+		"abilities": ["Heal 1 HP on an adjacent ally instead of attacking", "Erect an adjacent 1 HP / 2 Armor barrier instead of attacking"],
 	},
 	"ghostthorn": {
 		"name": "Ghostthorn",
@@ -33,7 +33,7 @@ const EXPECTED_PROFILES := {
 		"cost_type": "standard",
 		"stats": {"health": 2, "attack": 2, "range": 1, "armor": 0, "speed": 5},
 		"terrain": {"field": 1, "forest": 1, "water": -1, "mountain": -1},
-		"abilities": ["Can teleport up to 3 hexes once per game"],
+		"abilities": ["Free once-per-game teleport up to 3 hexes to an unoccupied non-Water tile"],
 	},
 	"golemancer_hull": {
 		"name": "Golemancer Hull",
@@ -43,7 +43,7 @@ const EXPECTED_PROFILES := {
 		"cost_type": "standard",
 		"stats": {"health": 5, "attack": 3, "range": 1, "armor": 2, "speed": 2},
 		"terrain": {"field": 1, "forest": 2, "water": -1, "mountain": 10},
-		"abilities": ["Splash damage in adjacent hexes"],
+		"abilities": ["A primary hit checks the same attack roll against adjacent enemies"],
 	},
 	"shard_walker": {
 		"name": "Shardwalker",
@@ -63,7 +63,7 @@ const EXPECTED_PROFILES := {
 		"cost_type": "standard",
 		"stats": {"health": 3, "attack": 2, "range": 2, "armor": 1, "speed": 6},
 		"terrain": {"field": 1, "forest": 1, "water": 1, "mountain": 1},
-		"abilities": ["Ignores terrain penalties", "May move again after combat once per game"],
+		"abilities": ["Ignores terrain penalties", "Once per game, may take one unsplittable full-speed move after attacking", "Carries one Shardwalker, Ghostthorn, or Fluxsmith; load and unload each cost 3 movement"],
 	},
 	"tide_born": {
 		"name": "Tideborn",

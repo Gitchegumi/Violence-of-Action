@@ -25,6 +25,6 @@ terrain_type_matrix = {
 "mountain": -1,
 "water": -1
 }
-special_abilities = Array[String](["Can teleport up to 3 hexes once per game"])
+special_abilities = Array[String](["Free once-per-game teleport up to 3 hexes to an unoccupied non-Water tile"])
 artwork_region = Rect2(360, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
