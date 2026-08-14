@@ -1,5 +1,7 @@
 extends Node
 
+const MAIN_MENU_SCENE := "res://scenes/ui/main_menu.tscn"
+
 func _ready():
 	var tile_map := $TileMapLayer
 	$ResourceManager.essence_changed.connect(_on_essence_changed)
@@ -17,6 +19,7 @@ func _ready():
 	tile_map.troop_manager.unit_destroyed.connect(_on_unit_destroyed)
 	$AdvancePhaseButton.pressed.connect(_on_advance_phase_pressed)
 	$CancelActionButton.pressed.connect(tile_map.cancel_pending_action)
+	$ReturnToMenuButton.pressed.connect(_return_to_main_menu)
 	GameState.state_changed.connect(_on_state_changed)
 	GameState.phase_changed.connect(_on_phase_changed)
 	GameState.turn_started.connect(_on_turn_started)
@@ -131,8 +134,16 @@ func _evaluate_elimination_victory() -> bool:
 	return GameState.declare_game_over(surviving_players[0], "elimination")
 
 
+func _return_to_main_menu(perform_transition: bool = true) -> void:
+	GameSession.clear_match_config()
+	GameState.return_to_menu()
+	if perform_transition:
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+
+
 func _refresh_turn_ui() -> void:
 	$PauseOverlay.visible = GameState.current_state == GameState.State.PAUSED
+	$ReturnToMenuButton.visible = GameState.current_state == GameState.State.GAME_OVER
 	$EssenceLabel.text = "Player %d Essence: %d" % [
 		GameState.active_player_id + 1,
 		$ResourceManager.get_essence(GameState.active_player_id),

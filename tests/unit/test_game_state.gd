@@ -103,6 +103,23 @@ func test_game_over_declared_at_turn_end_does_not_rotate_player():
 	assert_eq(state_machine.current_phase, state_machine.TurnPhase.CLEAN_UP)
 
 
+func test_game_over_exposes_return_to_menu_and_clears_finished_session():
+	GameSession.set_match_config({"player_count": 2, "seed": 982451653})
+	GameState.begin_match(GameSession.match_config)
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	assert_false(main.get_node("ReturnToMenuButton").visible)
+	GameState.start_playing_for_test(2)
+	assert_true(GameState.declare_game_over(0, "elimination"))
+	assert_true(main.get_node("ReturnToMenuButton").visible)
+	assert_true(ResourceLoader.exists(main.MAIN_MENU_SCENE))
+	main._return_to_main_menu(false)
+	assert_eq(GameState.current_state, GameState.State.MENU)
+	assert_false(GameSession.has_match_config())
+	assert_false(main.get_node("ReturnToMenuButton").visible)
+
+
 func test_main_objective_control_wins_after_three_later_controller_turns():
 	GameState.begin_match({"player_count": 2, "seed": 982451653})
 	var main = MainScene.instantiate()
