@@ -6,6 +6,7 @@ signal objective_control_changed(previous_player_id: int, player_id: int)
 signal objective_control_turns_changed(player_id: int, turns: int)
 
 const INITIAL_ESSENCE := 12
+const MINIMUM_REBUILD_INCOME := 1
 const SCAVENGER_REWARD_PER_DESTRUCTION := 3
 const OBJECTIVE_CAPTURE_BONUS := 6
 const OBJECTIVE_UPKEEP := 3
@@ -74,6 +75,8 @@ func add_essence(player_id: int, amount: int, reason: String) -> int:
 func start_turn(player_id: int, active_units: Array) -> int:
 	upgraded_units_this_turn[player_id] = {}
 	var income := calculate_diversity_income(active_units)
+	if active_units.is_empty():
+		income = MINIMUM_REBUILD_INCOME
 	if _contains_scavenger(active_units):
 		income += SCAVENGER_REWARD_PER_DESTRUCTION * pending_destructions.get(player_id, {}).size()
 	pending_destructions[player_id] = {}

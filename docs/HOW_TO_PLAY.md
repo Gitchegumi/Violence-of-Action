@@ -50,6 +50,8 @@ The top status line shows the round, active player, and current phase. Select **
 5. **Resolve:** Any unit that has not attacked yet may still attack here.
 6. **Clean Up:** End-of-turn Objective control and upkeep resolve, then play passes to the next player.
 
+A player with no units remains in the turn rotation and gains 1 essence at Start Turn, allowing them to save toward or immediately purchase a new unit during Marshal Troops.
+
 An invalid destination or target leaves the action active so you can choose another. Use right-click, Escape, or the visible Cancel button to abandon it.
 
 ## Movement and Engagement

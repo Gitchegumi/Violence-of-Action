@@ -65,6 +65,8 @@ For example:
 
 This system encourages diversity in unit composition while limiting passive income from spammed unit types.
 
+If a player starts their turn with no active units, they gain a minimum of **1 essence** instead. They remain in the turn rotation and may save or spend this income to rebuild their army in their deployment zone.
+
 **Exception:** The **Battlefield Scavenger** does not generate essence in this way. Its only source of essence is its special ability.
 
 
