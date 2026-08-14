@@ -246,3 +246,22 @@ func test_paused_real_scene_blocks_gameplay_processing_and_input():
 	Input.parse_input_event(debug_essence_input)
 	await get_tree().process_frame
 	assert_eq(tile_map.get_player_essence(), starting_essence, "paused input cannot mutate gameplay")
+
+
+func test_number_keys_cannot_replace_player_essence_during_gameplay():
+	GameState.begin_match({"player_count": 2})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var starting_essence: int = tile_map.get_player_essence()
+	for keycode in [KEY_1, KEY_2, KEY_3]:
+		var input := InputEventKey.new()
+		input.keycode = keycode
+		input.pressed = true
+		tile_map._unhandled_input(input)
+		assert_eq(
+			tile_map.get_player_essence(),
+			starting_essence,
+			"number key %s cannot bypass the economy" % keycode,
+		)
