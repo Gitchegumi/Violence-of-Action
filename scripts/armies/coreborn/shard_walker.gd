@@ -22,8 +22,9 @@ func _ready():
 	initialize_combat_state()
 
 	# Apply art
-	if $UnitArtwork:
-		pass
+	if $UnitArtwork and data.artwork_region.has_area():
+		$UnitArtwork.region_enabled = true
+		$UnitArtwork.region_rect = data.artwork_region
 
 	# C	if $UnitSelection:
 		$UnitSelection.input_pickable = true
@@ -66,5 +67,9 @@ func record_non_movement_action() -> bool:
 
 func get_artwork_node() -> Node:
 	if $UnitArtwork:
-		return $UnitArtwork.duplicate()
+		var artwork := $UnitArtwork.duplicate()
+		if data != null and data.artwork_region.has_area():
+			artwork.region_enabled = true
+			artwork.region_rect = data.artwork_region
+		return artwork
 	return null

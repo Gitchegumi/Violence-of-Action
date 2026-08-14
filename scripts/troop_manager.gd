@@ -378,6 +378,7 @@ func get_unit_artwork(unit_id: String) -> Node:
 	if scene == null:
 		return null
 	var inst := scene.instantiate()
+	inst.set("data", catalog.get(unit_id))
 	var artwork: Node = null
 	if inst.has_method("get_artwork_node"):
 		artwork = inst.get_artwork_node()

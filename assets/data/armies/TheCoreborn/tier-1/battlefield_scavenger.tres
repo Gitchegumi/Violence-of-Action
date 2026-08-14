@@ -26,4 +26,5 @@ terrain_type_matrix = {
 "water": -1
 }
 special_abilities = Array[String](["This unit's only method of generating essence. See GAME_RULES.md for scaling cost. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."])
+artwork_region = Rect2(0, 520, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

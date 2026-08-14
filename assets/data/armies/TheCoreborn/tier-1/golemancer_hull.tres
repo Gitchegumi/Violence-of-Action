@@ -26,4 +26,5 @@ terrain_type_matrix = {
 "water": -1
 }
 special_abilities = Array[String](["Splash damage in adjacent hexes"])
+artwork_region = Rect2(690, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

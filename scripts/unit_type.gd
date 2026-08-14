@@ -39,6 +39,9 @@ class_name UnitType
 ## Any Special Abilities
 @export var special_abilities: Array[String] = []
 
+## Crop within the army sprite sheet used for board and inspection artwork.
+@export var artwork_region: Rect2
+
 
 ## Gets the cost of the unit.
 ## p_unit_count: The number of units of this type already in play.

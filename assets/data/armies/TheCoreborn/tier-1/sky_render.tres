@@ -26,4 +26,5 @@ terrain_type_matrix = {
 "water": 1
 }
 special_abilities = Array[String](["Ignores terrain penalties", "May move again after combat once per game"])
+artwork_region = Rect2(500, 520, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

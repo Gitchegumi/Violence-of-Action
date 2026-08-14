@@ -44,9 +44,9 @@ Once all players have completed their deployments, the first round begins with t
 
 ### Deployment Zones
 
-Each player's **deployment zone** consists of the three rows of hexes on their edge of the board:
-- In 2-player games: Each player uses the 3 rows along their board edge.
-- In 3-player games: Deployment zones are equally spaced along the outer edge, spanning approximately 1/4 of the map perimeter per player.
+Each player's **deployment zone** consists of the hexes along one outer edge of the board:
+- In 2-player games: Players use opposite outer edges.
+- In 3-player games: Players use three equally spaced outer edges.
 
 **Important:** No unit may be deployed outside the owning player’s designated deployment zone at **any time** — this applies to both initial deployment and all future deployments during the game.
 
