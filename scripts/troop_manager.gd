@@ -385,8 +385,9 @@ func get_unit_artwork(unit_id: String) -> Node:
 	return artwork
 
 func _scene_for_unit_id(unit_id: String) -> PackedScene:
-	# Only the Shard Walker has a scene wired up so far.
-	if unit_id == "shard_walker":
+	# All stat-only MVP profiles share the current placeholder scene until the
+	# creative director supplies their unit-specific visual assets.
+	if catalog.has(unit_id):
 		return shardwalker_scene
 	return null
 
