@@ -85,3 +85,5 @@ On each later turn of the controller:
 - If upkeep cannot be paid, control is lost and the Objective becomes uncontrolled.
 
 A player also wins immediately when every opposing army has been eliminated.
+
+After either victory condition, select **Return to Main Menu** to leave the completed match and start a fresh setup.
