@@ -26,6 +26,7 @@ func before_each():
 
 func after_each():
 	get_tree().paused = false
+	GameSession.clear_match_config()
 	GameState.return_to_menu()
 	GameState.active_player_id = 0
 
@@ -121,6 +122,26 @@ func test_every_coreborn_profile_places_with_its_own_stats_and_artwork_region():
 		assert_not_null(artwork, "%s has preview artwork" % quote.unit_name)
 		assert_eq(artwork.region_rect, expected_region, "%s preview art" % quote.unit_name)
 		artwork.free()
+
+
+func test_placed_units_use_their_players_configured_colors():
+	GameSession.set_match_config({
+		"player_count": 2,
+		"seed": 982451653,
+		"players": [
+			{"name": "Alpha", "color": Color(0.3, 0.7, 1.0)},
+			{"name": "Bravo", "color": Color(1.0, 0.3, 0.3)},
+		],
+	})
+	var tile_map = await _gameplay_tile_map()
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[0][0], 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	var player_one = tile_map.troop_manager.get_units_for_player(0)[0]
+	var player_two = tile_map.troop_manager.get_units_for_player(1)[0]
+	assert_eq(player_one.get_node("UnitArtwork").modulate, Color(0.3, 0.7, 1.0))
+	assert_eq(player_two.get_node("UnitArtwork").modulate, Color(1.0, 0.3, 0.3))
+	assert_true(tile_map.get_parent().get_node("TurnLabel").text.contains("Alpha"))
 
 
 func test_scavenger_roster_quote_tracks_live_on_field_count():
@@ -284,11 +305,14 @@ func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	var unit = tile_map.troop_manager.get_unit_at_map_coord(origin)
 	var starting_movement: int = unit.movement_remaining
 	tile_map._begin_pending_action("move", unit, origin)
+	assert_true(tile_map.get_action_highlighted_cells().has(destination))
+	assert_eq(tile_map.action_highlight_layer.modulate, tile_map.MOVE_HIGHLIGHT_COLOR)
 	tile_map._resolve_pending_action(destination)
 	assert_same(tile_map.troop_manager.get_unit_at_map_coord(destination), unit)
 	assert_null(tile_map.troop_manager.get_unit_at_map_coord(origin))
 	assert_lt(unit.movement_remaining, starting_movement)
 	assert_true(tile_map.pending_action.is_empty())
+	assert_true(tile_map.get_action_highlighted_cells().is_empty())
 
 
 func test_right_click_cancels_live_move_targeting():
@@ -302,11 +326,13 @@ func test_right_click_cancels_live_move_targeting():
 	tile_map.troop_manager.start_turn(0)
 	tile_map._begin_pending_action("move", tile_map.troop_manager.get_unit_at_map_coord(origin), origin)
 	assert_false(tile_map.pending_action.is_empty())
+	assert_false(tile_map.get_action_highlighted_cells().is_empty())
 	var cancel := InputEventMouseButton.new()
 	cancel.button_index = MOUSE_BUTTON_RIGHT
 	cancel.pressed = true
 	tile_map._unhandled_input(cancel)
 	assert_true(tile_map.pending_action.is_empty())
+	assert_true(tile_map.get_action_highlighted_cells().is_empty())
 
 
 func test_visible_cancel_button_clears_move_targeting():
@@ -360,12 +386,17 @@ func test_live_attack_target_flow_uses_seeded_combat_resolution():
 	tile_map.unit_attack_resolved.connect(func(_attacker, _defender, result): observed_results.append(result))
 	tile_map._begin_pending_action("attack", attacker, attacker.map_pos)
 	assert_eq(tile_map.pending_action.type, "attack")
+	assert_eq(tile_map.get_action_highlighted_cells(), [defender.map_pos])
+	assert_eq(tile_map.action_highlight_layer.modulate, tile_map.ATTACK_HIGHLIGHT_COLOR)
 	tile_map._resolve_pending_action(defender.map_pos)
 	assert_true(tile_map.pending_action.is_empty())
+	assert_true(tile_map.get_action_highlighted_cells().is_empty())
 	assert_eq(observed_results.size(), 1)
 	assert_eq([observed_results[0].die_one, observed_results[0].die_two], expected_dice)
 	assert_eq(observed_results[0].attack_total, observed_results[0].natural_roll + 1)
-	assert_eq(observed_results[0].defense_target, 8)
+	var defender_terrain: TerrainType = tile_map.terrain_data_map.get(defender.map_pos)
+	var expected_defense := 9 if defender_terrain.terrain_name.to_lower() == "forest" else 8
+	assert_eq(observed_results[0].defense_target, expected_defense)
 	assert_true(attacker.attacked_this_turn)
 	assert_true(tile_map.get_parent().get_node("CombatResultLabel").visible)
 	assert_true(tile_map.get_parent().get_node("CombatResultLabel").text.contains("Attack:"))

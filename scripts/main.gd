@@ -35,7 +35,7 @@ func _on_deploy_unit_hovered(unit_id: String) -> void:
 
 func _on_essence_changed(player_id: int, total: int, _delta: int, _reason: String) -> void:
 	if player_id == GameState.active_player_id:
-		$EssenceLabel.text = "Player %d Essence: %d" % [player_id + 1, total]
+		$EssenceLabel.text = "%s Essence: %d" % [_player_name(player_id), total]
 
 
 func _on_objective_control_changed(_previous_player_id: int, _player_id: int) -> void:
@@ -50,8 +50,8 @@ func _refresh_objective_ui() -> void:
 	if $ResourceManager.objective_controller == ResourceManager.NO_PLAYER:
 		$ObjectiveLabel.text = "Objective: Uncontrolled"
 		return
-	$ObjectiveLabel.text = "Objective: Player %d (%d/%d)" % [
-		$ResourceManager.objective_controller + 1,
+	$ObjectiveLabel.text = "Objective: %s (%d/%d)" % [
+		_player_name($ResourceManager.objective_controller),
 		$ResourceManager.objective_control_turns,
 		ResourceManager.OBJECTIVE_TURNS_TO_WIN,
 	]
@@ -62,8 +62,8 @@ func _on_advance_phase_pressed() -> void:
 		var player_id := GameState.active_player_id
 		if $TileMapLayer.troop_manager.get_units_for_player(player_id).is_empty():
 			$DeploymentAlert.dialog_text = (
-				"Player %d must place at least one unit in their army before declaring Ready."
-				% (player_id + 1)
+				"%s must place at least one unit in their army before declaring Ready."
+				% _player_name(player_id)
 			)
 			$DeploymentAlert.popup_centered(Vector2i(480, 160))
 			return
@@ -149,29 +149,33 @@ func _return_to_main_menu(perform_transition: bool = true) -> void:
 func _refresh_turn_ui() -> void:
 	$PauseOverlay.visible = GameState.current_state == GameState.State.PAUSED
 	$ReturnToMenuButton.visible = GameState.current_state == GameState.State.GAME_OVER
-	$EssenceLabel.text = "Player %d Essence: %d" % [
-		GameState.active_player_id + 1,
+	$EssenceLabel.text = "%s Essence: %d" % [
+		_player_name(GameState.active_player_id),
 		$ResourceManager.get_essence(GameState.active_player_id),
 	]
 	match GameState.current_state:
 		GameState.State.INITIAL_DEPLOYMENT:
-			$TurnLabel.text = "Initial Deployment - Player %d" % (GameState.active_player_id + 1)
-			$AdvancePhaseButton.text = "Ready Player %d" % (GameState.active_player_id + 1)
+			$TurnLabel.text = "Initial Deployment - %s" % _player_name(GameState.active_player_id)
+			$AdvancePhaseButton.text = "Ready %s" % _player_name(GameState.active_player_id)
 		GameState.State.PLAYING:
-			$TurnLabel.text = "Round %d - Player %d - %s" % [
+			$TurnLabel.text = "Round %d - %s - %s" % [
 				GameState.round_number,
-				GameState.active_player_id + 1,
+				_player_name(GameState.active_player_id),
 				GameState.get_phase_name(),
 			]
 			$AdvancePhaseButton.text = "Complete Phase"
 		GameState.State.PAUSED:
 			$TurnLabel.text = "Paused"
 		GameState.State.GAME_OVER:
-			$TurnLabel.text = "Game Over - Player %d Wins (%s)" % [
-				GameState.winner_player_id + 1,
+			$TurnLabel.text = "Game Over - %s Wins (%s)" % [
+				_player_name(GameState.winner_player_id),
 				GameState.game_over_reason.capitalize(),
 			]
 	$AdvancePhaseButton.disabled = GameState.current_state not in [
 		GameState.State.INITIAL_DEPLOYMENT,
 		GameState.State.PLAYING,
 	]
+
+
+func _player_name(player_id: int) -> String:
+	return GameSession.get_player_name(player_id)
