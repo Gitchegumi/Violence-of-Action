@@ -22,6 +22,10 @@ const ICON_SIZE := Vector2(60, 60)
 const DEBOUNCE_MS := 250
 const LOG_CHANNEL := "deployment.radial"
 
+# Tests and profiling may disable console I/O so timing reflects radial UI work
+# instead of the debug logger. Normal gameplay keeps diagnostics enabled.
+@export var debug_logging_enabled := true
+
 # --- Session state (see data-model.md: RadialMenuSession) ---
 # Note: all_units/visible_units/unit_icons hold whatever the current mode
 # presents — deployable unit dicts in DEPLOY mode, action dicts in ACTION mode.
@@ -487,4 +491,5 @@ func reposition_within_viewport(viewport_size: Vector2) -> void:
 # --- Logging (T033) ---
 
 func _log(message: String) -> void:
-	GameLog.debug(LOG_CHANNEL, message)
+	if debug_logging_enabled:
+		GameLog.debug(LOG_CHANNEL, message)

@@ -23,6 +23,7 @@ func test_open_close_cycle_is_fast():
 	var start_us := Time.get_ticks_usec()
 	for i in range(CYCLES):
 		var m = RadialScene.instantiate()
+		m.debug_logging_enabled = false
 		m.size = Vector2(400, 400)
 		add_child(m)
 		m.open(Vector2i(0, 0), units)
