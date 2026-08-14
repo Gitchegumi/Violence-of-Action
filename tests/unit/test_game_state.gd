@@ -131,6 +131,30 @@ func test_main_objective_control_wins_after_three_later_controller_turns():
 	assert_eq(main.get_node("ObjectiveLabel").text, "Objective: Player 1 (3/3)")
 
 
+func test_failed_upkeep_cannot_recapture_during_an_opponents_cleanup():
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(tile_map.objective_position, 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	GameState.start_playing_for_test(2)
+	var resource_manager: ResourceManager = main.get_node("ResourceManager")
+	main._on_turn_ended(0, 1)
+	resource_manager.set_essence(0, 0, "test_failed_upkeep")
+	main._on_turn_ended(0, 2)
+	assert_eq(resource_manager.objective_controller, ResourceManager.NO_PLAYER)
+	main._on_turn_ended(1, 2)
+	assert_eq(
+		resource_manager.objective_controller,
+		ResourceManager.NO_PLAYER,
+		"a stationary enemy unit cannot capture outside its controller's cleanup",
+	)
+	assert_eq(resource_manager.get_essence(0), 0, "out-of-turn recapture grants no bonus")
+
+
 func test_destroying_penultimate_players_last_unit_declares_elimination():
 	GameState.begin_match({"player_count": 2, "seed": 982451653})
 	var main = MainScene.instantiate()

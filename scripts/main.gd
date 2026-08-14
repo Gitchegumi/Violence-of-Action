@@ -107,8 +107,8 @@ func _on_turn_started(player_id: int, _round_number: int) -> void:
 
 func _on_turn_ended(player_id: int, _round_number: int) -> void:
 	var objective_unit = $TileMapLayer.troop_manager.get_unit_at_map_coord($TileMapLayer.objective_position)
-	if objective_unit != null:
-		$ResourceManager.capture_objective(int(objective_unit.get("controller_player_id")))
+	if objective_unit != null and int(objective_unit.get("controller_player_id")) == player_id:
+		$ResourceManager.capture_objective(player_id)
 	var objective_result: Dictionary = $ResourceManager.resolve_objective_turn(player_id)
 	if bool(objective_result.victory):
 		GameState.declare_game_over(player_id, "objective_control")
