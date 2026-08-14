@@ -1,7 +1,7 @@
 extends GutTest
 
-# Verifies the real asset pipeline the deploy radial depends on: the Shard
-# Walker UnitType loads from the troop catalog with the expected fields.
+# Verifies the real data and placeholder-asset pipeline used by the Coreborn
+# MVP deployment radial.
 
 var TroopManagerScript = preload("res://scripts/troop_manager.gd")
 var TileMapScript = preload("res://scripts/tile_map.gd")
@@ -65,6 +65,67 @@ func test_shard_walker_resource_fields():
 	assert_false(data.can_upgrade, "upgrade mechanics remain disabled while GAME_RULES.md marks them TBD")
 	# No upgrade target wired yet -> the Upgrade action should render disabled.
 	assert_null(data.upgrades_to, "no upgrade target set yet")
+
+
+func test_live_deployment_roster_exposes_all_seven_coreborn_profiles_in_order():
+	var tile_map = await _gameplay_tile_map()
+	var roster: Array = tile_map._get_deployable_units()
+	var ids: Array = roster.map(func(unit): return unit.unit_id)
+	assert_eq(ids, [
+		"battlefield_scavenger",
+		"fluxsmith",
+		"ghostthorn",
+		"golemancer_hull",
+		"shard_walker",
+		"sky_render",
+		"tide_born",
+	])
+	assert_eq(roster.size(), 7)
+	for quote in roster:
+		assert_same(tile_map.get_unit_type(quote.unit_id), tile_map.troop_manager.catalog[quote.unit_id])
+		assert_true(quote.affordable, "%s is affordable from the initial 12 essence" % quote.unit_name)
+
+
+func test_every_coreborn_profile_places_with_its_own_stats_and_placeholder_scene():
+	var tile_map = await _gameplay_tile_map()
+	var roster: Array = tile_map._get_deployable_units()
+	var land_tiles: Array = tile_map.deployment_zones_data[0].slice(0, roster.size())
+	assert_eq(land_tiles.size(), 7)
+	for index in range(roster.size()):
+		var quote: Dictionary = roster[index]
+		tile_map.troop_manager.set_current_unit(quote.unit_id)
+		assert_true(tile_map.troop_manager.place_unit(land_tiles[index], 0), "%s places" % quote.unit_name)
+		var placed: Node = tile_map.troop_manager.get_unit_at_map_coord(land_tiles[index])
+		assert_not_null(placed)
+		assert_same(placed.get_unit_data(), tile_map.troop_manager.catalog[quote.unit_id])
+		assert_eq(placed.current_hp, int(quote.stats_block.health), "%s HP comes from its profile" % quote.unit_name)
+		assert_eq(placed.movement_remaining, int(quote.stats_block.speed), "%s Speed comes from its profile" % quote.unit_name)
+		var artwork: Node = tile_map.get_unit_artwork(quote.unit_id)
+		assert_not_null(artwork, "%s has the shared MVP placeholder" % quote.unit_name)
+		artwork.free()
+
+
+func test_scavenger_roster_quote_uses_live_fibonacci_cost():
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("battlefield_scavenger")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	var roster: Array = tile_map._get_deployable_units()
+	var scavenger: Dictionary = roster.filter(func(unit): return unit.unit_id == "battlefield_scavenger")[0]
+	assert_eq(scavenger.unit_cost, 2, "second Scavenger preview uses the live Fibonacci cost")
+
+
+func test_hover_panel_uses_the_live_roster_quote():
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("battlefield_scavenger")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	tile_map.current_radial_units = tile_map._get_deployable_units()
+	var main: Node = tile_map.get_parent()
+	main._on_deploy_unit_hovered("battlefield_scavenger")
+	var panel: Control = main.get_node("UnitInfoPanel")
+	assert_true(panel.visible)
+	assert_eq(panel.get_node("Panel/UnitCostLabel").text, "Cost: 2")
 
 func test_occupied_tile_actions_are_attack_move_upgrade_inspect():
 	var tm = TileMapScript.new()  # not added to tree: avoids scene-only @onready

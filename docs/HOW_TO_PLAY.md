@@ -37,7 +37,7 @@ Each player begins with **12 essence** and deploys within their highlighted depl
 4. Repeat as desired. Unspent essence is saved.
 5. Select **Ready Player N** when finished.
 
-Every player must place at least one unit before declaring Ready. After all players are ready, round one begins. The current MVP deployment menu offers the Shardwalker.
+Every player must place at least one unit before declaring Ready. After all players are ready, round one begins. The MVP deployment menu offers all seven Coreborn profiles: Battlefield Scavenger, Fluxsmith, Ghostthorn, Golemancer Hull, Shardwalker, Skyrender, and Tideborn. Their listed special abilities are reserved for later feature updates unless the mechanic is already active in the game.
 
 ## Take a Turn
 

@@ -25,9 +25,9 @@ func _ready():
 	_refresh_objective_ui()
 
 func _on_deploy_unit_hovered(unit_id: String) -> void:
-	var data = $TileMapLayer.get_unit_type(unit_id)
-	if data:
-		$UnitInfoPanel.show_unit_type(data, $TileMapLayer.get_unit_artwork(unit_id))
+	var preview: Dictionary = $TileMapLayer.get_deployable_unit_preview(unit_id)
+	if not preview.is_empty():
+		$UnitInfoPanel.show_unit_type(preview, $TileMapLayer.get_unit_artwork(unit_id))
 
 
 func _on_essence_changed(player_id: int, total: int, _delta: int, _reason: String) -> void:

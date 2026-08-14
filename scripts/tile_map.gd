@@ -40,6 +40,15 @@ var deployment_zones_data: Array = []
 
 # --- Radial Menu Integration ---
 var radial_menu_scene = preload("res://scenes/ui/radial_menu.tscn")
+const MVP_COREBORN_ROSTER: Array[String] = [
+	"battlefield_scavenger",
+	"fluxsmith",
+	"ghostthorn",
+	"golemancer_hull",
+	"shard_walker",
+	"sky_render",
+	"tide_born",
+]
 var radial_menu_instance = null
 var radial_origin: Vector2i = Vector2i(-1, -1)
 var current_radial_units: Array = []
@@ -714,15 +723,19 @@ func _show_action_radial(origin_tile: Vector2i, unit_node):
 	_deploy_log("Action radial opened at %s" % str(origin_tile))
 
 func _get_deployable_units() -> Array:
-	"""Build the deployable-unit list from the real troop catalog.
-	For now only the Shard Walker is fully implemented."""
+	"""Build the stat-only MVP roster in a stable player-facing order."""
 	var units: Array = []
-	var data: UnitType = troop_manager.catalog.get("shard_walker")
-	if data:
-		units.append(_unit_type_to_dict("shard_walker", data))
-	else:
-		_deploy_log("shard_walker missing from troop catalog")
+	for unit_id in MVP_COREBORN_ROSTER:
+		var data: UnitType = troop_manager.catalog.get(unit_id)
+		if data:
+			units.append(_unit_type_to_dict(unit_id, data))
+		else:
+			_deploy_log("MVP roster unit missing from troop catalog: %s" % unit_id)
 	return units
+
+
+func get_deployable_unit_preview(unit_id: String) -> Dictionary:
+	return _find_radial_unit(unit_id)
 
 func _unit_type_to_dict(id: String, data: UnitType) -> Dictionary:
 	var existing_count := troop_manager.count_units(id, GameState.active_player_id)
