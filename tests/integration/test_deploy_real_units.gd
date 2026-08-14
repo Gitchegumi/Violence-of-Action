@@ -1,12 +1,22 @@
 extends GutTest
 
-# Verifies the real data and placeholder-asset pipeline used by the Coreborn
+# Verifies the real data and shared sprite-sheet pipeline used by the Coreborn
 # MVP deployment radial.
 
 var TroopManagerScript = preload("res://scripts/troop_manager.gd")
 var TileMapScript = preload("res://scripts/tile_map.gd")
 var MockUnit = preload("res://tests/unit/mock_unit.gd")
 var MainScene = preload("res://scenes/main.tscn")
+
+const EXPECTED_ARTWORK_REGIONS := {
+	"battlefield_scavenger": Rect2(35, 545, 210, 285),
+	"fluxsmith": Rect2(20, 80, 300, 320),
+	"ghostthorn": Rect2(360, 80, 300, 320),
+	"golemancer_hull": Rect2(690, 80, 300, 320),
+	"shard_walker": Rect2(258, 548, 236, 301),
+	"sky_render": Rect2(500, 520, 300, 320),
+	"tide_born": Rect2(790, 570, 205, 260),
+}
 
 
 func before_each():
@@ -86,13 +96,18 @@ func test_live_deployment_roster_exposes_all_seven_coreborn_profiles_in_order():
 		assert_true(quote.affordable, "%s is affordable from the initial 12 essence" % quote.unit_name)
 
 
-func test_every_coreborn_profile_places_with_its_own_stats_and_placeholder_scene():
+func test_every_coreborn_profile_places_with_its_own_stats_and_artwork_region():
 	var tile_map = await _gameplay_tile_map()
 	var roster: Array = tile_map._get_deployable_units()
 	var land_tiles: Array = tile_map.deployment_zones_data[0].slice(0, roster.size())
 	assert_eq(land_tiles.size(), 7)
+	var unique_regions: Dictionary = {}
+	for region in EXPECTED_ARTWORK_REGIONS.values():
+		unique_regions[region] = true
+	assert_eq(unique_regions.size(), roster.size(), "every Coreborn profile uses a distinct crop")
 	for index in range(roster.size()):
 		var quote: Dictionary = roster[index]
+		var expected_region: Rect2 = EXPECTED_ARTWORK_REGIONS[quote.unit_id]
 		tile_map.troop_manager.set_current_unit(quote.unit_id)
 		assert_true(tile_map.troop_manager.place_unit(land_tiles[index], 0), "%s places" % quote.unit_name)
 		var placed: Node = tile_map.troop_manager.get_unit_at_map_coord(land_tiles[index])
@@ -100,8 +115,11 @@ func test_every_coreborn_profile_places_with_its_own_stats_and_placeholder_scene
 		assert_same(placed.get_unit_data(), tile_map.troop_manager.catalog[quote.unit_id])
 		assert_eq(placed.current_hp, int(quote.stats_block.health), "%s HP comes from its profile" % quote.unit_name)
 		assert_eq(placed.movement_remaining, int(quote.stats_block.speed), "%s Speed comes from its profile" % quote.unit_name)
+		assert_eq(placed.get_unit_data().artwork_region, expected_region, "%s stores its crop" % quote.unit_name)
+		assert_eq(placed.get_node("UnitArtwork").region_rect, expected_region, "%s board art" % quote.unit_name)
 		var artwork: Node = tile_map.get_unit_artwork(quote.unit_id)
-		assert_not_null(artwork, "%s has the shared MVP placeholder" % quote.unit_name)
+		assert_not_null(artwork, "%s has preview artwork" % quote.unit_name)
+		assert_eq(artwork.region_rect, expected_region, "%s preview art" % quote.unit_name)
 		artwork.free()
 
 

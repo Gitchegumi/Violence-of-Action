@@ -25,4 +25,5 @@ terrain_type_matrix = {
 "water": -1
 }
 special_abilities = Array[String](["Heals adjacent allies", "Can construct temporary barriers"])
+artwork_region = Rect2(20, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"
