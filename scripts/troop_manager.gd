@@ -16,7 +16,7 @@ const CombatResolverScript = preload("res://scripts/systems/combat_resolver.gd")
 # Keep mechanics out of main.gd; this node is created/owned by the TileMap scene.
 
 @export var tile_map: TileMapLayer
-@export var shardwalker_scene: PackedScene = preload("res://scenes/armies/coreborn/ShardWalker.tscn")
+@export var unit_scene: PackedScene = preload("res://scenes/units/unit.tscn")
 
 # Where your .tres live (adjust to your layout)
 @export var units_dirs: Array[String] = [
@@ -78,7 +78,7 @@ func place_unit(map_pos: Vector2i, player_id: int) -> bool:
 	if terrain == null or terrain.passable_by != "land":
 		return false
 
-	var u: ShardWalker = shardwalker_scene.instantiate()
+	var u: Unit = unit_scene.instantiate()
 	u.data = catalog[current_unit_id]
 	u.unit_type_id = current_unit_id
 	u.map_pos = map_pos
@@ -899,12 +899,12 @@ func _scene_for_unit_id(unit_id: String) -> PackedScene:
 	# All stat-only MVP profiles share the current placeholder scene until the
 	# creative director supplies their unit-specific visual assets.
 	if catalog.has(unit_id):
-		return shardwalker_scene
+		return unit_scene
 	return null
 
 func _center_of_tile(map_pos: Vector2i) -> Vector2:
 	# For hex stairs right layout, Godot's map_to_local returns the center
 	return tile_map.map_to_local(map_pos)
 
-func _on_unit_selected(unit: ShardWalker):
-	print("Selected: ", unit.data.unit_name, " @ ", unit.map_pos)
+func _on_unit_selected(unit: Unit) -> void:
+	GameLog.debug("selection", "Selected: %s @ %s" % [unit.data.unit_name, str(unit.map_pos)])

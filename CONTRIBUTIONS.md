@@ -14,9 +14,30 @@ and Godot Engine 4.5.
 
 1. Create a focused feature or fix branch from `main`.
 2. Add or update GUT tests for behavior changes.
-3. Run the import, test, and smoke checks described in the README.
+3. Run the import, test, and smoke checks below.
 4. Use a Conventional Commit message such as `fix(combat): prevent a second attack`.
-5. Open a pull request targeting `main` and link the relevant issue.
+5. Open a pull request targeting `dev` and link the relevant issue.
+
+The creative director batches `dev` into `main`; contributors do not open
+feature pull requests directly against `main`.
+
+### Required validation
+
+On Windows PowerShell, set `$godot` to the Godot 4.5 console executable:
+
+```powershell
+& $godot --headless --path . --import
+& $godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit
+& $godot --headless --path . --quit-after 5
+```
+
+On Linux:
+
+```bash
+godot --headless --path . --import
+godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit
+godot --headless --path . --quit-after 5
+```
 
 Pull requests run the complete GUT suite and a headless main-scene smoke test on
 Godot 4.5. Keep the scope focused and describe player-visible changes and known

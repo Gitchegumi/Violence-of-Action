@@ -1,9 +1,0 @@
-{
-  "integration": "speckit",
-  "version": "0.8.2",
-  "installed_at": "2026-06-12T21:56:06.356828+00:00",
-  "files": {
-    ".specify/templates/checklist-template.md": "dd87ec5630cb510019f4a7e1d13d68239113b77e99c0516d2ce5aee7a1cd95da",
-    ".specify/templates/constitution-template.md": "29fc1837b20f493d302203554923322a245123b4be9ed5734d9e1af96cd5ef0b"
-  }
-}

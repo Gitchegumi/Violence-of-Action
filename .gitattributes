@@ -1,2 +1,11 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Editable artwork and high-fidelity audio are large binary sources.
+source-assets/**/*.ai filter=lfs diff=lfs merge=lfs -text
+source-assets/**/*.af filter=lfs diff=lfs merge=lfs -text
+source-assets/**/*.wav filter=lfs diff=lfs merge=lfs -text
+
+# This provided theme predates LFS and already exists in Git history. Preserve
+# the existing blob when relocating it; new audio sources use LFS above.
+source-assets/audio/VoA-Title-Theme.wav -filter -diff -merge -text
