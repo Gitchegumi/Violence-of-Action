@@ -9,7 +9,7 @@ audio, names, balance values, or UX behavior.
 
 ## Workflow
 
-1. Create a focused feature branch from the current `main` branch.
+1. Create a focused feature branch from the current `dev` branch.
 2. Conduct the work and validate it on that branch.
 3. Open the pull request against `dev`, never directly against `main`.
 4. The creative director handles batching and merging `dev` into `main`.
