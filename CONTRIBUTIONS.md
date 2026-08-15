@@ -12,14 +12,28 @@ and Godot Engine 4.5.
 
 ## Workflow
 
-1. Create a focused feature or fix branch from `main`.
-2. Add or update GUT tests for behavior changes.
-3. Run the import, test, and smoke checks below.
-4. Use a Conventional Commit message such as `fix(combat): prevent a second attack`.
-5. Open a pull request targeting `dev` and link the relevant issue.
+1. Update your local `dev` branch from `origin/dev`.
+2. Create a focused feature or fix branch from `dev`, never from `main`.
+3. Add or update GUT tests for behavior changes.
+4. Run the import, test, and smoke checks below.
+5. Use a Conventional Commit message such as `fix(combat): prevent a second attack`.
+6. Push the feature branch and open a pull request targeting `dev`.
+7. Link the relevant issue, describe the change and validation, and keep the
+   issue checklist current for every completed item.
+
+For example:
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git switch -c fix/short-description
+# Conduct and validate the work, then commit it.
+git push -u origin fix/short-description
+gh pr create --base dev
+```
 
 The creative director batches `dev` into `main`; contributors do not open
-feature pull requests directly against `main`.
+feature pull requests directly against `main` or merge `dev` into `main`.
 
 ### Required validation
 
