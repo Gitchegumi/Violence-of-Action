@@ -56,8 +56,21 @@ func test_project_defines_vendor_neutral_radial_actions() -> void:
 		for event in InputMap.action_get_events(action_name):
 			if event is InputEventJoypadButton:
 				mapped_buttons.append(event.button_index)
+				assert_eq(event.device, -1, "%s accepts every connected joypad" % action_name)
 		assert_has(mapped_buttons, expected_actions[action_name],
 			"%s uses a standard Godot joypad button" % action_name)
+
+
+func test_nonzero_device_shoulder_dispatches_through_input_map() -> void:
+	menu.open(Vector2i.ZERO, _units(3))
+	var event := _joy_button(JOY_BUTTON_RIGHT_SHOULDER)
+	event.device = 1
+	Input.parse_input_event(event)
+	await get_tree().process_frame
+	assert_eq(menu.focus_index, 1, "device 1 reaches the mapped cycle action")
+	event.pressed = false
+	Input.parse_input_event(event)
+	await get_tree().process_frame
 
 
 func test_left_stick_routes_live_input_to_nearest_enabled_item() -> void:

@@ -591,8 +591,9 @@ func center_camera_on_tile(tile: Vector2i) -> void:
 @onready var action_highlight_layer: TileMapLayer = get_node("ActionHighlightLayer")
 var selected_tile: Vector2i = Vector2i(-1, -1) # Off-map coordinate by default
 var is_dragging = false
-var _controller_stick_direction := Vector2.ZERO
-var _controller_stick_engaged := false
+var _controller_stick_directions: Dictionary = {}
+var _controller_stick_engaged: Dictionary = {}
+var _controller_stick_move_pending: Dictionary = {}
 
 # This dictionary will be populated in _generate_map
 var terrain_data_map: Dictionary = {}
@@ -668,18 +669,24 @@ func _unhandled_input(event):
 
 func _handle_controller_cursor_input(event: InputEvent) -> bool:
 	if event is InputEventJoypadMotion:
+		var device_id := event.device
+		var stick_direction: Vector2 = _controller_stick_directions.get(device_id, Vector2.ZERO)
 		if event.axis == JOY_AXIS_LEFT_X:
-			_controller_stick_direction.x = event.axis_value
+			stick_direction.x = event.axis_value
 		elif event.axis == JOY_AXIS_LEFT_Y:
-			_controller_stick_direction.y = event.axis_value
+			stick_direction.y = event.axis_value
 		else:
 			return false
-		if _controller_stick_direction.length() < CONTROLLER_CURSOR_DEADZONE:
-			_controller_stick_engaged = false
+		_controller_stick_directions[device_id] = stick_direction
+		if stick_direction.length() < CONTROLLER_CURSOR_DEADZONE:
+			_controller_stick_engaged[device_id] = false
 			return true
-		if not _controller_stick_engaged:
-			_controller_stick_engaged = true
-			_move_controller_cursor(_controller_stick_direction)
+		if not _controller_stick_engaged.get(device_id, false) \
+				and not _controller_stick_move_pending.get(device_id, false):
+			# Joypad X/Y axes arrive as separate events. Commit at the deferred
+			# boundary so the move uses the complete vector regardless of order.
+			_controller_stick_move_pending[device_id] = true
+			_commit_controller_stick_move.call_deferred(device_id)
 		return true
 
 	if event is InputEventJoypadButton and event.pressed:
@@ -709,6 +716,17 @@ func _handle_controller_cursor_input(event: InputEvent) -> bool:
 		cancel_pending_action()
 		return true
 	return false
+
+
+func _commit_controller_stick_move(device_id: int) -> void:
+	_controller_stick_move_pending[device_id] = false
+	if _controller_stick_engaged.get(device_id, false):
+		return
+	var direction: Vector2 = _controller_stick_directions.get(device_id, Vector2.ZERO)
+	if direction.length() < CONTROLLER_CURSOR_DEADZONE:
+		return
+	_controller_stick_engaged[device_id] = true
+	_move_controller_cursor(direction)
 
 
 func _move_controller_cursor(direction: Vector2) -> void:

@@ -74,13 +74,33 @@ func test_left_stick_requires_a_new_directional_press_for_each_hex() -> void:
 	var origin: Vector2i = tile_map.selected_tile
 	var right := _joy_motion(JOY_AXIS_LEFT_X, 1.0)
 	tile_map._unhandled_input(right)
+	await get_tree().process_frame
 	var first_step: Vector2i = tile_map.selected_tile
 	tile_map._unhandled_input(right)
+	await get_tree().process_frame
 	assert_eq(tile_map.selected_tile, first_step, "held direction does not skip multiple hexes")
 	tile_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 0.0))
 	tile_map._unhandled_input(right)
+	await get_tree().process_frame
 	assert_ne(tile_map.selected_tile, first_step, "returning through the deadzone permits another step")
 	assert_gt(tile_map._hex_distance(origin, tile_map.selected_tile), 1)
+
+
+func test_diagonal_stick_target_is_independent_of_axis_event_order() -> void:
+	var x_first_map = await _gameplay_tile_map()
+	x_first_map.set_selected_tile(x_first_map.objective_position)
+	x_first_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 0.8))
+	x_first_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_Y, -0.8))
+	await get_tree().process_frame
+	var x_first_target: Vector2i = x_first_map.selected_tile
+
+	var y_first_map = await _gameplay_tile_map()
+	y_first_map.set_selected_tile(y_first_map.objective_position)
+	y_first_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_Y, -0.8))
+	y_first_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 0.8))
+	await get_tree().process_frame
+	assert_eq(y_first_map.selected_tile, x_first_target,
+		"the complete stick vector selects the same nearest hex in either event order")
 
 
 func test_primary_action_opens_deployment_radial_on_cursor_hex() -> void:
