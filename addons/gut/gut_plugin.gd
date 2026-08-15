@@ -49,7 +49,9 @@ func _exit_tree():
 	# Clean-up of the plugin goes here
 	# Always remember to remove_at it from the engine when deactivated
 	remove_control_from_bottom_panel(_bottom_panel)
-	_bottom_panel.free()
+	# Backport GUT 9.5's deferred teardown. Immediate free during Godot 4.5
+	# headless export shutdown emits a spurious non-existing `changed` signal.
+	_bottom_panel.queue_free()
 
 
 # This seems like a good idea at first, but it deletes the settings for ALL
