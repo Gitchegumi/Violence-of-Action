@@ -103,6 +103,37 @@ func test_diagonal_stick_target_is_independent_of_axis_event_order() -> void:
 		"the complete stick vector selects the same nearest hex in either event order")
 
 
+func test_radial_lifecycle_resets_board_stick_state() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.set_selected_tile(tile_map.objective_position)
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 1.0))
+	await get_tree().process_frame
+	var moved_right: Vector2i = tile_map.selected_tile
+
+	tile_map._show_radial_menu(tile_map.deployment_zones_data[0][0])
+	assert_not_null(tile_map.radial_menu_instance)
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 0.0))
+	tile_map._close_radial_menu("test")
+	assert_null(tile_map.radial_menu_instance)
+
+	var expected_up: Vector2i = tile_map._nearest_valid_neighbor_in_direction(moved_right, Vector2.UP)
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_Y, -1.0))
+	await get_tree().process_frame
+	assert_eq(tile_map.selected_tile, expected_up,
+		"closing a radial releases the board latch and removes stale axis state")
+
+
+func test_opening_radial_invalidates_queued_board_stick_move() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.set_selected_tile(tile_map.objective_position)
+	var origin: Vector2i = tile_map.selected_tile
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_LEFT_X, 1.0))
+	tile_map._show_radial_menu(tile_map.deployment_zones_data[0][0])
+	await get_tree().process_frame
+	assert_eq(tile_map.selected_tile, origin,
+		"a deferred board move cannot commit after radial input ownership begins")
+
+
 func test_primary_action_opens_deployment_radial_on_cursor_hex() -> void:
 	var tile_map = await _gameplay_tile_map()
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]

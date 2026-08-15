@@ -729,6 +729,15 @@ func _commit_controller_stick_move(device_id: int) -> void:
 	_move_controller_cursor(direction)
 
 
+func _reset_controller_stick_state() -> void:
+	# Axis release events belong to the radial while it is open, so board-owned
+	# vectors cannot safely survive either radial lifecycle boundary. Clearing
+	# pending state also makes any already-deferred commit observe a zero vector.
+	_controller_stick_directions.clear()
+	_controller_stick_engaged.clear()
+	_controller_stick_move_pending.clear()
+
+
 func _move_controller_cursor(direction: Vector2) -> void:
 	if direction.length() < CONTROLLER_CURSOR_DEADZONE or terrain_data_map.is_empty():
 		return
@@ -803,6 +812,7 @@ func _show_radial_menu(origin_tile: Vector2i):
 		return
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
+	_reset_controller_stick_state()
 
 	current_radial_units = _get_deployable_units()
 	current_radial_unit_node = null
@@ -835,6 +845,7 @@ func _show_action_radial(origin_tile: Vector2i, unit_node):
 	"""Show the ACTION radial at an occupied tile (Attack/Move/Upgrade/Inspect)."""
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
+	_reset_controller_stick_state()
 
 	radial_origin = origin_tile
 	current_radial_unit_node = unit_node
@@ -860,6 +871,7 @@ func _show_action_radial(origin_tile: Vector2i, unit_node):
 func _show_barrier_radial(origin_tile: Vector2i, barrier: TacticalBarrier) -> void:
 	if radial_menu_instance:
 		_close_radial_menu("new_location")
+	_reset_controller_stick_state()
 	radial_origin = origin_tile
 	current_radial_unit_node = null
 	current_radial_barrier = barrier
@@ -1288,6 +1300,7 @@ func _on_radial_self_closed(reason: String):
 	"""Single owner of radial teardown: the radial emits deploy_radial_closed
 	whenever it closes (self-initiated or via _close_radial_menu)."""
 	var was_deploy := _radial_is_deploy
+	_reset_controller_stick_state()
 	_dispose_radial_instance()
 	if was_deploy:
 		# Clear the deploy-hover preview from the shared info panel.
