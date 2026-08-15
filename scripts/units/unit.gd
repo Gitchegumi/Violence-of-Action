@@ -1,0 +1,100 @@
+extends Node2D
+class_name Unit
+
+@export var data: UnitType
+var unit_type_id := ""
+var map_pos: Vector2i
+var controller_player_id := 0
+var player_color := Color.WHITE
+var movement_remaining := 0
+var took_non_movement_action := false
+var disengaged_this_turn := false
+var post_combat_movement_unlocked := false
+var entered_engagement_this_turn := false
+var maximum_hp := 0
+var current_hp := 0
+var attacked_this_turn := false
+var barrier_built_this_turn := false
+var teleport_used := false
+var post_combat_move_available := false
+var post_combat_move_used := false
+var transported_by: Node = null
+var transported_unit: Node = null
+
+signal selected(unit: Unit)
+
+
+func _ready() -> void:
+	if data == null:
+		push_error("Unit spawned without data.")
+		return
+	initialize_combat_state()
+
+	if $UnitArtwork and data.artwork_region.has_area():
+		$UnitArtwork.region_enabled = true
+		$UnitArtwork.region_rect = data.artwork_region
+	_apply_player_color()
+
+	if $UnitSelection:
+		$UnitSelection.input_pickable = true
+		$UnitSelection.input_event.connect(_on_input)
+
+
+func _on_input(_viewport: Node, event: InputEvent, _shape_index: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		selected.emit(self)
+		get_viewport().set_input_as_handled()
+
+
+func set_selected(is_selected: bool) -> void:
+	if has_node("SelectionRing"):
+		$SelectionRing.visible = is_selected
+
+
+func get_unit_data() -> UnitType:
+	return data
+
+
+func set_player_color(color: Color) -> void:
+	player_color = color
+	_apply_player_color()
+
+
+func _apply_player_color() -> void:
+	if has_node("UnitArtwork"):
+		$UnitArtwork.modulate = player_color
+
+
+func reset_turn_state() -> void:
+	if maximum_hp <= 0:
+		initialize_combat_state()
+	movement_remaining = int(data.stats_block.get("speed", 0)) if data else 0
+	took_non_movement_action = false
+	disengaged_this_turn = false
+	post_combat_movement_unlocked = false
+	entered_engagement_this_turn = false
+	attacked_this_turn = false
+	barrier_built_this_turn = false
+	post_combat_move_available = false
+
+
+func initialize_combat_state() -> void:
+	maximum_hp = int(data.stats_block.get("health", 0)) if data else 0
+	current_hp = maximum_hp
+
+
+func record_non_movement_action() -> bool:
+	if disengaged_this_turn:
+		return false
+	took_non_movement_action = true
+	return true
+
+
+func get_artwork_node() -> Node:
+	if $UnitArtwork:
+		var artwork := $UnitArtwork.duplicate()
+		if data != null and data.artwork_region.has_area():
+			artwork.region_enabled = true
+			artwork.region_rect = data.artwork_region
+		return artwork
+	return null

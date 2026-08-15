@@ -154,6 +154,10 @@ The Objective tile represents a critical point of interest on the battlefield. C
 
 This game features different armies, each with their own unique units and playstyles. The first army available is **The Coreborn**.
 
+The authoritative Coreborn roster, profile data, artwork mapping, and upgrade
+status are maintained in the [Army Codex](ARMY_CODEX.md). Universal rules for
+their implemented special actions remain below as gameplay mechanics.
+
 ## Units and Stats
 
 Here are the details about the different units, their stats, abilities, and terrain movement costs:

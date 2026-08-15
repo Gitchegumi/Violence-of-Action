@@ -53,14 +53,6 @@ coverage/
 __pycache__/
 
 ############################################
-# Governance & Automation
-############################################
-# Ignore only ephemeral potential future dirs, track templates & scripts
-.specify/**/cache/
-.specify/**/tmp/
-.specify/**/logs/
-
-############################################
 # Workspace / Project Files
 ############################################
 ViolenceofAction.code-workspace

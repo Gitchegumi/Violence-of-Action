@@ -1,6 +1,6 @@
 # How to Play Violence of Action
 
-This guide covers the controls and complete match flow available in the current MVP build. For exact mechanic definitions and unit profiles, see [Game Rules](GAME_RULES.md).
+This guide covers the controls and complete match flow available in the current MVP build. For exact universal mechanics, see [Game Rules](GAME_RULES.md). For unit profiles and upgrade status, see the [Army Codex](ARMY_CODEX.md).
 
 ## Start a Match
 

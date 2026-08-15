@@ -6,6 +6,9 @@ Godot Engine 4.5.
 For player controls and a complete match walkthrough, see
 [How to Play](docs/HOW_TO_PLAY.md). For authoritative mechanics and design
 specifications, see [Game Rules](docs/GAME_RULES.md).
+Army-specific profiles and upgrade status are in the
+[Army Codex](docs/ARMY_CODEX.md), and runtime ownership is documented in
+[Architecture](docs/ARCHITECTURE.md).
 
 ## Requirements
 
@@ -57,8 +60,9 @@ are planned separately after the desktop release.
 ## Repository layout
 
 ```text
-assets/          Game images and data
-docs/            Rules, player guidance, and release operations
+assets/          Runtime-imported images, audio, and data
+source-assets/   Editable source artwork excluded from Godot imports
+docs/            Rules, codex, architecture, guidance, and release operations
 scenes/          Godot scenes
 scripts/         GDScript source
 tests/           GUT unit, integration, and UI tests
