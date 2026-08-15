@@ -63,6 +63,7 @@ func test_shard_walker_loads_from_catalog():
 	var tm = TroopManagerScript.new()
 	add_child_autofree(tm)
 	await get_tree().process_frame  # let _ready populate the catalog
+	assert_eq(tm.unit_scene.resource_path, "res://scenes/units/unit.tscn")
 	assert_true(tm.catalog.has("shard_walker"), "catalog loads the shard_walker UnitType")
 	var data = tm.catalog.get("shard_walker")
 	assert_eq(data.unit_name, "Shardwalker")
@@ -113,6 +114,7 @@ func test_every_coreborn_profile_places_with_its_own_stats_and_artwork_region():
 		assert_true(tile_map.troop_manager.place_unit(land_tiles[index], 0), "%s places" % quote.unit_name)
 		var placed: Node = tile_map.troop_manager.get_unit_at_map_coord(land_tiles[index])
 		assert_not_null(placed)
+		assert_true(placed is Unit, "%s uses the profile-neutral Unit runtime" % quote.unit_name)
 		assert_same(placed.get_unit_data(), tile_map.troop_manager.catalog[quote.unit_id])
 		assert_eq(placed.current_hp, int(quote.stats_block.health), "%s HP comes from its profile" % quote.unit_name)
 		assert_eq(placed.movement_remaining, int(quote.stats_block.speed), "%s Speed comes from its profile" % quote.unit_name)

@@ -6,17 +6,23 @@ Godot Engine 4.5.
 For player controls and a complete match walkthrough, see
 [How to Play](docs/HOW_TO_PLAY.md). For authoritative mechanics and design
 specifications, see [Game Rules](docs/GAME_RULES.md).
+Army-specific profiles and upgrade status are in the
+[Army Codex](docs/ARMY_CODEX.md), and runtime ownership is documented in
+[Architecture](docs/ARCHITECTURE.md).
 
 ## Requirements
 
 - Godot Engine 4.5, standard (non-.NET) build
 - Git
+- Git LFS when working with editable files under `source-assets/`
 
 ## Setup
 
 1. Clone the repository.
-2. Open Godot 4.5 and import `project.godot` from the repository root.
-3. Press F5 or use **Run Project** to launch the game.
+2. If you need editable source artwork, run `git lfs install` and
+   `git lfs pull`. Runtime game assets do not require this step.
+3. Open Godot 4.5 and import `project.godot` from the repository root.
+4. Press F5 or use **Run Project** to launch the game.
 
 ## Command-line validation
 
@@ -57,8 +63,9 @@ are planned separately after the desktop release.
 ## Repository layout
 
 ```text
-assets/          Game images and data
-docs/            Rules, player guidance, and release operations
+assets/          Runtime-imported images, audio, and data
+source-assets/   Editable source artwork excluded from Godot imports
+docs/            Rules, codex, architecture, guidance, and release operations
 scenes/          Godot scenes
 scripts/         GDScript source
 tests/           GUT unit, integration, and UI tests

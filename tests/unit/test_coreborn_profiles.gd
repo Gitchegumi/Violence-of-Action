@@ -78,7 +78,7 @@ const EXPECTED_PROFILES := {
 }
 
 
-func test_every_documented_tier_one_profile_matches_game_rules():
+func test_every_tier_one_profile_matches_authoritative_expectations():
 	var directory := DirAccess.open(PROFILE_DIR)
 	assert_not_null(directory)
 	var resource_ids: Array[String] = []
@@ -106,3 +106,46 @@ func test_every_documented_tier_one_profile_matches_game_rules():
 		assert_false(actual.can_upgrade, "%s upgrade remains disabled while rules are TBD" % unit_id)
 		assert_eq(actual.upgrade_cost, -1, "%s has no guessed upgrade cost" % unit_id)
 		assert_null(actual.upgrades_to, "%s has no guessed upgrade path" % unit_id)
+
+
+func test_army_codex_profile_table_matches_live_resources() -> void:
+	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
+	assert_not_null(file, "Army Codex is readable")
+	var rows: Dictionary = {}
+	var in_profile_table := false
+	while not file.eof_reached():
+		var line := file.get_line()
+		if line == "<!-- CODEX_PROFILE_TABLE_START -->":
+			in_profile_table = true
+			continue
+		if line == "<!-- CODEX_PROFILE_TABLE_END -->":
+			break
+		if not in_profile_table or not line.begins_with("|"):
+			continue
+		var columns := line.split("|", false)
+		if columns.size() != 15:
+			continue
+		var unit_id := columns[0].strip_edges()
+		if unit_id in ["Unit ID", "---"]:
+			continue
+		rows[unit_id] = Array(columns).map(func(value): return value.strip_edges())
+
+	var expected_ids: Array = EXPECTED_PROFILES.keys()
+	expected_ids.sort()
+	var codex_ids: Array = rows.keys()
+	codex_ids.sort()
+	assert_eq(codex_ids, expected_ids, "Codex documents every live Tier 1 profile exactly once")
+	for unit_id in expected_ids:
+		var actual: UnitType = load(PROFILE_DIR + unit_id + ".tres")
+		var row: Array = rows[unit_id]
+		assert_eq(row[1], actual.unit_name, "%s Codex name" % unit_id)
+		assert_eq(row[2], actual.unit_role, "%s Codex role" % unit_id)
+		assert_eq(int(row[3]), actual.unit_tier, "%s Codex tier" % unit_id)
+		assert_eq(row[4], actual.unit_cost_type, "%s Codex cost type" % unit_id)
+		assert_eq(int(row[5]), actual.unit_cost, "%s Codex cost" % unit_id)
+		for comparison in [
+			[6, "health"], [7, "attack"], [8, "range"], [9, "armor"], [10, "speed"],
+		]:
+			assert_eq(int(row[comparison[0]]), int(actual.stats_block[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
+		for comparison in [[11, "field"], [12, "forest"], [13, "mountain"], [14, "water"]]:
+			assert_eq(int(row[comparison[0]]), int(actual.terrain_type_matrix[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
