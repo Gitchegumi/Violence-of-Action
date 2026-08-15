@@ -25,6 +25,7 @@ signal deploy_preview_ended
 const MAP_RADIUS = 8
 const MOVE_HIGHLIGHT_COLOR := Color(0.35, 0.75, 1.0, 0.52)
 const ATTACK_HIGHLIGHT_COLOR := Color(1.0, 0.2, 0.2, 0.52)
+const CONTROLLER_CURSOR_DEADZONE := 0.5
 var player_count := 2
 var map_seed := 0
 var map_rng := RandomNumberGenerator.new()
@@ -477,10 +478,13 @@ func _process(delta: float) -> void:
 	if not camera:
 		return
 
-	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	input_dir += Vector2(
-		float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A)),
-		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
+	# Controller directional input belongs to the hex cursor. Camera panning
+	# remains keyboard/mouse driven so moving the cursor cannot also pan twice.
+	var input_dir := Vector2(
+		float(Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D))
+			- float(Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A)),
+		float(Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S))
+			- float(Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W))
 	)
 	if input_dir.length_squared() > 1.0:
 		input_dir = input_dir.normalized()
@@ -585,13 +589,24 @@ func center_camera_on_tile(tile: Vector2i) -> void:
 
 @onready var selection_layer = get_node("SelectionLayer")
 @onready var action_highlight_layer: TileMapLayer = get_node("ActionHighlightLayer")
-var selected_tile = Vector2i(-1, -1) # Off-map coordinate by default
+var selected_tile: Vector2i = Vector2i(-1, -1) # Off-map coordinate by default
 var is_dragging = false
+var _controller_stick_direction := Vector2.ZERO
+var _controller_stick_engaged := false
 
 # This dictionary will be populated in _generate_map
 var terrain_data_map: Dictionary = {}
 
 func _unhandled_input(event):
+	# The radial owns controller input while open. Returning without marking the
+	# event lets the child radial receive it through normal unhandled dispatch.
+	if radial_menu_instance != null:
+		return
+
+	if _handle_controller_cursor_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
 	# Handle right-click button press/release for camera dragging
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.is_pressed() and not pending_action.is_empty():
@@ -630,35 +645,11 @@ func _unhandled_input(event):
 
 		_deploy_log("Left click tile %s" % str(map_pos))
 
-		# Emit deploy tile clicked signal
-		emit_signal("deploy_tile_clicked", map_pos)
-
-		# Route the click: occupied tile -> action radial; empty deployment
-		# tile -> deploy radial; anything else -> plain selection.
-		var unit_on_tile = troop_manager.get_unit_at_map_coord(map_pos)
-		var barrier_on_tile: TacticalBarrier = troop_manager.get_barrier_at(map_pos)
-
-		if not pending_action.is_empty():
-			_resolve_pending_action(map_pos)
-		elif unit_on_tile:
-			_deploy_log("Unit found at tile %s: %s" % [str(map_pos), unit_on_tile.name])
-			_show_action_radial(map_pos, unit_on_tile)
-			emit_signal("unit_selected", unit_on_tile)
-		elif barrier_on_tile != null and barrier_on_tile.owner_player_id == GameState.active_player_id:
-			_show_barrier_radial(map_pos, barrier_on_tile)
-			emit_signal("unit_selected", null)
-		elif _can_deploy_at(map_pos):
-			_deploy_log("Empty deployment tile %s" % str(map_pos))
-			_show_radial_menu(map_pos)
-			emit_signal("unit_selected", null)
+		if terrain_data_map.has(map_pos):
+			set_selected_tile(map_pos)
+			_activate_selected_tile()
 		else:
-			_deploy_log("No unit at tile %s" % str(map_pos))
 			emit_signal("unit_selected", null)
-
-		# Existing tile selection highlight logic (keep this)
-		selection_layer.clear()
-		selected_tile = map_pos
-		selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
 	
 	# Press P to open the normal purchase flow on the selected tile.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
@@ -673,6 +664,117 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
 		center_camera_on_tile(selected_tile)
 		get_viewport().set_input_as_handled()
+
+
+func _handle_controller_cursor_input(event: InputEvent) -> bool:
+	if event is InputEventJoypadMotion:
+		if event.axis == JOY_AXIS_LEFT_X:
+			_controller_stick_direction.x = event.axis_value
+		elif event.axis == JOY_AXIS_LEFT_Y:
+			_controller_stick_direction.y = event.axis_value
+		else:
+			return false
+		if _controller_stick_direction.length() < CONTROLLER_CURSOR_DEADZONE:
+			_controller_stick_engaged = false
+			return true
+		if not _controller_stick_engaged:
+			_controller_stick_engaged = true
+			_move_controller_cursor(_controller_stick_direction)
+		return true
+
+	if event is InputEventJoypadButton and event.pressed:
+		match event.button_index:
+			JOY_BUTTON_DPAD_RIGHT:
+				_move_controller_cursor(Vector2.RIGHT)
+			JOY_BUTTON_DPAD_DOWN:
+				_move_controller_cursor(Vector2.DOWN)
+			JOY_BUTTON_DPAD_LEFT:
+				_move_controller_cursor(Vector2.LEFT)
+			JOY_BUTTON_DPAD_UP:
+				_move_controller_cursor(Vector2.UP)
+			_:
+				if event.is_action_pressed("ui_accept"):
+					_activate_selected_tile()
+					return true
+				if event.is_action_pressed("ui_cancel") and not pending_action.is_empty():
+					cancel_pending_action()
+					return true
+				return false
+		return true
+
+	if event.is_action_pressed("ui_accept"):
+		_activate_selected_tile()
+		return true
+	if event.is_action_pressed("ui_cancel") and not pending_action.is_empty():
+		cancel_pending_action()
+		return true
+	return false
+
+
+func _move_controller_cursor(direction: Vector2) -> void:
+	if direction.length() < CONTROLLER_CURSOR_DEADZONE or terrain_data_map.is_empty():
+		return
+	var origin: Vector2i = selected_tile
+	if not terrain_data_map.has(origin):
+		origin = local_to_map(camera.position) if camera != null else objective_position
+		if not terrain_data_map.has(origin):
+			origin = objective_position
+	var target: Vector2i = _nearest_valid_neighbor_in_direction(origin, direction)
+	set_selected_tile(target, true)
+
+
+func _nearest_valid_neighbor_in_direction(origin: Vector2i, direction: Vector2) -> Vector2i:
+	var normalized_direction := direction.normalized()
+	var origin_position := map_to_local(origin)
+	var best_neighbor := origin
+	var best_alignment := 0.25
+	for neighbor in _get_neighbors(origin):
+		if not terrain_data_map.has(neighbor):
+			continue
+		var offset := (map_to_local(neighbor) - origin_position).normalized()
+		var alignment := offset.dot(normalized_direction)
+		if alignment > best_alignment:
+			best_alignment = alignment
+			best_neighbor = neighbor
+	return best_neighbor
+
+
+func set_selected_tile(map_pos: Vector2i, recenter := false) -> void:
+	if not terrain_data_map.has(map_pos):
+		return
+	selected_tile = map_pos
+	selection_layer.clear()
+	selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
+	if recenter:
+		center_camera_on_tile(selected_tile)
+
+
+func _activate_selected_tile() -> void:
+	if not terrain_data_map.has(selected_tile):
+		var initial_tile := local_to_map(camera.position) if camera != null else objective_position
+		set_selected_tile(initial_tile if terrain_data_map.has(initial_tile) else objective_position, true)
+	if not terrain_data_map.has(selected_tile):
+		return
+	emit_signal("deploy_tile_clicked", selected_tile)
+	var unit_on_tile = troop_manager.get_unit_at_map_coord(selected_tile)
+	var barrier_on_tile: TacticalBarrier = troop_manager.get_barrier_at(selected_tile)
+
+	if not pending_action.is_empty():
+		_resolve_pending_action(selected_tile)
+	elif unit_on_tile:
+		_deploy_log("Unit found at tile %s: %s" % [str(selected_tile), unit_on_tile.name])
+		_show_action_radial(selected_tile, unit_on_tile)
+		emit_signal("unit_selected", unit_on_tile)
+	elif barrier_on_tile != null and barrier_on_tile.owner_player_id == GameState.active_player_id:
+		_show_barrier_radial(selected_tile, barrier_on_tile)
+		emit_signal("unit_selected", null)
+	elif _can_deploy_at(selected_tile):
+		_deploy_log("Empty deployment tile %s" % str(selected_tile))
+		_show_radial_menu(selected_tile)
+		emit_signal("unit_selected", null)
+	else:
+		_deploy_log("No unit at tile %s" % str(selected_tile))
+		emit_signal("unit_selected", null)
 	
 # --- Radial Menu Functions ---
 
