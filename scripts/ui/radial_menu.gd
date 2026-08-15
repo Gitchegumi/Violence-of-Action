@@ -21,6 +21,7 @@ const RADIUS := 80.0
 const ICON_SIZE := Vector2(60, 60)
 const DEBOUNCE_MS := 250
 const LOG_CHANNEL := "deployment.radial"
+const GAMEPAD_DEADZONE := 0.5
 
 # Tests and profiling may disable console I/O so timing reflects radial UI work
 # instead of the debug logger. Normal gameplay keeps diagnostics enabled.
@@ -41,6 +42,7 @@ var last_selection_time_ms: int = 0
 
 var _prev_button: Button = null
 var _next_button: Button = null
+var _left_stick_direction := Vector2.ZERO
 
 # Optional hook: a controller sets this Callable to supply the placement
 # context dict ({resources, tile_valid, tile_occupied, now_ms}) when a unit is
@@ -59,7 +61,21 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
 		return
-	if event.is_action_pressed("ui_right"):
+	if _handle_gamepad_direction(event):
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("radial_page_next"):
+		next_page()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("radial_page_previous"):
+		prev_page()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("radial_cycle_next"):
+		focus_next()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("radial_cycle_previous"):
+		focus_previous()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right"):
 		focus_next()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_left"):
@@ -80,6 +96,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		# (Icon Buttons consume their own clicks before _unhandled_input.)
 		close("cancel")
 		get_viewport().set_input_as_handled()
+
+
+func _handle_gamepad_direction(event: InputEvent) -> bool:
+	if event is InputEventJoypadMotion:
+		if event.axis == JOY_AXIS_LEFT_X:
+			_left_stick_direction.x = event.axis_value
+		elif event.axis == JOY_AXIS_LEFT_Y:
+			_left_stick_direction.y = event.axis_value
+		else:
+			return false
+		if _left_stick_direction.length() >= GAMEPAD_DEADZONE:
+			set_focus_from_vector(_left_stick_direction)
+		return true
+	if event is InputEventJoypadButton and event.pressed:
+		match event.button_index:
+			JOY_BUTTON_DPAD_RIGHT:
+				set_focus_from_vector(Vector2.RIGHT)
+			JOY_BUTTON_DPAD_DOWN:
+				set_focus_from_vector(Vector2.DOWN)
+			JOY_BUTTON_DPAD_LEFT:
+				set_focus_from_vector(Vector2.LEFT)
+			JOY_BUTTON_DPAD_UP:
+				set_focus_from_vector(Vector2.UP)
+			_:
+				return false
+		return true
+	return false
 
 
 # --- Lifecycle ---
@@ -265,14 +308,20 @@ func set_focus_from_angle(angle_rad: float) -> void:
 	if visible_units.is_empty():
 		return
 	var angle_step := TAU / float(visible_units.size())
-	var best_i := 0
+	var best_i := -1
 	var best_diff := TAU
 	for i in range(visible_units.size()):
+		if not _item_enabled(visible_units[i]):
+			continue
 		var icon_angle := i * angle_step
 		var diff: float = absf(wrapf(angle_rad - icon_angle, -PI, PI))
-		if diff < best_diff:
+		# Keep the lower stable index when floating-point rounding produces an
+		# angular tie between two enabled neighbours.
+		if diff < best_diff and not is_equal_approx(diff, best_diff):
 			best_diff = diff
 			best_i = i
+	if best_i == -1:
+		return
 	focus_index = best_i
 	_update_focus_visual()
 	_emit_focus_hover()
