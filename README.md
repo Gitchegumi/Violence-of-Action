@@ -1,43 +1,69 @@
 # Violence of Action
 
-A turn-based tactical battle game.
+Violence of Action is a local hot-seat, turn-based tactical battle game built with
+Godot Engine 4.5.
 
-## Project Overview
+For player controls and a complete match walkthrough, see
+[How to Play](docs/HOW_TO_PLAY.md). For authoritative mechanics and design
+specifications, see [Game Rules](docs/GAME_RULES.md).
 
-This repository contains the source code for Violence of Action, a turn-based strategy game. This README focuses on setting up the development environment and running the game.
+## Requirements
 
-### From Pygame to Godot
+- Godot Engine 4.5, standard (non-.NET) build
+- Git
 
-Initially, Violence of Action was envisioned and prototyped using Pygame. However, due to the inherent challenges in developing complex UI/UX elements and managing intricate game states within Pygame, a strategic decision was made to transition the project to the Godot Engine. This shift occurred early in development, prior to any significant game logic or asset creation, to leverage Godot's robust tools for game development, particularly its scene-based architecture and integrated editor. Another key factor in choosing Godot was the Pythonic nature of GDScript, which provides a familiar and efficient scripting environment. All Python code will be removed as development progresses in Godot.
+## Setup
 
-For player controls and a walkthrough of a complete match, see [How to Play](docs/HOW_TO_PLAY.md). For exact mechanics and design specifications, see the [Game Rules documentation](docs/GAME_RULES.md).
+1. Clone the repository.
+2. Open Godot 4.5 and import `project.godot` from the repository root.
+3. Press F5 or use **Run Project** to launch the game.
 
-## Setup and Installation
+## Command-line validation
 
-1. Download and install the [Godot Engine](https://godotengine.org/download/) (version 4.x is recommended).
-2. Clone this repository to your local machine.
-3. Open the Godot Engine, click the "Import" button, and select the `project.godot` file from this repository's root directory.
+Set the command path for your platform, then import resources, run all GUT tests,
+and smoke-test the main scene.
 
-## How to Run the Game
+### Windows PowerShell
 
-1. Open the project in the Godot Engine.
-2. Press the "Play" button (or F5) in the top-right corner of the editor.
-
-## Project Structure
-
-```
-/
-├───.godot/              # Godot's internal project data.
-├───assets/              # Game assets (images, sounds, data, etc.).
-├───docs/                # Project documentation.
-├───scenes/              # Godot scenes (.tscn files).
-├───scripts/             # GDScript files (.gd files).
-├───.gitignore           # Files and directories ignored by Git.
-├───CONTRIBUTIONS.md     # Contribution guidelines.
-├───project.godot        # The main Godot project file.
-└───README.md            # This file.
+```powershell
+$godot = "C:\path\to\Godot_v4.5-stable_win64_console.exe"
+& $godot --headless --path . --import
+& $godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit
+& $godot --headless --path . --quit-after 5
 ```
 
-## Development
+### Linux
 
-This project encourages a Test-Driven Development (TDD) approach for core game logic. For detailed development guidelines, including coding conventions, testing procedures, and contribution workflow, please refer to the [CONTRIBUTIONS.md](CONTRIBUTIONS.md) file.
+```bash
+godot --headless --path . --import
+godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit
+godot --headless --path . --quit-after 5
+```
+
+Pull requests run the same validation with the pinned Godot 4.5 release.
+
+## Local desktop exports
+
+Install the matching Godot 4.5 export templates before exporting.
+
+```powershell
+& $godot --headless --path . --export-release "Windows x86_64" "build/windows/ViolenceOfAction.exe"
+& $godot --headless --path . --export-release "Linux x86_64" "build/linux/ViolenceOfAction.x86_64"
+```
+
+Windows x86_64 and Linux x86_64 are the initial release targets. Mobile exports
+are planned separately after the desktop release.
+
+## Repository layout
+
+```text
+assets/          Game images and data
+docs/            Rules, player guidance, and release operations
+scenes/          Godot scenes
+scripts/         GDScript source
+tests/           GUT unit, integration, and UI tests
+project.godot    Godot project configuration
+```
+
+See [Contributing](CONTRIBUTIONS.md) for branch, test, and commit expectations.
+Release maintainers should use the [release runbook](docs/RELEASE_RUNBOOK.md).

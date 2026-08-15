@@ -1,0 +1,17 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "violence-of-action",
+      "initial-version": "0.1.0",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "project.godot"
+        }
+      ]
+    }
+  },
+  "bootstrap-sha": "8791b5dac2ebd19ee3cafddc5eb88e4c93737663"
+}
