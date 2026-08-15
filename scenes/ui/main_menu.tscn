@@ -1,0 +1,171 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.055, 0.065, 0.08, 1)
+mouse_filter = 2
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Menu" type="VBoxContainer" parent="Center"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Center/Menu"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "VIOLENCE OF ACTION"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="Center/Menu"]
+layout_mode = 2
+text = "Start Game"
+
+[node name="RulesButton" type="Button" parent="Center/Menu"]
+layout_mode = 2
+text = "Rules"
+
+[node name="QuitButton" type="Button" parent="Center/Menu"]
+layout_mode = 2
+text = "Quit"
+
+[node name="SetupDialog" type="ConfirmationDialog" parent="."]
+title = "Start Game"
+initial_position = 1
+ok_button_text = "Start"
+
+[node name="SetupFields" type="VBoxContainer" parent="SetupDialog"]
+custom_minimum_size = Vector2(500, 330)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PlayerCountLabel" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+text = "Players"
+
+[node name="PlayerCountOption" type="OptionButton" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+item_count = 2
+popup/item_0/text = "2 Players"
+popup/item_0/id = 2
+popup/item_1/text = "3 Players"
+popup/item_1/id = 3
+
+[node name="IdentityPrompt" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+text = "Enter each player's name and choose a unique color."
+
+[node name="Player1Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player1Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 1"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player1Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player1Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 1's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="Player2Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player2Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 2"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player2Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player2Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 2's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="Player3Identity" type="HBoxContainer" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="SetupDialog/SetupFields/Player3Identity"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Player 3"
+
+[node name="NameInput" type="LineEdit" parent="SetupDialog/SetupFields/Player3Identity"]
+size_flags_horizontal = 3
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="ColorInput" type="ColorPickerButton" parent="SetupDialog/SetupFields/Player3Identity"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+tooltip_text = "Choose Player 3's unit color"
+color = Color(0, 0, 0, 0)
+edit_alpha = false
+
+[node name="SetupError" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+autowrap_mode = 2
+
+[node name="SeedLabel" type="Label" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+text = "Map Seed (optional integer)"
+
+[node name="SeedInput" type="LineEdit" parent="SetupDialog/SetupFields"]
+layout_mode = 2
+placeholder_text = "Leave blank for a random seed"
+
+[node name="RulesDialog" type="AcceptDialog" parent="."]
+title = "How to Play"
+initial_position = 1
+
+[node name="RulesScroll" type="ScrollContainer" parent="RulesDialog"]
+custom_minimum_size = Vector2(660, 430)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="RulesText" type="RichTextLabel" parent="RulesDialog/RulesScroll"]
+custom_minimum_size = Vector2(630, 1480)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = "[font_size=24][b]Start and Deployment[/b][/font_size]\nChoose 2 or 3 players and optionally enter a map seed. Each player starts with 12 essence. Left-click an empty hex in your deployment zone, then choose an affordable unit from the radial menu. Every player must place at least one unit before selecting Ready. Unspent essence is saved.\n\n[font_size=24][b]Controls[/b][/font_size]\nLeft-click: select a hex, open a radial menu, or confirm a target\nRight-drag / WASD / Arrow keys / screen edge: pan\nMouse wheel: zoom\nF: center on the selected hex\nP: deploy on the selected eligible hex\nRight-click, Escape, or Cancel button: cancel a pending Move or Attack\nEscape with no pending action: pause or resume\n\n[font_size=24][b]Turn Phases[/b][/font_size]\nUse Complete Phase to advance.\n1. Start Turn - reset unit actions and gain essence automatically.\n2. Marshal Troops - buy units in your deployment zone.\n3. Movement - choose a unit, Move, then a destination. The cheapest valid path is automatic.\n4. Combat - choose a unit, Attack, then a valid enemy target. Each unit may attack once per turn.\n5. Resolve - units that have not attacked may still attack.\n6. Clean Up - Objective control and upkeep resolve; the next player begins.\n\n[font_size=24][b]Movement and Engagement[/b][/font_size]\nTerrain costs depend on the unit. The current Shardwalker pays 1 for Field and 2 for Forest, and cannot enter Mountain or Water. Friendly units may be crossed but cannot share a destination; enemies block movement. A unit beside one enemy may attack or disengage, but not both. A unit beside multiple enemies is pinned. Destroying an engaged unit's only adjacent enemy unlocks any remaining movement during Combat.\n\n[font_size=24][b]Combat[/b][/font_size]\nRoll 2d6 + Attack against 8 + Armor. Forest adds +1 to the defender's target. Natural 2 misses and natural 12 hits. A hit deals 1 persistent HP damage; Armor persists. Mountain blocks line of sight. Other terrain and units do not. A unit at 0 HP is destroyed.\n\n[font_size=24][b]Essence[/b][/font_size]\nAt Start Turn, each active unit type generates half its cost once, regardless of duplicates. Battlefield Scavengers instead gain essence from eligible destructions.\n\n[font_size=24][b]Objective[/b][/font_size]\nEnd your turn on the central Objective to capture its token and gain 6 essence. Capture starts at 0 control turns. On each later turn of the controller, pay 3 essence at the end of the turn and advance the counter. Opponents' turns do not charge upkeep or advance it. Failed upkeep removes control.\n\n[font_size=24][b]Victory[/b][/font_size]\nWin by eliminating every opposing army or reaching 3 Objective control turns."

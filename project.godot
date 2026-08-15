@@ -11,9 +11,20 @@ config_version=5
 [application]
 
 config/name="Violence of Action"
-run/main_scene="uid://c6i7i5yoovjsh"
-config/features=PackedStringArray("4.4", "Mobile")
+config/version="0.0.0" ; x-release-please-version
+run/main_scene="res://scenes/ui/main_menu.tscn"
+config/features=PackedStringArray("4.5", "Mobile")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameLog="*res://scripts/logger.gd"
+GameSession="*res://scripts/game_session.gd"
+GameState="*res://scripts/game_state.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [rendering]
 

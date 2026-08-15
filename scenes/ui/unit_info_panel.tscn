@@ -1,0 +1,101 @@
+[gd_scene load_steps=2 format=3 uid="uid://1rpkc5flac0n"]
+
+[ext_resource type="Script" uid="uid://bfloc3lei87vs" path="res://scripts/ui/unit_info_panel.gd" id="1_6tj4i"]
+
+[node name="UnitInfoPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 400.0
+offset_bottom = 200.0
+script = ExtResource("1_6tj4i")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 200.0
+
+[node name="UnitImageContainer" type="SubViewportContainer" parent="Panel"]
+layout_mode = 0
+offset_left = 9.0
+offset_top = 14.0
+offset_right = 521.0
+offset_bottom = 526.0
+scale = Vector2(0.15, 0.15)
+
+[node name="UnitImageViewport" type="SubViewport" parent="Panel/UnitImageContainer"]
+transparent_bg = true
+handle_input_locally = false
+render_target_update_mode = 4
+
+[node name="UnitNameLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 6.0
+offset_right = 142.0
+offset_bottom = 29.0
+text = "Name"
+
+[node name="UnitRoleLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 32.0
+offset_right = 135.0
+offset_bottom = 55.0
+text = "Role"
+
+[node name="UnitCostLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 100.0
+offset_right = 135.0
+offset_bottom = 123.0
+text = "cost"
+
+[node name="HealthLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 80.0
+offset_right = 280.0
+offset_bottom = 103.0
+text = "health"
+
+[node name="AttackLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 100.0
+offset_right = 270.0
+offset_bottom = 123.0
+text = "atk"
+
+[node name="RangeLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 140.0
+offset_right = 275.0
+offset_bottom = 163.0
+text = "range"
+
+[node name="ArmorLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 120.0
+offset_right = 279.0
+offset_bottom = 143.0
+text = "armor"
+
+[node name="SpeedLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 80.0
+offset_right = 142.0
+offset_bottom = 103.0
+text = "speed"
+
+[node name="MovementLabel" type="Label" parent="Panel"]
+visible = false
+layout_mode = 0
+offset_left = 95.0
+offset_top = 125.0
+offset_right = 220.0
+offset_bottom = 148.0
+text = "movement"

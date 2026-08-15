@@ -7,10 +7,10 @@ script = ExtResource("1_6xceg")
 unit_name = "Fluxsmith"
 unit_role = "Engineer / Support"
 unit_tier = 1
-can_upgrade = true
-upgrade_cost = 3
+can_upgrade = false
+upgrade_cost = -1
 unit_description = "Support unit with healing and terrain-altering abilities."
-unit_cost = 2
+unit_cost = 4
 stats_block = {
 "armor": 0,
 "attack": 1,
@@ -21,8 +21,9 @@ stats_block = {
 terrain_type_matrix = {
 "field": 1,
 "forest": 2,
-"mountain": 5,
-"water": 0
+"mountain": -1,
+"water": -1
 }
-special_abilities = Array[String](["Heals adjacent allies", "Can construct temporary barriers"])
+special_abilities = Array[String](["Heal 1 HP on an adjacent ally instead of attacking", "Erect an adjacent 1 HP / 2 Armor barrier instead of attacking"])
+artwork_region = Rect2(20, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

@@ -4,14 +4,14 @@
 
 [resource]
 script = ExtResource("1_8m3po")
-unit_name = "Ghost Thorn"
+unit_name = "Ghostthorn"
 unit_role = "Special Forces"
 unit_tier = 1
-can_upgrade = true
-upgrade_cost = 5
+can_upgrade = false
+upgrade_cost = -1
 unit_description = "Stealthy infiltrators using teleportation tech."
 unit_cost_type = "standard"
-unit_cost = 3
+unit_cost = 8
 stats_block = {
 "armor": 0,
 "attack": 2,
@@ -21,9 +21,10 @@ stats_block = {
 }
 terrain_type_matrix = {
 "field": 1,
-"forest": 2,
-"mountain": 5,
+"forest": 1,
+"mountain": -1,
 "water": -1
 }
-special_abilities = Array[String](["Can teleport up to 3 hexes once per game"])
+special_abilities = Array[String](["Free once-per-game teleport up to 3 hexes to an unoccupied non-Water tile"])
+artwork_region = Rect2(360, 80, 300, 320)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

@@ -10,7 +10,7 @@ unit_tier = 1
 can_upgrade = false
 upgrade_cost = -1
 unit_description = "A unit that profits from destruction on the battlefield."
-unit_cost_type = "fibonnacci"
+unit_cost_type = "fibonacci"
 unit_cost = 1
 stats_block = {
 "armor": 0,
@@ -22,8 +22,9 @@ stats_block = {
 terrain_type_matrix = {
 "field": 1,
 "forest": 2,
-"mountain": 5,
+"mountain": -1,
 "water": -1
 }
 special_abilities = Array[String](["This unit's only method of generating essence. See GAME_RULES.md for scaling cost. Gains 3 essence for each unit (friendly or enemy) destroyed since the beginning of the player's last turn. This includes units destroyed during their own turn and during opponent turns between turns."])
+artwork_region = Rect2(35, 545, 210, 285)
 metadata/_custom_type_script = "uid://cogrj3h8s8nxx"

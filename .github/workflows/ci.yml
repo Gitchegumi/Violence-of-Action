@@ -1,0 +1,68 @@
+name: Godot CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.5-stable
+  GODOT_DIR: /home/runner/.cache/godot-editor/4.5-stable
+  GODOT_BIN: /home/runner/.cache/godot-editor/4.5-stable/godot
+
+jobs:
+  validate:
+    name: Import, test, and smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 2
+
+      - name: Check repository hygiene
+        shell: bash
+        run: |
+          git diff --check HEAD^ HEAD
+          tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
+          if [[ -n "$tracked_temp_files" ]]; then
+            echo "::error::Generated editor temp files are tracked:"
+            echo "$tracked_temp_files"
+            exit 1
+          fi
+
+      - name: Restore Godot editor cache
+        id: godot-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.GODOT_DIR }}
+          key: godot-editor-${{ runner.os }}-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot 4.5
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$GODOT_DIR"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/Godot_v4.5-stable_linux.x86_64.zip" \
+            --output "$RUNNER_TEMP/godot.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot-editor"
+          mv "$RUNNER_TEMP/godot-editor/Godot_v4.5-stable_linux.x86_64" "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+
+      - name: Import project
+        run: "$GODOT_BIN --headless --path . --import"
+
+      - name: Run GUT test suite
+        run: "$GODOT_BIN --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit"
+
+      - name: Smoke-test main scene
+        run: "$GODOT_BIN --headless --path . --quit-after 5"

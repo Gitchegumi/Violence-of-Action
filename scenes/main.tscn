@@ -1,0 +1,110 @@
+[gd_scene load_steps=6 format=3 uid="uid://b6163kstksqqe"]
+
+[ext_resource type="PackedScene" uid="uid://c6i7i5yoovjsh" path="res://scenes/tileMap.tscn" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://cp41w75xohqfi" path="res://scripts/main.gd" id="1_sugp2"]
+[ext_resource type="PackedScene" uid="uid://1rpkc5flac0n" path="res://scenes/ui/unit_info_panel.tscn" id="2_0wfyh"]
+[ext_resource type="Script" uid="uid://bn6grcj84idr2" path="res://scripts/systems/resource_manager.gd" id="3_resource"]
+[ext_resource type="Script" uid="uid://cwejuqn66bhti" path="res://scripts/pause_input.gd" id="4_pause"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_sugp2")
+
+[node name="PauseInput" type="Node" parent="."]
+process_mode = 3
+script = ExtResource("4_pause")
+
+[node name="ResourceManager" type="Node" parent="."]
+script = ExtResource("3_resource")
+
+[node name="TileMapLayer" parent="." instance=ExtResource("1_o5qli")]
+
+[node name="EssenceLabel" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 14.0
+offset_right = 180.0
+offset_bottom = 45.0
+text = "Player 1 Essence: 12"
+
+[node name="TurnLabel" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 46.0
+offset_right = 300.0
+offset_bottom = 77.0
+text = "Initial Deployment"
+
+[node name="ObjectiveLabel" type="Label" parent="."]
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 400.0
+offset_top = 6.0
+offset_right = 583.0
+offset_bottom = 29.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+text = "Objective: Uncontrolled"
+
+[node name="CombatResultLabel" type="Label" parent="."]
+visible = false
+offset_left = 360.0
+offset_top = 46.0
+offset_right = 790.0
+offset_bottom = 77.0
+text = "Combat Result"
+
+[node name="AdvancePhaseButton" type="Button" parent="."]
+offset_left = 14.0
+offset_top = 80.0
+offset_right = 190.0
+offset_bottom = 112.0
+text = "Ready Player 1"
+
+[node name="CancelActionButton" type="Button" parent="."]
+visible = false
+offset_left = 200.0
+offset_top = 80.0
+offset_right = 340.0
+offset_bottom = 112.0
+text = "Cancel Action"
+
+[node name="ReturnToMenuButton" type="Button" parent="."]
+visible = false
+offset_left = 14.0
+offset_top = 120.0
+offset_right = 190.0
+offset_bottom = 152.0
+text = "Return to Main Menu"
+
+[node name="DeploymentAlert" type="AcceptDialog" parent="."]
+title = "Deployment Required"
+initial_position = 1
+dialog_text = "Each player must place at least one unit before declaring Ready."
+
+[node name="PauseOverlay" type="ColorRect" parent="."]
+visible = false
+offset_left = 360.0
+offset_top = 250.0
+offset_right = 690.0
+offset_bottom = 330.0
+color = Color(0.04, 0.05, 0.07, 0.92)
+
+[node name="PauseLabel" type="Label" parent="PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "PAUSED
+Press Escape to Resume"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UnitInfoPanel" parent="." instance=ExtResource("2_0wfyh")]
+offset_left = 743.0
+offset_top = 5.0
+offset_right = 743.0
+offset_bottom = 5.0
+size_flags_horizontal = 0

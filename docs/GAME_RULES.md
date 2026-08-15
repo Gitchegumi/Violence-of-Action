@@ -44,9 +44,9 @@ Once all players have completed their deployments, the first round begins with t
 
 ### Deployment Zones
 
-Each player's **deployment zone** consists of the three rows of hexes on their edge of the board:
-- In 2-player games: Each player uses the 3 rows along their board edge.
-- In 3-player games: Deployment zones are equally spaced along the outer edge, spanning approximately 1/4 of the map perimeter per player.
+Each player's **deployment zone** consists of the hexes along one outer edge of the board:
+- In 2-player games: Players use opposite outer edges.
+- In 3-player games: Players use three equally spaced outer edges.
 
 **Important:** No unit may be deployed outside the owning player’s designated deployment zone at **any time** — this applies to both initial deployment and all future deployments during the game.
 
@@ -65,6 +65,8 @@ For example:
 
 This system encourages diversity in unit composition while limiting passive income from spammed unit types.
 
+If a player starts their turn with no active units, they gain a minimum of **1 essence** instead. They remain in the turn rotation and may save or spend this income to rebuild their army in their deployment zone.
+
 **Exception:** The **Battlefield Scavenger** does not generate essence in this way. Its only source of essence is its special ability.
 
 
@@ -77,9 +79,32 @@ Each player's turn consists of the following phases:
 1.  **Start Turn:** Reset any persistent effects from the previous turn.
 2.  **Marshal Troops:** Spend any earned essence to improve existing units or add new units to the deployment zone.
 3.  **Movement:** Move any active units up to their maximum movement allowance.
-4.  **Combat:** Declare combat actions. (Detailed combat mechanics will be addressed in a separate section/issue.)
+4.  **Combat:** Declare combat actions against valid enemy targets.
 5.  **Resolve:** Resolve all declared combat actions.
 6.  **Clean Up:** Resolve any temporary effects that expire at the end of the turn, and establish any persistent effects that will carry over into the next turn. Finally, pass play to the next player.
+
+### Movement and Engagement
+
+- A unit may split its Speed across multiple movement actions during its turn. Unspent movement remains available later in the turn, including after combat if the combat action destroys the adjacent enemy.
+- Movement automatically follows the cheapest valid path by movement-point cost.
+- Units may move through hexes occupied by friendly units, but may not end movement on an occupied hex.
+- Enemy-occupied hexes block movement and may not be entered or crossed.
+- A unit adjacent to one enemy is **decisively engaged**. It may attack, or it may move as a **disengagement action**, but it cannot both disengage and take another action that turn.
+- If an engaged unit attacks and destroys the enemy so that it is no longer adjacent to an enemy, it may spend any remaining movement normally.
+- A unit adjacent to enemies from more than one direction is **pinned** and cannot move, including by disengagement.
+
+### Combat Resolution
+
+- Each unit may attack once per turn during the Combat/Resolve flow.
+- A target must be an enemy within the attacker's Range and line of sight.
+- An intervening Mountain hex blocks line of sight. Units, Field, Forest, Objective, and Water hexes do not block line of sight.
+- Roll **2d6 + the attacker's Attack** against **8 + the defender's Armor**.
+- A defender occupying a Forest hex adds **+1** to its Defense Target.
+- A natural 2 automatically misses. A natural 12 automatically hits. Otherwise, the attack hits when the Attack Total equals or exceeds the Defense Target.
+- A hit deals exactly **1 persistent HP damage**. HP does not automatically recover during Cleanup.
+- Armor raises the Defense Target; it is not a health pool and does not deplete or replenish.
+- A unit at 0 HP is destroyed and removed from the battlefield.
+- The initial combat implementation does not add critical damage, variable damage, counterattacks, friendly fire, cover, flanking, armor penetration, or status effects.
 
 ### 1. Deploying New Units
 
@@ -101,7 +126,7 @@ Players must choose between expanding their force or enhancing the strength of t
 Players can achieve victory through one of the following conditions:
 
 *   **Elimination:** Eliminate all enemy units belonging to opposing players.
-*   **Objective Control:** Occupy the central Objective tile for 3 consecutive turns. An 'occupation token' will be used to signify control of the Objective tile, persisting even if the occupying unit moves off the tile, until an opposing unit occupies it.
+*   **Objective Control:** Retain the central Objective tile's occupation token through 3 of your own completed turns after capturing it. The token persists even if the occupying unit moves off the tile, until an opposing unit occupies it or upkeep cannot be paid.
 
 ### Objective Control (Occupation Token Rules)
 
@@ -114,12 +139,15 @@ The Objective tile represents a critical point of interest on the battlefield. C
   Once gained, the **occupation token remains** with the controlling player, even if they no longer have a unit on the Objective tile. The token only changes hands if:
   - An **opposing player ends their turn** with a unit on the Objective tile.
   - The **current controller cannot afford the upkeep cost** (see below).
+  - The controller's **last unit is destroyed while occupying the Objective tile**; the Objective immediately becomes uncontrolled.
 
 - **Essence Bonus:**  
   When a player **gains control** of the Objective tile, they immediately gain **6 essence**.
 
 - **Upkeep Cost:**  
-  At the end of each of their turns while holding the Objective token, a player must pay **3 essence** to maintain control.  
+  Capturing the Objective establishes control at **0 control turns** and does not charge upkeep on the capture turn. At the end of each later turn of their own while holding the Objective token, a player must pay **3 essence** to maintain control. Opponents' completed turns do not charge upkeep or advance the counter.
+  - After successful upkeep, increase the controller's control-turn counter by 1.
+  - The controller wins immediately when that counter reaches 3.
   - If they **cannot pay**, the **local populace rebels**, and the occupation token is **removed** from play. The tile becomes uncontrolled until another player captures it again.
 
 ## Armies
@@ -157,6 +185,8 @@ Each Battlefield Scavenger a player controls increases the cost of the next one,
 - 5th Scavenger: **8 essence**
 - 6th and beyond: Continue the Fibonacci progression (13, 21, etc.)
 
+The price is based on how many Scavengers that player currently has on the battlefield, not how many they have purchased during the match. If one is destroyed, the next price drops to the appropriate level for the remaining on-field count.
+
 This cost scaling represents increasing resistance from the battlefield population and logistical strain in deploying additional scavengers.
 
 #### Fluxsmith
@@ -166,7 +196,10 @@ This cost scaling represents increasing resistance from the battlefield populati
 *   **Cost:** 4
 *   **Stats:** HP: 2, Attack: 1, Range: 1, Armor: 0, Speed: 3
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
-*   **Special:** Heals adjacent allies; can construct temporary barriers
+*   **Special — Field Repair:** During Combat or Resolve, restore 1 HP to an adjacent friendly unit. Healing uses the Fluxsmith's one combat action for the turn, so it cannot also attack.
+*   **Special — Barrier:** During Combat or Resolve, erect one barrier in an adjacent, unoccupied hex that is not Water or Mountain. This also uses the Fluxsmith's combat action. Each Fluxsmith may erect one barrier per turn and maintain at most two of its own barriers.
+
+A barrier has **1 HP and 2 Armor**, costs **3 movement** to enter or cross, and blocks line of sight. It lasts until destroyed or the end of its owner's third turn. An enemy must occupy the barrier's hex to attack it; friendly barriers may be dismantled at any time at no cost.
 
 #### Ghostthorn
 *   **Role:** Special Forces
@@ -175,7 +208,7 @@ This cost scaling represents increasing resistance from the battlefield populati
 *   **Cost:** 8
 *   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 5
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: N/A, Mountain: N/A
-*   **Special:** Can teleport up to 3 hexes once per game
+*   **Special:** Once per game, this Ghostthorn may teleport up to 3 hexes as a free independent action during any phase. Teleportation ignores terrain, units, engagement, and line of sight, and may be used after attacking to disengage. The destination must be unoccupied and cannot be Water.
 
 #### Golemancer Hull
 *   **Role:** Heavy Armor
@@ -184,7 +217,7 @@ This cost scaling represents increasing resistance from the battlefield populati
 *   **Cost:** 8
 *   **Stats:** HP: 5, Attack: 3, Range: 1, Armor: 2, Speed: 2
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: 10
-*   **Special:** Splash damage in adjacent hexes
+*   **Special:** When its primary attack hits, the same 2d6 + Attack total automatically resolves against every enemy adjacent to the primary target. Armor and terrain defense are checked separately for each splash target, and each successful splash hit deals the standard 1 damage. Friendly units are unaffected.
 
 #### Shardwalker
 *   **Role:** Core Infantry
@@ -202,7 +235,10 @@ This cost scaling represents increasing resistance from the battlefield populati
 *   **Cost:** 12
 *   **Stats:** HP: 3, Attack: 2, Range: 2, Armor: 1, Speed: 6
 *   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: 1, Mountain: 1
-*   **Special:** Ignores terrain penalties; may move again after combat once per game
+*   **Special — Post-Combat Move:** After this Skyrender attacks, hit or miss, it may take one full-speed move later that turn. This is once per Skyrender per game and normal engagement rules still apply. Moving even one hex consumes the entire post-combat move; it cannot be split.
+*   **Special — Transport:** A Skyrender can carry one Shardwalker, Ghostthorn, or Fluxsmith. Loading an adjacent infantry unit or unloading it to an adjacent valid hex may occur during Movement or Resolve and costs 3 of the Skyrender's movement. The passenger retains its action and movement state and may act after unloading when its remaining state and the current phase allow it.
+
+If a loaded Skyrender is destroyed, its passenger rolls 2d6 and survives only on a total above 8. A survivor is placed on the unoccupied hex formerly occupied by the Skyrender. If the Skyrender is destroyed over Water and the passenger cannot traverse Water, the passenger is destroyed without a survival roll.
 
 #### Tideborn
 *   **Role:** Amphibious Unit
@@ -215,4 +251,4 @@ This cost scaling represents increasing resistance from the battlefield populati
 
 ## How to Play
 
-(Instructions on how to play will be added once the core mechanics are implemented.)
+See [How to Play](HOW_TO_PLAY.md) for current controls, initial deployment, turn-by-turn interactions, combat targeting, and victory instructions.
