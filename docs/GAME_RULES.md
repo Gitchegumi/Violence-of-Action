@@ -158,20 +158,14 @@ The authoritative Coreborn roster, profile data, artwork mapping, and upgrade
 status are maintained in the [Army Codex](ARMY_CODEX.md). Universal rules for
 their implemented special actions remain below as gameplay mechanics.
 
-## Units and Stats
+## Coreborn Implemented Action Rules
 
-Here are the details about the different units, their stats, abilities, and terrain movement costs:
+Unit names, roles, tiers, descriptions, costs, stats, terrain matrices,
+abilities, and artwork mappings are defined only in the
+[Army Codex](ARMY_CODEX.md). The rules below define how the currently
+implemented Coreborn actions resolve.
 
-### The Coreborn
-
-#### Battlefield Scavenger
-*   **Role:** Scavenger  
-*   **Tier:** 1  
-*   **Description:** A unit that profits from destruction on the battlefield.  
-*   **Cost:** Variable (see below)  
-*   **Stats:** HP: 1, Attack: 1, Range: 1, Armor: 0, Speed: 3  
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A  
-*   **Special:** This unit's only method of generating essence.
+### Battlefield Scavenger income
 
 At the **start of its controller's turn**, the Battlefield Scavenger grants **3 essence for each unit** (friendly or enemy) destroyed **since the beginning of that player's previous turn**.
 
@@ -193,65 +187,45 @@ The price is based on how many Scavengers that player currently has on the battl
 
 This cost scaling represents increasing resistance from the battlefield population and logistical strain in deploying additional scavengers.
 
-#### Fluxsmith
-*   **Role:** Engineer / Support
-*   **Tier:** 1
-*   **Description:** Support unit with healing and terrain-altering abilities.
-*   **Cost:** 4
-*   **Stats:** HP: 2, Attack: 1, Range: 1, Armor: 0, Speed: 3
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
-*   **Special — Field Repair:** During Combat or Resolve, restore 1 HP to an adjacent friendly unit. Healing uses the Fluxsmith's one combat action for the turn, so it cannot also attack.
-*   **Special — Barrier:** During Combat or Resolve, erect one barrier in an adjacent, unoccupied hex that is not Water or Mountain. This also uses the Fluxsmith's combat action. Each Fluxsmith may erect one barrier per turn and maintain at most two of its own barriers.
+### Fluxsmith actions
+
+- **Field Repair:** During Combat or Resolve, restore 1 HP to an adjacent
+  friendly unit. Healing uses the Fluxsmith's one combat action for the turn,
+  so it cannot also attack.
+- **Barrier:** During Combat or Resolve, erect one barrier in an adjacent,
+  unoccupied hex that is not Water or Mountain. This also uses the Fluxsmith's
+  combat action. Each Fluxsmith may erect one barrier per turn and maintain at
+  most two of its own barriers.
 
 A barrier has **1 HP and 2 Armor**, costs **3 movement** to enter or cross, and blocks line of sight. It lasts until destroyed or the end of its owner's third turn. An enemy must occupy the barrier's hex to attack it; friendly barriers may be dismantled at any time at no cost.
 
-#### Ghostthorn
-*   **Role:** Special Forces
-*   **Tier:** 1
-*   **Description:** Stealthy infiltrators using teleportation tech.
-*   **Cost:** 8
-*   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 5
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: N/A, Mountain: N/A
-*   **Special:** Once per game, this Ghostthorn may teleport up to 3 hexes as a free independent action during any phase. Teleportation ignores terrain, units, engagement, and line of sight, and may be used after attacking to disengage. The destination must be unoccupied and cannot be Water.
+### Ghostthorn teleportation
 
-#### Golemancer Hull
-*   **Role:** Heavy Armor
-*   **Tier:** 1
-*   **Description:** Massive exo-shell driven by arcane tech. Slow, powerful, and resilient.
-*   **Cost:** 8
-*   **Stats:** HP: 5, Attack: 3, Range: 1, Armor: 2, Speed: 2
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: 10
-*   **Special:** When its primary attack hits, the same 2d6 + Attack total automatically resolves against every enemy adjacent to the primary target. Armor and terrain defense are checked separately for each splash target, and each successful splash hit deals the standard 1 damage. Friendly units are unaffected.
+Once per game, a Ghostthorn may teleport up to 3 hexes as a free independent
+action during any phase. Teleportation ignores terrain, units, engagement, and
+line of sight, and may be used after attacking to disengage. The destination
+must be unoccupied and cannot be Water.
 
-#### Shardwalker
-*   **Role:** Core Infantry
-*   **Tier:** 1
-*   **Description:** Light troops augmented with crystal tech for standard mobility.
-*   **Cost:** 2
-*   **Stats:** HP: 3, Attack: 1, Range: 1, Armor: 0, Speed: 4
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: N/A, Mountain: N/A
-*   **Special:** None
+### Golemancer Hull splash damage
 
-#### Skyrender
-*   **Role:** All-Terrain Flanker
-*   **Tier:** 1
-*   **Description:** Hovering drone-rider capable of crossing all terrain types.
-*   **Cost:** 12
-*   **Stats:** HP: 3, Attack: 2, Range: 2, Armor: 1, Speed: 6
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 1, Water: 1, Mountain: 1
-*   **Special — Post-Combat Move:** After this Skyrender attacks, hit or miss, it may take one full-speed move later that turn. This is once per Skyrender per game and normal engagement rules still apply. Moving even one hex consumes the entire post-combat move; it cannot be split.
-*   **Special — Transport:** A Skyrender can carry one Shardwalker, Ghostthorn, or Fluxsmith. Loading an adjacent infantry unit or unloading it to an adjacent valid hex may occur during Movement or Resolve and costs 3 of the Skyrender's movement. The passenger retains its action and movement state and may act after unloading when its remaining state and the current phase allow it.
+When its primary attack hits, the same 2d6 + Attack total automatically resolves
+against every enemy adjacent to the primary target. Armor and terrain defense
+are checked separately for each splash target, and each successful splash hit
+deals the standard 1 damage. Friendly units are unaffected.
+
+### Skyrender actions
+
+- **Post-Combat Move:** After a Skyrender attacks, hit or miss, it may take one
+  full-speed move later that turn. This is once per Skyrender per game and
+  normal engagement rules still apply. Moving even one hex consumes the entire
+  post-combat move; it cannot be split.
+- **Transport:** A Skyrender can carry one Shardwalker, Ghostthorn, or Fluxsmith.
+  Loading an adjacent infantry unit or unloading it to an adjacent valid hex
+  may occur during Movement or Resolve and costs 3 of the Skyrender's movement.
+  The passenger retains its action and movement state and may act after
+  unloading when its remaining state and the current phase allow it.
 
 If a loaded Skyrender is destroyed, its passenger rolls 2d6 and survives only on a total above 8. A survivor is placed on the unoccupied hex formerly occupied by the Skyrender. If the Skyrender is destroyed over Water and the passenger cannot traverse Water, the passenger is destroyed without a survival roll.
-
-#### Tideborn
-*   **Role:** Amphibious Unit
-*   **Tier:** 1
-*   **Description:** Bio-engineered aquatic troopers with amphibious mobility.
-*   **Cost:** 4
-*   **Stats:** HP: 2, Attack: 2, Range: 1, Armor: 0, Speed: 3
-*   **Terrain Movement Costs:** Grass: 1, Tall Grass: 2, Water: 1, Mountain: N/A
-*   **Special:** None
 
 ## How to Play
 

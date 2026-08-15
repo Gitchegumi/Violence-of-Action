@@ -14,12 +14,15 @@ Army-specific profiles and upgrade status are in the
 
 - Godot Engine 4.5, standard (non-.NET) build
 - Git
+- Git LFS when working with editable files under `source-assets/`
 
 ## Setup
 
 1. Clone the repository.
-2. Open Godot 4.5 and import `project.godot` from the repository root.
-3. Press F5 or use **Run Project** to launch the game.
+2. If you need editable source artwork, run `git lfs install` and
+   `git lfs pull`. Runtime game assets do not require this step.
+3. Open Godot 4.5 and import `project.godot` from the repository root.
+4. Press F5 or use **Run Project** to launch the game.
 
 ## Command-line validation
 
