@@ -28,6 +28,16 @@ The game is local hotseat: players take turns using the same screen.
 | P | Open deployment on the selected hex when deployment is allowed there |
 | Escape | Cancel a pending action first; otherwise pause or resume the match |
 
+Controller navigation uses generic Godot gamepad mappings:
+
+| Input | Action |
+| --- | --- |
+| D-pad or left stick | Move the highlighted hex one step; while a radial is open, focus the nearest enabled option |
+| Primary action | Select the highlighted hex, open its deployment/action radial, confirm a radial option, or confirm a pending target |
+| Cancel action | Close a radial or cancel a pending target |
+| Left/right shoulder | Cycle backward/forward through radial options |
+| Left/right stick button | Show the previous/next radial page when pagination is available |
+
 ## Initial Deployment
 
 Each player begins with **12 essence** and deploys within their highlighted deployment zone.

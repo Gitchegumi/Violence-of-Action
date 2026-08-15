@@ -41,6 +41,14 @@ func test_focus_sets_from_angle():
 	menu.set_focus_from_angle(PI / 2.0)
 	assert_eq(menu.focus_index, 1, "angle ~PI/2 selects second icon")
 
+func test_angular_focus_skips_disabled_items_deterministically():
+	var units = _units([1, 1, 1, 1])
+	units[1]["affordable"] = false
+	menu.open(Vector2i(0, 0), units)
+	menu.set_focus_from_angle(PI / 2.0)
+	assert_eq(menu.focus_index, 0,
+		"an exact disabled sector chooses the first equally-near enabled item")
+
 func test_initial_focus_is_lowest_cost():
 	menu.open(Vector2i(0, 0), _units([5, 2, 8]))
 	assert_eq(menu.focus_index, 1, "initial focus lands on lowest-cost unit")
