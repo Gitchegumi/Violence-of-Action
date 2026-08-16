@@ -12,40 +12,48 @@ from typing import Sequence
 
 
 KNOWN_SHUTDOWN_ERROR = 'ERROR: Can\'t emit non-existing signal "changed".'
+KNOWN_ENGINE_BANNER = (
+    "Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org"
+)
 KNOWN_SHUTDOWN_CONTEXT = re.compile(
     r"^\s+at: emit_signalp \(core/object/object\.cpp:\d+\)\s*$"
 )
+GODOT_ERROR_LINE = re.compile(r"^\s*(?:[A-Z][A-Z0-9 _-]*\s+)?ERROR:\s*")
 
 
 def sanitize_output(lines: Sequence[str]) -> tuple[list[str], int]:
-    """Remove only Godot 4.5's proven scripted-TileMapLayer shutdown pair."""
-    sanitized: list[str] = []
-    suppressed = 0
-    index = 0
-    while index < len(lines):
-        if (
-            lines[index].strip() == KNOWN_SHUTDOWN_ERROR
-            and index + 1 < len(lines)
-            and KNOWN_SHUTDOWN_CONTEXT.match(lines[index + 1])
-        ):
-            suppressed += 1
-            index += 2
-            continue
-        sanitized.append(lines[index])
-        index += 1
-    return sanitized, suppressed
+    """Remove the one proven terminal error pair from the pinned Godot build."""
+    known_error_indices = [
+        index
+        for index, line in enumerate(lines)
+        if line.strip() == KNOWN_SHUTDOWN_ERROR
+    ]
+    has_pinned_banner = any(
+        line.strip() == KNOWN_ENGINE_BANNER for line in lines
+    )
+    if (
+        has_pinned_banner
+        and len(known_error_indices) == 1
+        and known_error_indices[0] == len(lines) - 2
+        and KNOWN_SHUTDOWN_CONTEXT.match(lines[-1])
+    ):
+        return list(lines[:-2]), 1
+    return list(lines), 0
 
 
 def error_lines(lines: Sequence[str]) -> list[str]:
-    return [line for line in lines if line.lstrip().startswith("ERROR:")]
+    return [line for line in lines if GODOT_ERROR_LINE.match(line)]
 
 
-def run_export(godot: str, project: Path, preset: str, output: Path) -> int:
+def run_export(
+    godot: str | Sequence[str], project: Path, preset: str, output: Path
+) -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.is_file():
         output.unlink()
+    godot_command = [godot] if isinstance(godot, str) else list(godot)
     command = [
-        godot,
+        *godot_command,
         "--headless",
         "--path",
         str(project),

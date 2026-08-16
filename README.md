@@ -50,7 +50,9 @@ Pull requests run the same validation with the pinned Godot 4.5 release.
 
 ## Local desktop exports
 
-Install the matching Godot 4.5 export templates before exporting.
+Install Python 3 and the matching Godot 4.5 export templates before using the
+validated local export helper. Python is only required for this helper and the
+CI/release infrastructure, not for general game development in the Godot editor.
 
 ```powershell
 python scripts/ci/godot_export.py --godot $godot --preset "Windows x86_64" --output "build/windows/ViolenceOfAction.exe"
@@ -60,8 +62,8 @@ python scripts/ci/godot_export.py --godot $godot --preset "Linux x86_64" --outpu
 Windows x86_64 and Linux x86_64 are the initial release targets. Mobile exports
 are planned separately after the desktop release. The export helper preserves
 Godot's exit status, fails on unexpected engine errors or a missing artifact,
-and suppresses only Godot 4.5's known first-export shutdown message for scripted
-`TileMapLayer` scenes.
+and suppresses only the single terminal shutdown signature produced by the
+pinned Godot 4.5 build during the first export of scripted `TileMapLayer` scenes.
 
 ## Repository layout
 
