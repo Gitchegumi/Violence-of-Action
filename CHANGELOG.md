@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/Gitchegumi/Violence-of-Action/compare/v0.1.0...v0.2.0) (2026-08-16)
+
+
+### Features
+
+* **ui:** show complete combat equation ([5135757](https://github.com/Gitchegumi/Violence-of-Action/commit/5135757a9663561097eb583b3f207f9eefa6835e))
+* **ui:** show complete combat equation ([cec444f](https://github.com/Gitchegumi/Violence-of-Action/commit/cec444f89bde69dc21a4c53caabbb3b851674676))
+
 ## 0.1.0 (2026-08-16)
 
 
