@@ -15,10 +15,11 @@ env:
   GODOT_VERSION: 4.5-stable
   GODOT_DIR: /home/runner/.cache/godot-editor/4.5-stable
   GODOT_BIN: /home/runner/.cache/godot-editor/4.5-stable/godot
+  GODOT_TEMPLATES_DIR: /home/runner/.local/share/godot/export_templates/4.5.stable
 
 jobs:
   validate:
-    name: Import, test, and smoke
+    name: Import, export, test, and smoke
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -58,8 +59,39 @@ jobs:
           mv "$RUNNER_TEMP/godot-editor/Godot_v4.5-stable_linux.x86_64" "$GODOT_BIN"
           chmod +x "$GODOT_BIN"
 
+      - name: Restore Windows export template cache
+        id: templates-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.GODOT_TEMPLATES_DIR }}
+          key: godot-ci-windows-export-template-${{ env.GODOT_VERSION }}
+
+      - name: Install Windows export template
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$GODOT_TEMPLATES_DIR"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/Godot_v4.5-stable_export_templates.tpz" \
+            --output "$RUNNER_TEMP/export-templates.tpz"
+          unzip -q "$RUNNER_TEMP/export-templates.tpz" \
+            templates/version.txt \
+            templates/windows_release_x86_64.exe \
+            -d "$RUNNER_TEMP/export-templates"
+          mv "$RUNNER_TEMP/export-templates/templates/"* "$GODOT_TEMPLATES_DIR/"
+
       - name: Import project
         run: "$GODOT_BIN --headless --path . --import"
+
+      - name: Test export output validation
+        run: python3 -m unittest tests/ci/test_godot_export.py
+
+      - name: Cold-cache Windows release export
+        run: |
+          python3 scripts/ci/godot_export.py \
+            --godot "$GODOT_BIN" \
+            --preset "Windows x86_64" \
+            --output "build/windows/ViolenceOfAction.exe"
 
       - name: Run GUT test suite
         run: "$GODOT_BIN --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit"
