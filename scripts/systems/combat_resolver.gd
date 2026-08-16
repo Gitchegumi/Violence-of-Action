@@ -27,6 +27,7 @@ static func resolve_attack(
 		"natural_roll": natural_roll,
 		"attack_value": attack_value,
 		"attack_total": attack_total,
+		"base_defense_target": BASE_DEFENSE_TARGET,
 		"armor_value": armor_value,
 		"defense_modifier": defense_modifier,
 		"defense_target": defense_target,

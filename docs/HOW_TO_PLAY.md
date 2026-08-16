@@ -91,7 +91,7 @@ Attacks resolve immediately when a valid target is selected:
 4. A hit deals 1 persistent HP damage. Armor does not deplete.
 5. A unit at 0 HP is removed from the battlefield.
 
-An intervening Mountain blocks line of sight. Other terrain and units do not. The combat result display shows the dice, Attack value, Defense Target, hit or miss, and remaining HP.
+An intervening Mountain blocks line of sight. Other terrain and units do not. The combat result display shows each die, the Attack stat and total, the separate base Defense, terrain, and Armor factors and total, hit or miss, and remaining HP.
 
 ## Objective and Victory
 
