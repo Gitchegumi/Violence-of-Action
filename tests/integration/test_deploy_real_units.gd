@@ -380,6 +380,9 @@ func test_live_attack_target_flow_uses_seeded_combat_resolution():
 	var units := _place_adjacent_opponents(tile_map)
 	var attacker: Node = units[0]
 	var defender: Node = units[1]
+	defender.data = defender.data.duplicate()
+	defender.data.stats_block = defender.data.stats_block.duplicate()
+	defender.data.stats_block["armor"] = 2
 	GameState.start_playing_for_test(2)
 	GameState.current_phase = GameState.TurnPhase.COMBAT
 	tile_map.troop_manager.start_turn(0)
@@ -400,11 +403,23 @@ func test_live_attack_target_flow_uses_seeded_combat_resolution():
 	assert_eq([observed_results[0].die_one, observed_results[0].die_two], expected_dice)
 	assert_eq(observed_results[0].attack_total, observed_results[0].natural_roll + 1)
 	var defender_terrain: TerrainType = tile_map.terrain_data_map.get(defender.map_pos)
-	var expected_defense := 9 if defender_terrain.terrain_name.to_lower() == "forest" else 8
+	var expected_terrain_bonus := 1 if defender_terrain.terrain_name.to_lower() == "forest" else 0
+	var expected_defense := 8 + expected_terrain_bonus + 2
 	assert_eq(observed_results[0].defense_target, expected_defense)
 	assert_true(attacker.attacked_this_turn)
 	assert_true(tile_map.get_parent().get_node("CombatResultLabel").visible)
-	assert_true(tile_map.get_parent().get_node("CombatResultLabel").text.contains("Attack:"))
+	assert_eq(
+		tile_map.get_parent().get_node("CombatResultLabel").text,
+		"Attack: %d + %d + ATK 1 = %d\nDefense: DEF 8 + Terrain %d + Armor 2 = %d - %s (%d HP)" % [
+			expected_dice[0],
+			expected_dice[1],
+			expected_dice[0] + expected_dice[1] + 1,
+			expected_terrain_bonus,
+			expected_defense,
+			"Hit" if observed_results[0].hit else "Miss",
+			observed_results[0].remaining_hp,
+		],
+	)
 
 
 func test_destroyed_unit_reaches_scavenger_reporting_exactly_once():
