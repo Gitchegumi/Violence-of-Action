@@ -94,10 +94,17 @@ func _on_pending_action_changed(active: bool, action_type: String) -> void:
 
 func _on_unit_attack_resolved(_attacker: Node, _defender: Node, result: Dictionary) -> void:
 	$CombatResultLabel.visible = true
-	$CombatResultLabel.text = "Attack: %d + %d + %d vs %d - %s (%d HP)" % [
+	$CombatResultLabel.text = (
+		"Attack: %d + %d + ATK %d = %d\n"
+		+ "Defense: DEF %d + Terrain %d + Armor %d = %d - %s (%d HP)"
+	) % [
 		result.die_one,
 		result.die_two,
 		result.attack_value,
+		result.attack_total,
+		result.base_defense_target,
+		result.defense_modifier,
+		result.armor_value,
 		result.defense_target,
 		"Hit" if result.hit else "Miss",
 		result.remaining_hp,
