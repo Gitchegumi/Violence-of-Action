@@ -53,9 +53,10 @@ godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gexit
 godot --headless --path . --quit-after 5
 ```
 
-Pull requests run the complete GUT suite and a headless main-scene smoke test on
-Godot 4.5. Keep the scope focused and describe player-visible changes and known
-risks in the pull request.
+Pull requests run a clean import, a cold-cache Windows release export, the
+complete GUT suite, and a headless main-scene smoke test on Godot 4.5. The export
+validator also has focused Python unit coverage. Keep the scope focused and
+describe player-visible changes and known risks in the pull request.
 
 ## AI-assisted development
 

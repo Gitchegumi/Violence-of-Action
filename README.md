@@ -53,12 +53,15 @@ Pull requests run the same validation with the pinned Godot 4.5 release.
 Install the matching Godot 4.5 export templates before exporting.
 
 ```powershell
-& $godot --headless --path . --export-release "Windows x86_64" "build/windows/ViolenceOfAction.exe"
-& $godot --headless --path . --export-release "Linux x86_64" "build/linux/ViolenceOfAction.x86_64"
+python scripts/ci/godot_export.py --godot $godot --preset "Windows x86_64" --output "build/windows/ViolenceOfAction.exe"
+python scripts/ci/godot_export.py --godot $godot --preset "Linux x86_64" --output "build/linux/ViolenceOfAction.x86_64"
 ```
 
 Windows x86_64 and Linux x86_64 are the initial release targets. Mobile exports
-are planned separately after the desktop release.
+are planned separately after the desktop release. The export helper preserves
+Godot's exit status, fails on unexpected engine errors or a missing artifact,
+and suppresses only Godot 4.5's known first-export shutdown message for scripted
+`TileMapLayer` scenes.
 
 ## Repository layout
 

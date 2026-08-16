@@ -174,10 +174,10 @@ jobs:
       - name: Export release build
         shell: bash
         run: |
-          mkdir -p "build/${{ matrix.directory }}"
-          "$GODOT_BIN" --headless --path . --export-release \
-            "${{ matrix.preset }}" \
-            "build/${{ matrix.directory }}/${{ matrix.output }}"
+          python3 scripts/ci/godot_export.py \
+            --godot "$GODOT_BIN" \
+            --preset "${{ matrix.preset }}" \
+            --output "build/${{ matrix.directory }}/${{ matrix.output }}"
 
       - name: Package export
         shell: bash
