@@ -165,6 +165,35 @@ func test_live_color_cancel_restores_unselected_transparent_sentinel() -> void:
 		assert_false(menu.player_color_selected[0])
 
 
+func test_live_controller_color_confirm_closes_picker_once() -> void:
+	menu.open_setup_dialog()
+	await get_tree().process_frame
+	menu.player_color_inputs[0].grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_true(menu.controller_color_picker.is_active())
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, false, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	assert_false(menu.controller_color_picker.is_active(), "A confirms the controller color")
+	assert_true(menu.player_color_inputs[0].disabled, "underlying picker stays blocked through release")
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_false(
+		menu.player_color_inputs[0].get_popup().visible,
+		"confirmation lifecycle does not reopen the native KBM color picker"
+	)
+	assert_false(menu.player_color_inputs[0].disabled)
+	assert_true(menu.player_color_selected[0])
+
+
 func test_live_controller_selects_setup_start_and_cancel_buttons() -> void:
 	menu.open_setup_dialog()
 	await get_tree().process_frame
