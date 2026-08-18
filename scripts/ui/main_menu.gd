@@ -48,6 +48,7 @@ func _ready() -> void:
 	setup_dialog.confirmed.connect(_start_game)
 	setup_dialog.canceled.connect(_focus_start_button)
 	setup_dialog.window_input.connect(_on_setup_dialog_input)
+	_configure_setup_action_focus_neighbors()
 	rules_dialog.confirmed.connect(_focus_rules_button)
 	player_count_option.item_selected.connect(_on_player_count_selected)
 	for player_id in range(player_color_inputs.size()):
@@ -80,6 +81,8 @@ func _handle_setup_dialog_navigation(event: InputEvent) -> bool:
 		setup_dialog.hide()
 		setup_dialog.canceled.emit()
 		return true
+	if event.device == 0:
+		return false
 	var next: Control = null
 	match event.button_index:
 		JOY_BUTTON_DPAD_DOWN:
@@ -98,6 +101,18 @@ func _handle_setup_dialog_navigation(event: InputEvent) -> bool:
 		return false
 	next.grab_focus()
 	return true
+
+
+func _configure_setup_action_focus_neighbors() -> void:
+	var start := setup_dialog.get_ok_button()
+	var cancel := setup_dialog.get_cancel_button()
+	seed_input.focus_neighbor_bottom = seed_input.get_path_to(start)
+	start.focus_neighbor_top = start.get_path_to(seed_input)
+	cancel.focus_neighbor_top = cancel.get_path_to(seed_input)
+	start.focus_neighbor_left = start.get_path_to(cancel)
+	start.focus_neighbor_right = start.get_path_to(cancel)
+	cancel.focus_neighbor_left = cancel.get_path_to(start)
+	cancel.focus_neighbor_right = cancel.get_path_to(start)
 
 
 func _handle_controller_setup_input(event: InputEvent) -> bool:

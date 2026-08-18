@@ -60,6 +60,7 @@ func _ready() -> void:
 			button.custom_minimum_size.x = 240.0
 		controls.add_child(button)
 		_control_buttons.append(button)
+	_configure_done_focus_neighbors()
 
 
 func _create_key_button(label: String, key: String) -> Button:
@@ -101,7 +102,7 @@ func _on_window_input(event: InputEvent) -> void:
 	if not _accept_armed and event.button_index == JOY_BUTTON_A and event.pressed:
 		_arm_accept()
 		return
-	if _accept_armed and event.pressed:
+	if _accept_armed and event.pressed and event.device != 0:
 		match event.button_index:
 			JOY_BUTTON_DPAD_LEFT:
 				_move_focus(SIDE_LEFT)
@@ -111,6 +112,14 @@ func _on_window_input(event: InputEvent) -> void:
 				_move_focus(SIDE_TOP)
 			JOY_BUTTON_DPAD_DOWN:
 				_move_focus(SIDE_BOTTOM)
+
+
+func _configure_done_focus_neighbors() -> void:
+	var done_button := get_ok_button()
+	for button: Button in _control_buttons:
+		button.focus_neighbor_bottom = button.get_path_to(done_button)
+	if _control_buttons.size() > 1:
+		done_button.focus_neighbor_top = done_button.get_path_to(_control_buttons[1])
 
 
 func _move_focus(side: Side) -> void:

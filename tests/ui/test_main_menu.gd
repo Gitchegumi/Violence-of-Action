@@ -69,45 +69,61 @@ func test_primary_button_opens_qwerty_keyboard_for_focused_name() -> void:
 	assert_same(menu.controller_keyboard.target_input, menu.player_name_inputs[0])
 
 
-func test_live_device_zero_primary_press_opens_keyboard_without_committing() -> void:
+func test_live_device_zero_keyboard_navigates_and_commits() -> void:
 	await _assert_live_primary_press_opens_keyboard(0)
+	await _assert_live_keyboard_navigation_and_commit(0)
 
 
-func test_live_nonzero_device_primary_press_opens_keyboard_without_committing() -> void:
+func test_live_nonzero_device_keyboard_navigates_and_commits() -> void:
 	await _assert_live_primary_press_opens_keyboard(1)
+	await _assert_live_keyboard_navigation_and_commit(1)
+
+
+func _assert_live_keyboard_navigation_and_commit(device: int) -> void:
 	var keyboard = menu.controller_keyboard
 	assert_false(keyboard._first_button.disabled, "opening release enables keyboard navigation")
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
 	await get_tree().process_frame
-	var focused: Control = keyboard.get_viewport().gui_get_focus_owner()
-	assert_not_null(focused)
-	assert_eq(focused.text, "2", "D-pad selects a non-default first key")
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
-	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
-	await get_tree().process_frame
-	assert_eq(keyboard._preview.text, "2", "intentional A enters the navigated-to first character")
+	assert_eq(keyboard._preview.text, "1", "device %d intentional A enters a character" % device)
+	for expected: String in ["Q", "A", "Z", "Shift", "Done"]:
+		Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, device))
+		await get_tree().process_frame
+		Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, device))
+		await get_tree().process_frame
+		assert_eq(
+			keyboard.get_viewport().gui_get_focus_owner().text,
+			expected,
+			"device %d D-pad Down reaches %s" % [device, expected]
+		)
 	var space_button: Button = keyboard._key_buttons.filter(
 		func(button: Button): return button.text == "Space"
 	)[0]
-	space_button.grab_focus()
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_UP, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_UP, false, device))
+	await get_tree().process_frame
+	assert_same(
+		keyboard.get_viewport().gui_get_focus_owner(),
+		space_button,
+		"device %d D-pad Up returns Done to Space" % device
+	)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, device))
 	await get_tree().process_frame
 	assert_same(
 		keyboard.get_viewport().gui_get_focus_owner(),
 		keyboard.get_ok_button(),
-		"D-pad reaches Done from the onscreen keyboard controls"
+		"device %d D-pad Down returns Space to Done" % device
 	)
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
 	await get_tree().process_frame
-	assert_false(keyboard.visible, "Done closes the onscreen keyboard")
-	assert_eq(menu.player_name_inputs[0].text, "2", "Done commits the controller-entered name")
+	assert_false(keyboard.visible, "device %d Done closes the onscreen keyboard" % device)
+	assert_eq(menu.player_name_inputs[0].text, "1", "device %d Done commits the name" % device)
 	assert_same(
 		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
 		menu.player_color_inputs[0],
@@ -195,42 +211,64 @@ func test_live_controller_color_confirm_closes_picker_once() -> void:
 
 
 func test_live_controller_selects_setup_start_and_cancel_buttons() -> void:
+	for device in [0, 1]:
+		await _assert_live_controller_selects_setup_actions(device)
+
+
+func _assert_live_controller_selects_setup_actions(device: int) -> void:
 	menu.open_setup_dialog()
 	await get_tree().process_frame
 	menu.seed_input.grab_focus()
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, device))
 	await get_tree().process_frame
 	assert_same(
 		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
 		menu.setup_dialog.get_ok_button(),
 		"D-pad Down reaches Start from the final setup field"
 	)
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
 	await get_tree().process_frame
 	assert_true(menu.setup_dialog.visible, "invalid Start activation keeps setup open")
 	assert_true(menu.setup_error.text.contains("enter a name"), "A activates focused Start")
 	menu.setup_dialog.grab_focus()
 	menu.seed_input.grab_focus()
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, false, device))
 	await get_tree().process_frame
 	assert_same(
 		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
 		menu.setup_dialog.get_cancel_button(),
 		"D-pad selects Cancel from Start"
 	)
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_UP, true, device))
 	await get_tree().process_frame
-	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_UP, false, device))
+	await get_tree().process_frame
+	assert_same(
+		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
+		menu.seed_input,
+		"device %d D-pad Up returns Cancel to Seed" % device
+	)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, true, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, false, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
 	await get_tree().process_frame
 	assert_false(menu.setup_dialog.visible, "A activates focused Cancel")
 
