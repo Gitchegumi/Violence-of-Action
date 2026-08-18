@@ -29,6 +29,12 @@ func _joy_button(button: JoyButton) -> InputEventJoypadButton:
 	return event
 
 
+func _joy_button_release(button: JoyButton) -> InputEventJoypadButton:
+	var event := _joy_button(button)
+	event.pressed = false
+	return event
+
+
 func _joy_motion(axis: JoyAxis, value: float) -> InputEventJoypadMotion:
 	var event := InputEventJoypadMotion.new()
 	event.axis = axis
@@ -144,6 +150,36 @@ func test_primary_action_opens_deployment_radial_on_cursor_hex() -> void:
 	assert_eq(tile_map.radial_origin, origin)
 
 
+func test_physical_primary_button_opens_deployment_radial() -> void:
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.set_selected_tile(origin)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_A))
+	assert_not_null(tile_map.radial_menu_instance)
+	assert_eq(tile_map.radial_origin, origin)
+
+
+func test_start_button_is_mapped_to_advance_phase_action() -> void:
+	var mapped_buttons: Array[int] = []
+	for event: InputEvent in InputMap.action_get_events("gamepad_advance_phase"):
+		if event is InputEventJoypadButton:
+			mapped_buttons.append(event.button_index)
+	assert_has(mapped_buttons, JOY_BUTTON_START)
+
+
+func test_physical_start_button_advances_play_phase() -> void:
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	Input.parse_input_event(_joy_button(JOY_BUTTON_START))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button_release(JOY_BUTTON_START))
+	await get_tree().process_frame
+	assert_eq(GameState.current_phase, GameState.TurnPhase.COMBAT)
+
+
 func test_primary_action_opens_action_radial_on_cursor_unit() -> void:
 	var tile_map = await _gameplay_tile_map()
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
@@ -190,3 +226,48 @@ func test_controller_cancel_clears_pending_target_selection() -> void:
 	tile_map._unhandled_input(_cancel_event())
 	assert_true(tile_map.pending_action.is_empty())
 	assert_true(tile_map.get_action_highlighted_cells().is_empty())
+
+
+func test_physical_cancel_button_clears_pending_target_selection() -> void:
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	tile_map._begin_pending_action(
+		"move",
+		tile_map.troop_manager.get_unit_at_map_coord(origin),
+		origin
+	)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_B))
+	assert_true(tile_map.pending_action.is_empty())
+	assert_true(tile_map.get_action_highlighted_cells().is_empty())
+
+
+func test_right_stick_pans_camera_until_released() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.camera_edge_margin = 0.0
+	tile_map.camera.zoom = Vector2.ONE * 2.0
+	tile_map.camera_target_zoom = 2.0
+	tile_map.center_camera_on_tile(tile_map.objective_position)
+	var starting_position: Vector2 = tile_map.camera.position
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_RIGHT_X, 1.0))
+	tile_map._process(0.1)
+	assert_gt(tile_map.camera.position.x, starting_position.x)
+
+	var moved_position: Vector2 = tile_map.camera.position
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_RIGHT_X, 0.0))
+	tile_map._process(0.1)
+	assert_almost_eq(tile_map.camera.position.x, moved_position.x, 0.001)
+
+
+func test_shoulders_zoom_map_in_and_out() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.camera_target_zoom = 1.0
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_RIGHT_SHOULDER))
+	assert_almost_eq(tile_map.camera_target_zoom, 1.0 + tile_map.camera_zoom_step, 0.0001)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_LEFT_SHOULDER))
+	assert_almost_eq(tile_map.camera_target_zoom, 1.0, 0.0001)

@@ -3,6 +3,21 @@ extends Node
 var match_config: Dictionary = {}
 
 
+func _ready() -> void:
+	_ensure_controller_ui_action("ui_accept", JOY_BUTTON_A)
+	_ensure_controller_ui_action("ui_cancel", JOY_BUTTON_B)
+
+
+func _ensure_controller_ui_action(action_name: StringName, button: JoyButton) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	var event := InputEventJoypadButton.new()
+	event.device = -1
+	event.button_index = button
+	if not InputMap.action_has_event(action_name, event):
+		InputMap.action_add_event(action_name, event)
+
+
 func set_match_config(config: Dictionary) -> void:
 	match_config = {
 		"player_count": int(config.get("player_count", 2)),

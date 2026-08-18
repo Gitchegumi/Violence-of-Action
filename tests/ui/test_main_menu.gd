@@ -22,10 +22,123 @@ func _configure_player_identities(player_count: int) -> void:
 		menu.player_color_inputs[player_id].color_changed.emit(colors[player_id])
 
 
+func _joy_button(button: JoyButton, pressed := true, device := -1) -> InputEventJoypadButton:
+	var event := InputEventJoypadButton.new()
+	event.device = device
+	event.button_index = button
+	event.pressed = pressed
+	return event
+
+
 func test_menu_exposes_required_options():
 	assert_eq(menu.start_button.text, "Start Game")
 	assert_eq(menu.rules_button.text, "Rules")
 	assert_eq(menu.quit_button.text, "Quit")
+
+
+func test_controller_face_buttons_are_native_ui_actions() -> void:
+	var expected := {
+		"ui_accept": JOY_BUTTON_A,
+		"ui_cancel": JOY_BUTTON_B,
+	}
+	for action_name: String in expected:
+		var buttons: Array[int] = []
+		for event in InputMap.action_get_events(action_name):
+			if event is InputEventJoypadButton:
+				buttons.append(event.button_index)
+		assert_has(buttons, expected[action_name])
+
+
+func test_physical_primary_button_activates_focused_main_menu_button() -> void:
+	assert_null(menu.controller_keyboard, "hidden keyboard window is not created during menu focus")
+	menu.start_button.grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false))
+	await get_tree().process_frame
+	assert_true(menu.setup_dialog.visible)
+	assert_true(menu.player_count_option.has_focus())
+
+
+func test_primary_button_opens_qwerty_keyboard_for_focused_name() -> void:
+	menu.open_setup_dialog()
+	menu.player_name_inputs[0].grab_focus()
+	assert_true(menu._handle_controller_setup_input(_joy_button(JOY_BUTTON_A)))
+	assert_not_null(menu.controller_keyboard)
+	assert_true(menu.controller_keyboard.visible)
+	assert_same(menu.controller_keyboard.target_input, menu.player_name_inputs[0])
+
+
+func test_live_device_zero_primary_press_opens_keyboard_without_committing() -> void:
+	await _assert_live_primary_press_opens_keyboard(0)
+
+
+func test_live_nonzero_device_primary_press_opens_keyboard_without_committing() -> void:
+	await _assert_live_primary_press_opens_keyboard(1)
+	var keyboard = menu.controller_keyboard
+	assert_false(keyboard._first_button.disabled, "opening release enables keyboard navigation")
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, false, 1))
+	await get_tree().process_frame
+	var focused: Control = keyboard.get_viewport().gui_get_focus_owner()
+	assert_not_null(focused)
+	assert_eq(focused.text, "2", "D-pad selects a non-default first key")
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	assert_eq(keyboard._preview.text, "2", "intentional A enters the navigated-to first character")
+
+
+func _assert_live_primary_press_opens_keyboard(device: int) -> void:
+	menu.open_setup_dialog()
+	await get_tree().process_frame
+	menu.player_name_inputs[0].grab_focus()
+	await get_tree().process_frame
+	assert_true(menu.player_name_inputs[0].has_focus(), "device %d name input has focus" % device)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
+	await get_tree().process_frame
+	assert_true(menu.controller_keyboard.visible, "device %d leaves keyboard open" % device)
+	assert_same(
+		menu.controller_keyboard.target_input,
+		menu.player_name_inputs[0],
+		"device %d keeps name entry active" % device
+	)
+
+
+func test_primary_button_opens_native_full_picker_for_focused_color() -> void:
+	menu.open_setup_dialog()
+	menu.player_color_inputs[0].grab_focus()
+	assert_true(menu._handle_controller_setup_input(_joy_button(JOY_BUTTON_A)))
+	assert_true(menu.player_color_inputs[0].get_popup().visible)
+	assert_true(menu.controller_color_picker.is_active())
+
+
+func test_live_color_cancel_restores_unselected_transparent_sentinel() -> void:
+	for device in [0, 1]:
+		var original: Color = menu.player_color_inputs[0].color
+		assert_false(menu.player_color_selected[0])
+		menu.open_setup_dialog()
+		await get_tree().process_frame
+		menu.player_color_inputs[0].grab_focus()
+		await get_tree().process_frame
+		assert_true(menu.player_color_inputs[0].has_focus(), "device %d color input has focus" % device)
+		Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, device))
+		await get_tree().process_frame
+		Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, device))
+		await get_tree().process_frame
+		assert_true(menu.controller_color_picker.is_active(), "device %d opens color input" % device)
+		assert_eq(menu.controller_color_picker._initial_color, original)
+		Input.parse_input_event(_joy_button(JOY_BUTTON_B, true, device))
+		await get_tree().process_frame
+		assert_false(menu.controller_color_picker.is_active(), "device %d cancel press closes color input" % device)
+		Input.parse_input_event(_joy_button(JOY_BUTTON_B, false, device))
+		await get_tree().process_frame
+		assert_eq(menu.player_color_inputs[0].color, original)
+		assert_false(menu.player_color_selected[0])
 
 
 func test_two_and_three_player_configs_preserve_seed():
