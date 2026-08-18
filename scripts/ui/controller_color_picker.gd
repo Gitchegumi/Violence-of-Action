@@ -17,10 +17,13 @@ var _left_stick := Vector2.ZERO
 var _right_stick := Vector2.ZERO
 var _accept_armed := true
 var _opening_device := -1
+var _blocked_button: ColorPickerButton = null
+var _blocked_device := -1
 
 
 func _ready() -> void:
 	set_process(false)
+	set_process_input(false)
 
 
 func begin(
@@ -70,6 +73,24 @@ func _on_popup_input(event: InputEvent) -> void:
 		popup_viewport.set_input_as_handled()
 
 
+func _input(event: InputEvent) -> void:
+	_handle_blocked_button_input(event, get_viewport())
+
+
+func _on_parent_window_input(event: InputEvent) -> void:
+	if _blocked_button != null:
+		_handle_blocked_button_input(event, _blocked_button.get_window().get_viewport())
+
+
+func _handle_blocked_button_input(event: InputEvent, viewport: Viewport) -> void:
+	if _blocked_button == null or not event is InputEventJoypadButton \
+			or event.device != _blocked_device or event.button_index != JOY_BUTTON_A:
+		return
+	viewport.set_input_as_handled()
+	if not event.pressed:
+		_release_blocked_button.call_deferred()
+
+
 func _handle_input_event(event: InputEvent) -> bool:
 	if _button == null:
 		return false
@@ -98,7 +119,7 @@ func _handle_input_event(event: InputEvent) -> bool:
 		return false
 	match event.button_index:
 		JOY_BUTTON_A:
-			_confirm()
+			_confirm(event.device)
 		JOY_BUTTON_B:
 			_cancel()
 		JOY_BUTTON_DPAD_LEFT:
@@ -138,14 +159,34 @@ func _adjust_color(saturation_value_delta: Vector2, hue_delta: float) -> void:
 	color_changed.emit(next, _player_id)
 
 
-func _confirm() -> void:
+func _confirm(device := -1) -> void:
 	if _button == null:
 		return
+	var button := _button
 	var color := _button.color
 	var player_id := _player_id
+	if device >= 0:
+		button.disabled = true
+		_blocked_button = button
+		_blocked_device = device
+		var parent_window := button.get_window()
+		if not parent_window.window_input.is_connected(_on_parent_window_input):
+			parent_window.window_input.connect(_on_parent_window_input)
+		set_process_input(true)
 	_button.get_popup().hide()
 	_deactivate()
 	color_committed.emit(color, player_id)
+
+
+func _release_blocked_button() -> void:
+	var button := _blocked_button
+	_blocked_button = null
+	_blocked_device = -1
+	set_process_input(false)
+	if is_instance_valid(button):
+		button.disabled = false
+		button.get_window().grab_focus()
+		button.grab_focus()
 
 
 func _cancel() -> void:
@@ -201,7 +242,7 @@ func adjust_for_test(saturation_value_delta: Vector2, hue_delta: float) -> void:
 
 
 func confirm_for_test() -> void:
-	_confirm()
+	_confirm(-1)
 
 
 func cancel_for_test() -> void:
