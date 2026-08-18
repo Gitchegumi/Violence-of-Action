@@ -108,6 +108,7 @@ func _open_controller_keyboard(input: LineEdit, opening_device := -1) -> void:
 	if controller_keyboard == null:
 		controller_keyboard = ControllerKeyboard.new()
 		add_child(controller_keyboard)
+		controller_keyboard.entry_committed.connect(_on_controller_keyboard_committed)
 	if opening_device >= 0:
 		_controller_popup_open_pending = true
 		_open_controller_keyboard_deferred.call_deferred(input, opening_device)
@@ -128,6 +129,13 @@ func _begin_controller_color_picker_deferred(
 ) -> void:
 	_controller_popup_open_pending = false
 	controller_color_picker.begin(button, player_id, was_selected, opening_device)
+
+
+func _on_controller_keyboard_committed(input: LineEdit) -> void:
+	var player_id := player_name_inputs.find(input)
+	if player_id >= 0:
+		setup_dialog.grab_focus()
+		player_color_inputs[player_id].grab_focus()
 
 
 func open_setup_dialog() -> void:

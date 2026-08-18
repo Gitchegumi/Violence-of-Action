@@ -1,5 +1,7 @@
 extends ConfirmationDialog
 
+signal entry_committed(input: LineEdit)
+
 const KEY_ROWS: Array[Array] = [
 	["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "'"],
 	["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -174,8 +176,9 @@ func _commit() -> void:
 		target_input.text = _preview.text
 		var input := target_input
 		target_input = null
+		input.release_focus()
 		hide()
-		input.grab_focus.call_deferred()
+		entry_committed.emit(input)
 
 
 func _cancel() -> void:

@@ -108,6 +108,11 @@ func test_live_nonzero_device_primary_press_opens_keyboard_without_committing() 
 	await get_tree().process_frame
 	assert_false(keyboard.visible, "Done closes the onscreen keyboard")
 	assert_eq(menu.player_name_inputs[0].text, "2", "Done commits the controller-entered name")
+	assert_same(
+		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
+		menu.player_color_inputs[0],
+		"Done advances controller focus from the name to that player's color"
+	)
 
 
 func _assert_live_primary_press_opens_keyboard(device: int) -> void:
