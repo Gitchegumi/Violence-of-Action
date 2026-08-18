@@ -61,6 +61,23 @@ func test_project_defines_vendor_neutral_radial_actions() -> void:
 			"%s uses a standard Godot joypad button" % action_name)
 
 
+func test_project_defines_vendor_neutral_gameplay_buttons() -> void:
+	var expected_actions := {
+		"gamepad_primary_action": JOY_BUTTON_A,
+		"gamepad_cancel_action": JOY_BUTTON_B,
+	}
+	for action_name: String in expected_actions:
+		assert_true(InputMap.has_action(action_name), "%s is defined" % action_name)
+		var mapped_buttons: Array[int] = []
+		for mapped_event in InputMap.action_get_events(action_name):
+			if mapped_event is InputEventJoypadButton:
+				mapped_buttons.append(mapped_event.button_index)
+				assert_eq(mapped_event.device, -1,
+					"%s accepts every connected joypad" % action_name)
+		assert_has(mapped_buttons, expected_actions[action_name],
+			"%s uses a standard Godot joypad button" % action_name)
+
+
 func test_nonzero_device_shoulder_dispatches_through_input_map() -> void:
 	menu.open(Vector2i.ZERO, _units(3))
 	var event := _joy_button(JOY_BUTTON_RIGHT_SHOULDER)
@@ -117,10 +134,25 @@ func test_controller_confirm_works_in_deploy_and_action_modes() -> void:
 	assert_signal_emitted_with_parameters(menu, "deploy_action_selected", ["move", Vector2i(4, 5)])
 
 
+func test_physical_primary_button_confirms_radial_option() -> void:
+	menu.open(Vector2i(2, 3), _units(2))
+	watch_signals(menu)
+	menu._unhandled_input(_joy_button(JOY_BUTTON_A))
+	assert_signal_emitted_with_parameters(menu, "deploy_unit_selected", ["u0", Vector2i(2, 3)])
+
+
 func test_controller_cancel_closes_menu() -> void:
 	menu.open(Vector2i.ZERO, _units(2))
 	watch_signals(menu)
 	menu._unhandled_input(_action_event("ui_cancel"))
+	assert_signal_emitted_with_parameters(menu, "deploy_radial_closed", ["cancel"])
+	assert_false(menu.active)
+
+
+func test_physical_cancel_button_closes_menu() -> void:
+	menu.open(Vector2i.ZERO, _units(2))
+	watch_signals(menu)
+	menu._unhandled_input(_joy_button(JOY_BUTTON_B))
 	assert_signal_emitted_with_parameters(menu, "deploy_radial_closed", ["cancel"])
 	assert_false(menu.active)
 

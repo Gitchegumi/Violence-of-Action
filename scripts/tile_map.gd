@@ -26,6 +26,7 @@ const MAP_RADIUS = 8
 const MOVE_HIGHLIGHT_COLOR := Color(0.35, 0.75, 1.0, 0.52)
 const ATTACK_HIGHLIGHT_COLOR := Color(1.0, 0.2, 0.2, 0.52)
 const CONTROLLER_CURSOR_DEADZONE := 0.5
+const CONTROLLER_CAMERA_DEADZONE := 0.2
 var player_count := 2
 var map_seed := 0
 var map_rng := RandomNumberGenerator.new()
@@ -478,14 +479,15 @@ func _process(delta: float) -> void:
 	if not camera:
 		return
 
-	# Controller directional input belongs to the hex cursor. Camera panning
-	# remains keyboard/mouse driven so moving the cursor cannot also pan twice.
+	# The left stick belongs to the hex cursor. The right stick is reserved for
+	# camera movement so selection and panning never happen from the same input.
 	var input_dir := Vector2(
 		float(Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D))
 			- float(Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A)),
 		float(Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S))
 			- float(Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W))
 	)
+	input_dir += _get_controller_camera_direction()
 	if input_dir.length_squared() > 1.0:
 		input_dir = input_dir.normalized()
 
@@ -539,12 +541,13 @@ static func get_clamped_camera_position(
 	if not world_bounds.has_area() or zoom_level <= 0.0:
 		return target
 	var half_view := viewport_size / (2.0 * zoom_level)
-	var center := world_bounds.get_center()
 	var min_position := world_bounds.position + half_view
 	var max_position := world_bounds.end - half_view
+	# When the map is smaller than the visible world, these endpoints reverse.
+	# Sorting them lets the map slide while keeping every edge in the viewport.
 	return Vector2(
-		center.x if min_position.x > max_position.x else clampf(target.x, min_position.x, max_position.x),
-		center.y if min_position.y > max_position.y else clampf(target.y, min_position.y, max_position.y)
+		clampf(target.x, minf(min_position.x, max_position.x), maxf(min_position.x, max_position.x)),
+		clampf(target.y, minf(min_position.y, max_position.y), maxf(min_position.y, max_position.y))
 	)
 
 
@@ -594,13 +597,18 @@ var is_dragging = false
 var _controller_stick_directions: Dictionary = {}
 var _controller_stick_engaged: Dictionary = {}
 var _controller_stick_move_pending: Dictionary = {}
+var _controller_camera_directions: Dictionary = {}
 
 # This dictionary will be populated in _generate_map
 var terrain_data_map: Dictionary = {}
 
 func _unhandled_input(event):
+	if _handle_controller_camera_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
 	# The radial owns controller input while open. Returning without marking the
-	# event lets the child radial receive it through normal unhandled dispatch.
+	# remaining events lets the child radial receive them through normal dispatch.
 	if radial_menu_instance != null:
 		return
 
@@ -700,22 +708,55 @@ func _handle_controller_cursor_input(event: InputEvent) -> bool:
 			JOY_BUTTON_DPAD_UP:
 				_move_controller_cursor(Vector2.UP)
 			_:
-				if event.is_action_pressed("ui_accept"):
+				if event.is_action_pressed("gamepad_primary_action") \
+						or event.is_action_pressed("ui_accept"):
 					_activate_selected_tile()
 					return true
-				if event.is_action_pressed("ui_cancel") and not pending_action.is_empty():
+				if (event.is_action_pressed("gamepad_cancel_action") \
+						or event.is_action_pressed("ui_cancel")) and not pending_action.is_empty():
 					cancel_pending_action()
 					return true
 				return false
 		return true
 
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("gamepad_primary_action") or event.is_action_pressed("ui_accept"):
 		_activate_selected_tile()
 		return true
-	if event.is_action_pressed("ui_cancel") and not pending_action.is_empty():
+	if (event.is_action_pressed("gamepad_cancel_action") \
+			or event.is_action_pressed("ui_cancel")) and not pending_action.is_empty():
 		cancel_pending_action()
 		return true
 	return false
+
+
+func _handle_controller_camera_input(event: InputEvent) -> bool:
+	if not event is InputEventJoypadMotion:
+		return false
+	var direction: Vector2 = _controller_camera_directions.get(event.device, Vector2.ZERO)
+	if event.axis == JOY_AXIS_RIGHT_X:
+		direction.x = event.axis_value
+	elif event.axis == JOY_AXIS_RIGHT_Y:
+		direction.y = event.axis_value
+	else:
+		return false
+	_controller_camera_directions[event.device] = direction
+	return true
+
+
+func _get_controller_camera_direction() -> Vector2:
+	var strongest := Vector2.ZERO
+	for direction: Vector2 in _controller_camera_directions.values():
+		if direction.length_squared() > strongest.length_squared():
+			strongest = direction
+	var magnitude := strongest.length()
+	if magnitude < CONTROLLER_CAMERA_DEADZONE:
+		return Vector2.ZERO
+	var strength := clampf(
+		(magnitude - CONTROLLER_CAMERA_DEADZONE) / (1.0 - CONTROLLER_CAMERA_DEADZONE),
+		0.0,
+		1.0
+	)
+	return strongest.normalized() * strength
 
 
 func _commit_controller_stick_move(device_id: int) -> void:

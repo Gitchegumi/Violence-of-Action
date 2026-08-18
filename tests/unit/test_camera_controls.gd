@@ -48,7 +48,7 @@ func test_camera_clamp_accounts_for_zoom():
 	)
 
 
-func test_small_map_stays_centered_when_viewport_is_larger():
+func test_small_map_can_pan_within_viewport_without_leaving_view():
 	assert_eq(
 		TileMapScript.get_clamped_camera_position(
 			Vector2(999, 999),
@@ -56,7 +56,16 @@ func test_small_map_stays_centered_when_viewport_is_larger():
 			Vector2(800, 600),
 			1.0
 		),
-		Vector2(200, 250)
+		Vector2(500, 500)
+	)
+	assert_eq(
+		TileMapScript.get_clamped_camera_position(
+			Vector2(-999, -999),
+			Rect2(100, 200, 200, 100),
+			Vector2(800, 600),
+			1.0
+		),
+		Vector2(-100, 0)
 	)
 
 

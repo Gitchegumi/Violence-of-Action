@@ -144,6 +144,15 @@ func test_primary_action_opens_deployment_radial_on_cursor_hex() -> void:
 	assert_eq(tile_map.radial_origin, origin)
 
 
+func test_physical_primary_button_opens_deployment_radial() -> void:
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.set_selected_tile(origin)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_A))
+	assert_not_null(tile_map.radial_menu_instance)
+	assert_eq(tile_map.radial_origin, origin)
+
+
 func test_primary_action_opens_action_radial_on_cursor_unit() -> void:
 	var tile_map = await _gameplay_tile_map()
 	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
@@ -190,3 +199,39 @@ func test_controller_cancel_clears_pending_target_selection() -> void:
 	tile_map._unhandled_input(_cancel_event())
 	assert_true(tile_map.pending_action.is_empty())
 	assert_true(tile_map.get_action_highlighted_cells().is_empty())
+
+
+func test_physical_cancel_button_clears_pending_target_selection() -> void:
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.troop_manager.set_current_unit("shard_walker")
+	assert_true(tile_map.troop_manager.place_unit(origin, 0))
+	assert_true(tile_map.troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	tile_map.troop_manager.start_turn(0)
+	tile_map._begin_pending_action(
+		"move",
+		tile_map.troop_manager.get_unit_at_map_coord(origin),
+		origin
+	)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_B))
+	assert_true(tile_map.pending_action.is_empty())
+	assert_true(tile_map.get_action_highlighted_cells().is_empty())
+
+
+func test_right_stick_pans_camera_until_released() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.camera_edge_margin = 0.0
+	tile_map.camera.zoom = Vector2.ONE * 2.0
+	tile_map.camera_target_zoom = 2.0
+	tile_map.center_camera_on_tile(tile_map.objective_position)
+	var starting_position: Vector2 = tile_map.camera.position
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_RIGHT_X, 1.0))
+	tile_map._process(0.1)
+	assert_gt(tile_map.camera.position.x, starting_position.x)
+
+	var moved_position: Vector2 = tile_map.camera.position
+	tile_map._unhandled_input(_joy_motion(JOY_AXIS_RIGHT_X, 0.0))
+	tile_map._process(0.1)
+	assert_almost_eq(tile_map.camera.position.x, moved_position.x, 0.001)

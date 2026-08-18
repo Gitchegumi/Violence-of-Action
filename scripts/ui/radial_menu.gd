@@ -81,10 +81,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_left"):
 		focus_previous()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_accept"):
+	elif event.is_action_pressed("gamepad_primary_action") or event.is_action_pressed("ui_accept"):
 		_confirm_item(get_focused_unit())
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("gamepad_cancel_action") or event.is_action_pressed("ui_cancel"):
 		close("cancel")
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
