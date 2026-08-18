@@ -58,6 +58,22 @@ func test_physical_primary_button_activates_focused_main_menu_button() -> void:
 	assert_true(menu.player_count_option.has_focus())
 
 
+func test_primary_button_opens_qwerty_keyboard_for_focused_name() -> void:
+	menu.open_setup_dialog()
+	menu.player_name_inputs[0].grab_focus()
+	menu._input(_joy_button(JOY_BUTTON_A))
+	assert_true(menu.controller_keyboard.visible)
+	assert_same(menu.controller_keyboard.target_input, menu.player_name_inputs[0])
+
+
+func test_primary_button_opens_native_full_picker_for_focused_color() -> void:
+	menu.open_setup_dialog()
+	menu.player_color_inputs[0].grab_focus()
+	menu._input(_joy_button(JOY_BUTTON_A))
+	assert_true(menu.player_color_inputs[0].get_popup().visible)
+	assert_true(menu.controller_color_picker.is_active())
+
+
 func test_two_and_three_player_configs_preserve_seed():
 	assert_eq(menu.build_match_config(2, "12345", 99), {"player_count": 2, "seed": 12345})
 	assert_eq(menu.build_match_config(3, "67890", 99), {"player_count": 3, "seed": 67890})

@@ -3,6 +3,8 @@ extends Control
 signal match_config_created(config: Dictionary)
 
 const GAMEPLAY_SCENE := "res://scenes/main.tscn"
+const ControllerKeyboard = preload("res://scripts/ui/controller_keyboard.gd")
+const ControllerColorPicker = preload("res://scripts/ui/controller_color_picker.gd")
 
 @onready var start_button: Button = $Center/Menu/StartButton
 @onready var rules_button: Button = $Center/Menu/RulesButton
@@ -28,10 +30,19 @@ const GAMEPLAY_SCENE := "res://scenes/main.tscn"
 @onready var setup_error: Label = $SetupDialog/SetupFields/SetupError
 @onready var rules_dialog: AcceptDialog = $RulesDialog
 var player_color_selected: Array[bool] = [false, false, false]
+var controller_keyboard = null
+var controller_color_picker = null
 
 
 func _ready() -> void:
 	GameState.return_to_menu()
+	controller_keyboard = ControllerKeyboard.new()
+	add_child(controller_keyboard)
+	controller_color_picker = ControllerColorPicker.new()
+	add_child(controller_color_picker)
+	controller_color_picker.color_changed.connect(_on_controller_color_changed)
+	controller_color_picker.color_committed.connect(_on_controller_color_committed)
+	controller_color_picker.selection_restored.connect(_on_controller_color_selection_restored)
 	start_button.pressed.connect(open_setup_dialog)
 	rules_button.pressed.connect(open_rules_dialog)
 	quit_button.pressed.connect(_quit_game)
@@ -44,6 +55,28 @@ func _ready() -> void:
 	player_count_option.select(0)
 	_refresh_player_identity_rows(2)
 	start_button.grab_focus()
+
+
+func _input(event: InputEvent) -> void:
+	if controller_keyboard.visible or controller_color_picker.is_active():
+		return
+	if not event is InputEventJoypadButton or not event.pressed \
+			or not event.is_action_pressed("gamepad_primary_action"):
+		return
+	for input: LineEdit in player_name_inputs:
+		if input.has_focus():
+			controller_keyboard.open_for(input)
+			get_viewport().set_input_as_handled()
+			return
+	for player_id in range(player_color_inputs.size()):
+		if player_color_inputs[player_id].has_focus():
+			controller_color_picker.begin(
+				player_color_inputs[player_id],
+				player_id,
+				player_color_selected[player_id]
+			)
+			get_viewport().set_input_as_handled()
+			return
 
 
 func open_setup_dialog() -> void:
@@ -128,6 +161,18 @@ func _on_player_color_changed(color: Color, player_id: int) -> void:
 	opaque_color.a = 1.0
 	if not player_color_inputs[player_id].color.is_equal_approx(opaque_color):
 		player_color_inputs[player_id].color = opaque_color
+
+
+func _on_controller_color_changed(color: Color, player_id: int) -> void:
+	_on_player_color_changed(color, player_id)
+
+
+func _on_controller_color_committed(color: Color, player_id: int) -> void:
+	_on_player_color_changed(color, player_id)
+
+
+func _on_controller_color_selection_restored(player_id: int, was_selected: bool) -> void:
+	player_color_selected[player_id] = was_selected
 
 
 func _get_identity_validation_error(player_count: int) -> String:

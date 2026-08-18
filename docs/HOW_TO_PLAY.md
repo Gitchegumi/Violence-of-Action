@@ -32,12 +32,19 @@ Controller navigation uses generic Godot gamepad mappings:
 
 | Input | Action |
 | --- | --- |
+| D-pad or left stick (menus) | Move focus through every menu and setup control |
+| Primary action (menus) | Press the focused button or open the focused name or color input |
+| Cancel action (menus) | Close the current dialog or setup input |
 | D-pad or left stick | Move the highlighted hex one step; while a radial is open, focus the nearest enabled option |
 | Right stick | Pan the battlefield at any zoom level |
 | Left/right shoulder | Zoom out/in on the battlefield; cycle radial options while a radial is open |
 | Primary action | Select the highlighted hex, open its deployment/action radial, confirm a radial option, or confirm a pending target |
 | Cancel action | Close a radial or cancel a pending target |
 | Left/right stick button | Show the previous/next radial page when pagination is available |
+
+During match setup, activating a player name opens an onscreen QWERTY keyboard. Navigate its keys with the D-pad or left stick and use the primary action to type or select Shift, Space, Backspace, Clear, or Done. The cancel action closes the keyboard without changing the name.
+
+Activating a player color opens the same full color picker shown for keyboard-and-mouse input. Use the left stick to adjust saturation and brightness, the right stick horizontally to adjust hue, the D-pad for precise saturation and brightness changes, and the shoulder buttons for precise hue changes. The primary action keeps the color; the cancel action restores the previous color.
 
 ## Initial Deployment
 
