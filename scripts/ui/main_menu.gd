@@ -36,8 +36,6 @@ var controller_color_picker = null
 
 func _ready() -> void:
 	GameState.return_to_menu()
-	controller_keyboard = ControllerKeyboard.new()
-	add_child(controller_keyboard)
 	controller_color_picker = ControllerColorPicker.new()
 	add_child(controller_color_picker)
 	controller_color_picker.color_changed.connect(_on_controller_color_changed)
@@ -58,14 +56,15 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if controller_keyboard.visible or controller_color_picker.is_active():
+	if (controller_keyboard != null and controller_keyboard.visible) \
+			or controller_color_picker.is_active():
 		return
 	if not event is InputEventJoypadButton or not event.pressed \
 			or not event.is_action_pressed("gamepad_primary_action"):
 		return
 	for input: LineEdit in player_name_inputs:
 		if input.has_focus():
-			controller_keyboard.open_for(input)
+			_open_controller_keyboard(input)
 			get_viewport().set_input_as_handled()
 			return
 	for player_id in range(player_color_inputs.size()):
@@ -77,6 +76,13 @@ func _input(event: InputEvent) -> void:
 			)
 			get_viewport().set_input_as_handled()
 			return
+
+
+func _open_controller_keyboard(input: LineEdit) -> void:
+	if controller_keyboard == null:
+		controller_keyboard = ControllerKeyboard.new()
+		add_child(controller_keyboard)
+	controller_keyboard.open_for(input)
 
 
 func open_setup_dialog() -> void:

@@ -49,6 +49,7 @@ func test_controller_face_buttons_are_native_ui_actions() -> void:
 
 
 func test_physical_primary_button_activates_focused_main_menu_button() -> void:
+	assert_null(menu.controller_keyboard, "hidden keyboard window is not created during menu focus")
 	menu.start_button.grab_focus()
 	Input.parse_input_event(_joy_button(JOY_BUTTON_A))
 	await get_tree().process_frame
@@ -62,6 +63,7 @@ func test_primary_button_opens_qwerty_keyboard_for_focused_name() -> void:
 	menu.open_setup_dialog()
 	menu.player_name_inputs[0].grab_focus()
 	menu._input(_joy_button(JOY_BUTTON_A))
+	assert_not_null(menu.controller_keyboard)
 	assert_true(menu.controller_keyboard.visible)
 	assert_same(menu.controller_keyboard.target_input, menu.player_name_inputs[0])
 
