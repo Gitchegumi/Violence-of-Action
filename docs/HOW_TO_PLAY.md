@@ -38,6 +38,7 @@ Controller navigation uses generic Godot gamepad mappings:
 | D-pad or left stick | Move the highlighted hex one step; while a radial is open, focus the nearest enabled option |
 | Right stick | Pan the battlefield at any zoom level |
 | Left/right shoulder | Zoom out/in on the battlefield; cycle radial options while a radial is open |
+| Start button | Declare the active deployment ready or complete the current phase |
 | Primary action | Select the highlighted hex, open its deployment/action radial, confirm a radial option, or confirm a pending target |
 | Cancel action | Close a radial or cancel a pending target |
 | Left/right stick button | Show the previous/next radial page when pagination is available |

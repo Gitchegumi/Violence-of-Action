@@ -29,6 +29,12 @@ func _joy_button(button: JoyButton) -> InputEventJoypadButton:
 	return event
 
 
+func _joy_button_release(button: JoyButton) -> InputEventJoypadButton:
+	var event := _joy_button(button)
+	event.pressed = false
+	return event
+
+
 func _joy_motion(axis: JoyAxis, value: float) -> InputEventJoypadMotion:
 	var event := InputEventJoypadMotion.new()
 	event.axis = axis
@@ -151,6 +157,27 @@ func test_physical_primary_button_opens_deployment_radial() -> void:
 	tile_map._unhandled_input(_joy_button(JOY_BUTTON_A))
 	assert_not_null(tile_map.radial_menu_instance)
 	assert_eq(tile_map.radial_origin, origin)
+
+
+func test_start_button_is_mapped_to_advance_phase_action() -> void:
+	var mapped_buttons: Array[int] = []
+	for event: InputEvent in InputMap.action_get_events("gamepad_advance_phase"):
+		if event is InputEventJoypadButton:
+			mapped_buttons.append(event.button_index)
+	assert_has(mapped_buttons, JOY_BUTTON_START)
+
+
+func test_physical_start_button_advances_play_phase() -> void:
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	GameState.start_playing_for_test(2)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	Input.parse_input_event(_joy_button(JOY_BUTTON_START))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button_release(JOY_BUTTON_START))
+	await get_tree().process_frame
+	assert_eq(GameState.current_phase, GameState.TurnPhase.COMBAT)
 
 
 func test_primary_action_opens_action_radial_on_cursor_unit() -> void:
