@@ -26,16 +26,16 @@ func test_edge_scroll_direction_ignores_mouse_outside_viewport():
 	)
 
 
-func test_camera_position_clamps_to_visible_world_bounds():
+func test_camera_position_keeps_one_screen_pixel_of_map_visible():
 	var bounds := Rect2(0, 0, 1000, 800)
 	var viewport := Vector2(400, 200)
 	assert_eq(
-		TileMapScript.get_clamped_camera_position(Vector2(-100, -100), bounds, viewport, 1.0),
-		Vector2(200, 100)
+		TileMapScript.get_clamped_camera_position(Vector2(-1000, -1000), bounds, viewport, 1.0),
+		Vector2(-199, -99)
 	)
 	assert_eq(
-		TileMapScript.get_clamped_camera_position(Vector2(1200, 900), bounds, viewport, 1.0),
-		Vector2(800, 700)
+		TileMapScript.get_clamped_camera_position(Vector2(2000, 2000), bounds, viewport, 1.0),
+		Vector2(1199, 899)
 	)
 
 
@@ -43,8 +43,8 @@ func test_camera_clamp_accounts_for_zoom():
 	var bounds := Rect2(0, 0, 1000, 800)
 	var viewport := Vector2(400, 200)
 	assert_eq(
-		TileMapScript.get_clamped_camera_position(Vector2.ZERO, bounds, viewport, 2.0),
-		Vector2(100, 50)
+		TileMapScript.get_clamped_camera_position(Vector2(-1000, -1000), bounds, viewport, 2.0),
+		Vector2(-99.5, -49.5)
 	)
 
 
@@ -56,7 +56,7 @@ func test_small_map_can_pan_within_viewport_without_leaving_view():
 			Vector2(800, 600),
 			1.0
 		),
-		Vector2(500, 500)
+		Vector2(699, 599)
 	)
 	assert_eq(
 		TileMapScript.get_clamped_camera_position(
@@ -65,7 +65,7 @@ func test_small_map_can_pan_within_viewport_without_leaving_view():
 			Vector2(800, 600),
 			1.0
 		),
-		Vector2(-100, 0)
+		Vector2(-299, -99)
 	)
 
 

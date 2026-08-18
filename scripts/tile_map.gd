@@ -536,15 +536,17 @@ static func get_clamped_camera_position(
 	target: Vector2,
 	world_bounds: Rect2,
 	viewport_size: Vector2,
-	zoom_level: float
+	zoom_level: float,
+	minimum_visible_pixels := 1.0
 ) -> Vector2:
 	if not world_bounds.has_area() or zoom_level <= 0.0:
 		return target
 	var half_view := viewport_size / (2.0 * zoom_level)
-	var min_position := world_bounds.position + half_view
-	var max_position := world_bounds.end - half_view
-	# When the map is smaller than the visible world, these endpoints reverse.
-	# Sorting them lets the map slide while keeping every edge in the viewport.
+	var minimum_visible_world := maxf(1.0, minimum_visible_pixels) / zoom_level
+	var min_position := world_bounds.position - half_view + Vector2.ONE * minimum_visible_world
+	var max_position := world_bounds.end + half_view - Vector2.ONE * minimum_visible_world
+	# One screen pixel of the map remains visible on each axis, so the battlefield
+	# can be pushed almost entirely aside without ever leaving the viewport.
 	return Vector2(
 		clampf(target.x, minf(min_position.x, max_position.x), maxf(min_position.x, max_position.x)),
 		clampf(target.y, minf(min_position.y, max_position.y), maxf(min_position.y, max_position.y))
@@ -612,6 +614,10 @@ func _unhandled_input(event):
 	if radial_menu_instance != null:
 		return
 
+	if _handle_controller_zoom_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
 	if _handle_controller_cursor_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -673,6 +679,26 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
 		center_camera_on_tile(selected_tile)
 		get_viewport().set_input_as_handled()
+
+
+func _handle_controller_zoom_input(event: InputEvent) -> bool:
+	if not event is InputEventJoypadButton or not event.pressed:
+		return false
+	if event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+		camera_target_zoom = clampf(
+			camera_target_zoom + camera_zoom_step,
+			camera_min_zoom,
+			camera_max_zoom
+		)
+		return true
+	if event.button_index == JOY_BUTTON_LEFT_SHOULDER:
+		camera_target_zoom = clampf(
+			camera_target_zoom - camera_zoom_step,
+			camera_min_zoom,
+			camera_max_zoom
+		)
+		return true
+	return false
 
 
 func _handle_controller_cursor_input(event: InputEvent) -> bool:

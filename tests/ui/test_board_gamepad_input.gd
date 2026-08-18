@@ -235,3 +235,12 @@ func test_right_stick_pans_camera_until_released() -> void:
 	tile_map._unhandled_input(_joy_motion(JOY_AXIS_RIGHT_X, 0.0))
 	tile_map._process(0.1)
 	assert_almost_eq(tile_map.camera.position.x, moved_position.x, 0.001)
+
+
+func test_shoulders_zoom_map_in_and_out() -> void:
+	var tile_map = await _gameplay_tile_map()
+	tile_map.camera_target_zoom = 1.0
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_RIGHT_SHOULDER))
+	assert_almost_eq(tile_map.camera_target_zoom, 1.0 + tile_map.camera_zoom_step, 0.0001)
+	tile_map._unhandled_input(_joy_button(JOY_BUTTON_LEFT_SHOULDER))
+	assert_almost_eq(tile_map.camera_target_zoom, 1.0, 0.0001)

@@ -22,10 +22,40 @@ func _configure_player_identities(player_count: int) -> void:
 		menu.player_color_inputs[player_id].color_changed.emit(colors[player_id])
 
 
+func _joy_button(button: JoyButton, pressed := true) -> InputEventJoypadButton:
+	var event := InputEventJoypadButton.new()
+	event.button_index = button
+	event.pressed = pressed
+	return event
+
+
 func test_menu_exposes_required_options():
 	assert_eq(menu.start_button.text, "Start Game")
 	assert_eq(menu.rules_button.text, "Rules")
 	assert_eq(menu.quit_button.text, "Quit")
+
+
+func test_controller_face_buttons_are_native_ui_actions() -> void:
+	var expected := {
+		"ui_accept": JOY_BUTTON_A,
+		"ui_cancel": JOY_BUTTON_B,
+	}
+	for action_name: String in expected:
+		var buttons: Array[int] = []
+		for event in InputMap.action_get_events(action_name):
+			if event is InputEventJoypadButton:
+				buttons.append(event.button_index)
+		assert_has(buttons, expected[action_name])
+
+
+func test_physical_primary_button_activates_focused_main_menu_button() -> void:
+	menu.start_button.grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false))
+	await get_tree().process_frame
+	assert_true(menu.setup_dialog.visible)
+	assert_true(menu.player_count_option.has_focus())
 
 
 func test_two_and_three_player_configs_preserve_seed():

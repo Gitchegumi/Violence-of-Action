@@ -50,7 +50,7 @@ func open_setup_dialog() -> void:
 	rules_dialog.hide()
 	setup_error.text = ""
 	setup_dialog.popup_centered(Vector2i(560, 440))
-	player_count_option.grab_focus()
+	player_count_option.grab_focus.call_deferred()
 
 
 func open_rules_dialog() -> void:

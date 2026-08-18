@@ -137,7 +137,18 @@ func test_controller_confirm_works_in_deploy_and_action_modes() -> void:
 func test_physical_primary_button_confirms_radial_option() -> void:
 	menu.open(Vector2i(2, 3), _units(2))
 	watch_signals(menu)
-	menu._unhandled_input(_joy_button(JOY_BUTTON_A))
+	menu._input(_joy_button(JOY_BUTTON_A))
+	assert_signal_emitted_with_parameters(menu, "deploy_unit_selected", ["u0", Vector2i(2, 3)])
+
+
+func test_live_primary_button_reaches_radial_before_focused_gui_control() -> void:
+	var competing_button := Button.new()
+	add_child_autofree(competing_button)
+	competing_button.grab_focus()
+	menu.open(Vector2i(2, 3), _units(2))
+	watch_signals(menu)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A))
+	await get_tree().process_frame
 	assert_signal_emitted_with_parameters(menu, "deploy_unit_selected", ["u0", Vector2i(2, 3)])
 
 
@@ -152,7 +163,7 @@ func test_controller_cancel_closes_menu() -> void:
 func test_physical_cancel_button_closes_menu() -> void:
 	menu.open(Vector2i.ZERO, _units(2))
 	watch_signals(menu)
-	menu._unhandled_input(_joy_button(JOY_BUTTON_B))
+	menu._input(_joy_button(JOY_BUTTON_B))
 	assert_signal_emitted_with_parameters(menu, "deploy_radial_closed", ["cancel"])
 	assert_false(menu.active)
 
