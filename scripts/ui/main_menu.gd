@@ -65,8 +65,39 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_setup_dialog_input(event: InputEvent) -> void:
-	if _handle_controller_setup_input(event):
+	if _handle_setup_dialog_navigation(event) or _handle_controller_setup_input(event):
 		setup_dialog.get_viewport().set_input_as_handled()
+
+
+func _handle_setup_dialog_navigation(event: InputEvent) -> bool:
+	if (controller_keyboard != null and controller_keyboard.visible) \
+			or controller_color_picker.is_active() \
+			or not event is InputEventJoypadButton or not event.pressed:
+		return false
+	var focused := setup_dialog.get_viewport().gui_get_focus_owner()
+	if event.is_action_pressed("gamepad_primary_action") \
+			and focused == setup_dialog.get_cancel_button():
+		setup_dialog.hide()
+		setup_dialog.canceled.emit()
+		return true
+	var next: Control = null
+	match event.button_index:
+		JOY_BUTTON_DPAD_DOWN:
+			if focused == seed_input:
+				next = setup_dialog.get_ok_button()
+		JOY_BUTTON_DPAD_UP:
+			if focused == setup_dialog.get_ok_button() \
+					or focused == setup_dialog.get_cancel_button():
+				next = seed_input
+		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT:
+			if focused == setup_dialog.get_ok_button():
+				next = setup_dialog.get_cancel_button()
+			elif focused == setup_dialog.get_cancel_button():
+				next = setup_dialog.get_ok_button()
+	if next == null:
+		return false
+	next.grab_focus()
+	return true
 
 
 func _handle_controller_setup_input(event: InputEvent) -> bool:

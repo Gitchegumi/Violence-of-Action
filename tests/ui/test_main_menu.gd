@@ -165,6 +165,47 @@ func test_live_color_cancel_restores_unselected_transparent_sentinel() -> void:
 		assert_false(menu.player_color_selected[0])
 
 
+func test_live_controller_selects_setup_start_and_cancel_buttons() -> void:
+	menu.open_setup_dialog()
+	await get_tree().process_frame
+	menu.seed_input.grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	await get_tree().process_frame
+	assert_same(
+		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
+		menu.setup_dialog.get_ok_button(),
+		"D-pad Down reaches Start from the final setup field"
+	)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	assert_true(menu.setup_dialog.visible, "invalid Start activation keeps setup open")
+	assert_true(menu.setup_error.text.contains("enter a name"), "A activates focused Start")
+	menu.setup_dialog.grab_focus()
+	menu.seed_input.grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_LEFT, false, 1))
+	await get_tree().process_frame
+	assert_same(
+		menu.setup_dialog.get_viewport().gui_get_focus_owner(),
+		menu.setup_dialog.get_cancel_button(),
+		"D-pad selects Cancel from Start"
+	)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	assert_false(menu.setup_dialog.visible, "A activates focused Cancel")
+
+
 func test_two_and_three_player_configs_preserve_seed():
 	assert_eq(menu.build_match_config(2, "12345", 99), {"player_count": 2, "seed": 12345})
 	assert_eq(menu.build_match_config(3, "67890", 99), {"player_count": 3, "seed": 67890})
