@@ -290,17 +290,22 @@ func test_p_shortcut_opens_purchase_flow_without_free_placement():
 
 func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	var tile_map = await _gameplay_tile_map()
-	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	var origin := Vector2i(-999, -999)
+	var destination := Vector2i(-999, -999)
+	for candidate_origin: Vector2i in tile_map.deployment_zones_data[0]:
+		for neighbor in tile_map._get_neighbors(candidate_origin):
+			var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
+			if terrain != null and terrain.terrain_name.to_lower() in ["field", "forest", "objective"]:
+				origin = candidate_origin
+				destination = neighbor
+				break
+		if destination != Vector2i(-999, -999):
+			break
+	assert_ne(origin, Vector2i(-999, -999), "generated deployment zone offers a movable unit origin")
+	assert_ne(destination, Vector2i(-999, -999), "generated map offers an adjacent legal destination")
 	tile_map.troop_manager.set_current_unit("shard_walker")
 	assert_true(tile_map.troop_manager.place_unit(origin, 0))
 	_place_passive_opposing_unit(tile_map)
-	var destination := Vector2i(-999, -999)
-	for neighbor in tile_map._get_neighbors(origin):
-		var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
-		if terrain != null and terrain.terrain_name.to_lower() in ["field", "forest", "objective"]:
-			destination = neighbor
-			break
-	assert_ne(destination, Vector2i(-999, -999), "generated map offers an adjacent legal destination")
 	GameState.start_playing_for_test(2)
 	GameState.current_phase = GameState.TurnPhase.MOVEMENT
 	tile_map.troop_manager.start_turn(0)

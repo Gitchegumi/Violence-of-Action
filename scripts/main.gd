@@ -28,6 +28,13 @@ func _ready():
 	_refresh_turn_ui()
 	_refresh_objective_ui()
 
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("gamepad_advance_phase"):
+		return
+	_on_advance_phase_pressed()
+	get_viewport().set_input_as_handled()
+
 func _on_deploy_unit_hovered(unit_id: String) -> void:
 	var preview: Dictionary = $TileMapLayer.get_deployable_unit_preview(unit_id)
 	if not preview.is_empty():

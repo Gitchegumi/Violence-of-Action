@@ -55,37 +55,21 @@ var origin_valid: bool = true
 
 
 func _ready() -> void:
+	set_process_input(false)
 	set_process_unhandled_input(false)
+
+
+func _input(event: InputEvent) -> void:
+	if not active or not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+		return
+	if _handle_navigation_input(event):
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
 		return
-	if _handle_gamepad_direction(event):
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("radial_page_next"):
-		next_page()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("radial_page_previous"):
-		prev_page()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("radial_cycle_next"):
-		focus_next()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("radial_cycle_previous"):
-		focus_previous()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_right"):
-		focus_next()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_left"):
-		focus_previous()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_accept"):
-		_confirm_item(get_focused_unit())
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel"):
-		close("cancel")
+	if _handle_navigation_input(event):
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		# Right-click cancels (T031).
@@ -96,6 +80,30 @@ func _unhandled_input(event: InputEvent) -> void:
 		# (Icon Buttons consume their own clicks before _unhandled_input.)
 		close("cancel")
 		get_viewport().set_input_as_handled()
+
+
+func _handle_navigation_input(event: InputEvent) -> bool:
+	if _handle_gamepad_direction(event):
+		return true
+	if event.is_action_pressed("radial_page_next"):
+		next_page()
+	elif event.is_action_pressed("radial_page_previous"):
+		prev_page()
+	elif event.is_action_pressed("radial_cycle_next"):
+		focus_next()
+	elif event.is_action_pressed("radial_cycle_previous"):
+		focus_previous()
+	elif event.is_action_pressed("ui_right"):
+		focus_next()
+	elif event.is_action_pressed("ui_left"):
+		focus_previous()
+	elif event.is_action_pressed("gamepad_primary_action") or event.is_action_pressed("ui_accept"):
+		_confirm_item(get_focused_unit())
+	elif event.is_action_pressed("gamepad_cancel_action") or event.is_action_pressed("ui_cancel"):
+		close("cancel")
+	else:
+		return false
+	return true
 
 
 func _handle_gamepad_direction(event: InputEvent) -> bool:
@@ -156,12 +164,14 @@ func _open_common(origin_tile: Vector2i, items: Array) -> void:
 	_rebuild()
 	_select_initial_focus()
 	show()
+	set_process_input(true)
 	set_process_unhandled_input(true)
 
 
 func close(reason: String) -> void:
 	"""Close the radial menu, free icons, hide the info panel, emit closed."""
 	active = false
+	set_process_input(false)
 	set_process_unhandled_input(false)
 	_clear_ui()
 	hide()

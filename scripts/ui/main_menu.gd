@@ -3,6 +3,8 @@ extends Control
 signal match_config_created(config: Dictionary)
 
 const GAMEPLAY_SCENE := "res://scenes/main.tscn"
+const ControllerKeyboard = preload("res://scripts/ui/controller_keyboard.gd")
+const ControllerColorPicker = preload("res://scripts/ui/controller_color_picker.gd")
 
 @onready var start_button: Button = $Center/Menu/StartButton
 @onready var rules_button: Button = $Center/Menu/RulesButton
@@ -28,15 +30,25 @@ const GAMEPLAY_SCENE := "res://scenes/main.tscn"
 @onready var setup_error: Label = $SetupDialog/SetupFields/SetupError
 @onready var rules_dialog: AcceptDialog = $RulesDialog
 var player_color_selected: Array[bool] = [false, false, false]
+var controller_keyboard = null
+var controller_color_picker = null
+var _controller_popup_open_pending := false
 
 
 func _ready() -> void:
 	GameState.return_to_menu()
+	controller_color_picker = ControllerColorPicker.new()
+	add_child(controller_color_picker)
+	controller_color_picker.color_changed.connect(_on_controller_color_changed)
+	controller_color_picker.color_committed.connect(_on_controller_color_committed)
+	controller_color_picker.selection_restored.connect(_on_controller_color_selection_restored)
 	start_button.pressed.connect(open_setup_dialog)
 	rules_button.pressed.connect(open_rules_dialog)
 	quit_button.pressed.connect(_quit_game)
 	setup_dialog.confirmed.connect(_start_game)
 	setup_dialog.canceled.connect(_focus_start_button)
+	setup_dialog.window_input.connect(_on_setup_dialog_input)
+	_configure_setup_action_focus_neighbors()
 	rules_dialog.confirmed.connect(_focus_rules_button)
 	player_count_option.item_selected.connect(_on_player_count_selected)
 	for player_id in range(player_color_inputs.size()):
@@ -46,11 +58,138 @@ func _ready() -> void:
 	start_button.grab_focus()
 
 
+func _input(event: InputEvent) -> void:
+	if setup_dialog.visible:
+		return
+	if _handle_controller_setup_input(event):
+		get_viewport().set_input_as_handled()
+
+
+func _on_setup_dialog_input(event: InputEvent) -> void:
+	if _handle_setup_dialog_navigation(event) or _handle_controller_setup_input(event):
+		setup_dialog.get_viewport().set_input_as_handled()
+
+
+func _handle_setup_dialog_navigation(event: InputEvent) -> bool:
+	if (controller_keyboard != null and controller_keyboard.visible) \
+			or controller_color_picker.is_active() \
+			or not event is InputEventJoypadButton or not event.pressed:
+		return false
+	var focused := setup_dialog.get_viewport().gui_get_focus_owner()
+	if event.is_action_pressed("gamepad_primary_action") \
+			and focused == setup_dialog.get_cancel_button():
+		setup_dialog.hide()
+		setup_dialog.canceled.emit()
+		return true
+	if event.device == 0:
+		return false
+	var next: Control = null
+	match event.button_index:
+		JOY_BUTTON_DPAD_DOWN:
+			if focused == seed_input:
+				next = setup_dialog.get_ok_button()
+		JOY_BUTTON_DPAD_UP:
+			if focused == setup_dialog.get_ok_button() \
+					or focused == setup_dialog.get_cancel_button():
+				next = seed_input
+		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT:
+			if focused == setup_dialog.get_ok_button():
+				next = setup_dialog.get_cancel_button()
+			elif focused == setup_dialog.get_cancel_button():
+				next = setup_dialog.get_ok_button()
+	if next == null:
+		return false
+	next.grab_focus()
+	return true
+
+
+func _configure_setup_action_focus_neighbors() -> void:
+	var start := setup_dialog.get_ok_button()
+	var cancel := setup_dialog.get_cancel_button()
+	seed_input.focus_neighbor_bottom = seed_input.get_path_to(start)
+	start.focus_neighbor_top = start.get_path_to(seed_input)
+	cancel.focus_neighbor_top = cancel.get_path_to(seed_input)
+	start.focus_neighbor_left = start.get_path_to(cancel)
+	start.focus_neighbor_right = start.get_path_to(cancel)
+	cancel.focus_neighbor_left = cancel.get_path_to(start)
+	cancel.focus_neighbor_right = cancel.get_path_to(start)
+
+
+func _handle_controller_setup_input(event: InputEvent) -> bool:
+	if _controller_popup_open_pending:
+		return event is InputEventJoypadButton and event.pressed \
+			and event.is_action_pressed("gamepad_primary_action")
+	if (controller_keyboard != null and controller_keyboard.visible) \
+			or controller_color_picker.is_active():
+		return false
+	if not event is InputEventJoypadButton or not event.pressed \
+			or not event.is_action_pressed("gamepad_primary_action"):
+		return false
+	for input: LineEdit in player_name_inputs:
+		if input.has_focus():
+			_open_controller_keyboard(input, event.device)
+			return true
+	for player_id in range(player_color_inputs.size()):
+		if player_color_inputs[player_id].has_focus():
+			if event.device >= 0:
+				_controller_popup_open_pending = true
+				_begin_controller_color_picker_deferred.call_deferred(
+					player_color_inputs[player_id],
+					player_id,
+					player_color_selected[player_id],
+					event.device
+				)
+			else:
+				controller_color_picker.begin(
+					player_color_inputs[player_id],
+					player_id,
+					player_color_selected[player_id],
+					event.device
+				)
+			return true
+	return false
+
+
+func _open_controller_keyboard(input: LineEdit, opening_device := -1) -> void:
+	if controller_keyboard == null:
+		controller_keyboard = ControllerKeyboard.new()
+		add_child(controller_keyboard)
+		controller_keyboard.entry_committed.connect(_on_controller_keyboard_committed)
+	if opening_device >= 0:
+		_controller_popup_open_pending = true
+		_open_controller_keyboard_deferred.call_deferred(input, opening_device)
+	else:
+		controller_keyboard.open_for(input, opening_device)
+
+
+func _open_controller_keyboard_deferred(input: LineEdit, opening_device: int) -> void:
+	_controller_popup_open_pending = false
+	controller_keyboard.open_for(input, opening_device)
+
+
+func _begin_controller_color_picker_deferred(
+	button: ColorPickerButton,
+	player_id: int,
+	was_selected: bool,
+	opening_device: int,
+) -> void:
+	_controller_popup_open_pending = false
+	controller_color_picker.begin(button, player_id, was_selected, opening_device)
+
+
+func _on_controller_keyboard_committed(input: LineEdit) -> void:
+	var player_id := player_name_inputs.find(input)
+	if player_id >= 0:
+		setup_dialog.grab_focus()
+		player_color_inputs[player_id].grab_focus()
+
+
 func open_setup_dialog() -> void:
 	rules_dialog.hide()
 	setup_error.text = ""
 	setup_dialog.popup_centered(Vector2i(560, 440))
 	player_count_option.grab_focus()
+	player_count_option.grab_focus.call_deferred()
 
 
 func open_rules_dialog() -> void:
@@ -128,6 +267,18 @@ func _on_player_color_changed(color: Color, player_id: int) -> void:
 	opaque_color.a = 1.0
 	if not player_color_inputs[player_id].color.is_equal_approx(opaque_color):
 		player_color_inputs[player_id].color = opaque_color
+
+
+func _on_controller_color_changed(color: Color, player_id: int) -> void:
+	_on_player_color_changed(color, player_id)
+
+
+func _on_controller_color_committed(color: Color, player_id: int) -> void:
+	_on_player_color_changed(color, player_id)
+
+
+func _on_controller_color_selection_restored(player_id: int, was_selected: bool) -> void:
+	player_color_selected[player_id] = was_selected
 
 
 func _get_identity_validation_error(player_count: int) -> String:
