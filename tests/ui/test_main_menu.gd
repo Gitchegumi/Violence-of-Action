@@ -75,6 +75,20 @@ func test_live_device_zero_primary_press_opens_keyboard_without_committing() -> 
 
 func test_live_nonzero_device_primary_press_opens_keyboard_without_committing() -> void:
 	await _assert_live_primary_press_opens_keyboard(1)
+	var keyboard = menu.controller_keyboard
+	assert_false(keyboard._first_button.disabled, "opening release enables keyboard navigation")
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_RIGHT, false, 1))
+	await get_tree().process_frame
+	var focused: Control = keyboard.get_viewport().gui_get_focus_owner()
+	assert_not_null(focused)
+	assert_eq(focused.text, "2", "D-pad selects a non-default first key")
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	assert_eq(keyboard._preview.text, "2", "intentional A enters the navigated-to first character")
 
 
 func _assert_live_primary_press_opens_keyboard(device: int) -> void:

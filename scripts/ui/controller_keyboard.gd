@@ -83,19 +83,40 @@ func open_for(input: LineEdit, opening_device := -1) -> void:
 
 
 func _on_window_input(event: InputEvent) -> void:
-	if not visible or _accept_armed or not event is InputEventJoypadButton \
-			or event.button_index != JOY_BUTTON_A:
+	if not visible or not event is InputEventJoypadButton:
 		return
-	if _opening_device >= 0:
+	if not _accept_armed and event.button_index == JOY_BUTTON_A and _opening_device >= 0:
 		if event.device != _opening_device:
 			return
 		get_viewport().set_input_as_handled()
 		if event.pressed:
 			return
 		_opening_device = -1
-		return
-	if event.pressed:
 		_arm_accept()
+		return
+	if not _accept_armed and event.button_index == JOY_BUTTON_A and event.pressed:
+		_arm_accept()
+		return
+	if _accept_armed and event.pressed:
+		match event.button_index:
+			JOY_BUTTON_DPAD_LEFT:
+				_move_focus(SIDE_LEFT)
+			JOY_BUTTON_DPAD_RIGHT:
+				_move_focus(SIDE_RIGHT)
+			JOY_BUTTON_DPAD_UP:
+				_move_focus(SIDE_TOP)
+			JOY_BUTTON_DPAD_DOWN:
+				_move_focus(SIDE_BOTTOM)
+
+
+func _move_focus(side: Side) -> void:
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused == null:
+		return
+	var next := focused.find_valid_focus_neighbor(side)
+	if next != null and next != focused:
+		next.grab_focus()
+		get_viewport().set_input_as_handled()
 
 
 func _arm_accept() -> void:
