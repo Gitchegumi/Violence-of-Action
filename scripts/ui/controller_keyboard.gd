@@ -10,8 +10,11 @@ const KEY_ROWS: Array[Array] = [
 var target_input: LineEdit = null
 var _preview: LineEdit = null
 var _letter_buttons: Dictionary = {}
+var _key_buttons: Array[Button] = []
 var _first_button: Button = null
 var _uppercase := true
+var _accept_armed := true
+var _opening_device := -1
 
 
 func _ready() -> void:
@@ -21,6 +24,7 @@ func _ready() -> void:
 	dialog_hide_on_ok = false
 	confirmed.connect(_commit)
 	canceled.connect(_cancel)
+	window_input.connect(_on_window_input)
 
 	var content := VBoxContainer.new()
 	content.custom_minimum_size = Vector2(720, 330)
@@ -59,19 +63,52 @@ func _create_key_button(label: String, key: String) -> Button:
 	button.text = label
 	button.custom_minimum_size = Vector2(48, 42)
 	button.pressed.connect(_press_key.bind(key))
+	_key_buttons.append(button)
 	if _first_button == null:
 		_first_button = button
 	return button
 
 
-func open_for(input: LineEdit) -> void:
+func open_for(input: LineEdit, opening_device := -1) -> void:
 	target_input = input
 	_preview.text = input.text
 	_uppercase = true
+	_opening_device = opening_device
+	_accept_armed = opening_device < 0
+	_set_controls_disabled(not _accept_armed)
 	_update_letter_labels()
 	popup_centered(Vector2i(760, 430))
 	if _first_button != null:
 		_first_button.grab_focus.call_deferred()
+
+
+func _on_window_input(event: InputEvent) -> void:
+	if not visible or _accept_armed or not event is InputEventJoypadButton \
+			or event.button_index != JOY_BUTTON_A:
+		return
+	if _opening_device >= 0:
+		if event.device != _opening_device:
+			return
+		get_viewport().set_input_as_handled()
+		if event.pressed:
+			return
+		_opening_device = -1
+		return
+	if event.pressed:
+		_arm_accept()
+
+
+func _arm_accept() -> void:
+	if not visible:
+		return
+	_accept_armed = true
+	_set_controls_disabled(false)
+
+
+func _set_controls_disabled(disabled: bool) -> void:
+	get_ok_button().disabled = disabled
+	for button: Button in _key_buttons:
+		button.disabled = disabled
 
 
 func _press_key(key: String) -> void:
@@ -104,7 +141,7 @@ func _update_letter_labels() -> void:
 
 
 func _commit() -> void:
-	if target_input != null:
+	if target_input != null and _accept_armed:
 		target_input.text = _preview.text
 		var input := target_input
 		target_input = null
@@ -115,6 +152,9 @@ func _commit() -> void:
 func _cancel() -> void:
 	var input := target_input
 	target_input = null
+	_accept_armed = true
+	_opening_device = -1
+	_set_controls_disabled(false)
 	hide()
 	if input != null:
 		input.grab_focus.call_deferred()

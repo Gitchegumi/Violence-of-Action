@@ -28,6 +28,7 @@ func test_cancel_restores_original_color_and_selection_state() -> void:
 	controller.begin(button, 2, false)
 	controller.adjust_for_test(Vector2(0.2, -0.1), 0.15)
 	controller.cancel_for_test()
+	await get_tree().process_frame
 	assert_eq(button.color, original)
 	assert_signal_emitted_with_parameters(controller, "selection_restored", [2, false])
 
