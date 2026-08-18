@@ -112,7 +112,6 @@ func test_army_codex_profile_table_matches_live_resources() -> void:
 	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
 	assert_not_null(file, "Army Codex is readable")
 	var codex_text := file.get_as_text()
-	var normalized_codex := _normalize_whitespace(codex_text)
 	file.seek(0)
 	var rows: Dictionary = {}
 	var in_profile_table := false
@@ -152,16 +151,22 @@ func test_army_codex_profile_table_matches_live_resources() -> void:
 			assert_eq(int(row[comparison[0]]), int(actual.stats_block[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
 		for comparison in [[11, "field"], [12, "forest"], [13, "mountain"], [14, "water"]]:
 			assert_eq(int(row[comparison[0]]), int(actual.terrain_type_matrix[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
-		assert_true(normalized_codex.contains(actual.unit_description), "%s Codex description" % unit_id)
-		for ability in actual.special_abilities:
-			assert_true(normalized_codex.contains(ability), "%s Codex ability: %s" % [unit_id, ability])
-		var region := "(%d, %d, %d, %d)" % [
-			int(actual.artwork_region.position.x),
-			int(actual.artwork_region.position.y),
-			int(actual.artwork_region.size.x),
-			int(actual.artwork_region.size.y),
-		]
-		assert_true(codex_text.contains(region), "%s Codex artwork region" % unit_id)
+	assert_eq(_codex_entry_reconciliation_errors(codex_text), [], "each live profile's prose values belong to its stable-ID Codex entry")
+
+
+func test_army_codex_reconciliation_rejects_cross_profile_description_swap() -> void:
+	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
+	assert_not_null(file, "Army Codex is readable")
+	var codex_text := file.get_as_text()
+	var fluxsmith_description: String = EXPECTED_PROFILES.fluxsmith.description
+	var ghostthorn_description: String = EXPECTED_PROFILES.ghostthorn.description
+	var swap_placeholder := "__CODEX_DESCRIPTION_SWAP_PLACEHOLDER__"
+	var mutated_codex := codex_text.replace(fluxsmith_description, swap_placeholder) \
+		.replace(ghostthorn_description, fluxsmith_description) \
+		.replace(swap_placeholder, ghostthorn_description)
+	var errors := _codex_entry_reconciliation_errors(mutated_codex)
+	assert_has(errors, "fluxsmith description", "swapped Fluxsmith description is rejected")
+	assert_has(errors, "ghostthorn description", "swapped Ghostthorn description is rejected")
 
 
 func test_army_codex_uses_complete_extensible_unit_schema() -> void:
@@ -219,3 +224,45 @@ func test_army_codex_preserves_volkaana_coming_soon_boundary() -> void:
 
 func _normalize_whitespace(value: String) -> String:
 	return " ".join(value.replace("\n", " ").replace("\t", " ").split(" ", false))
+
+
+func _codex_entry_reconciliation_errors(codex_text: String) -> Array[String]:
+	var errors: Array[String] = []
+	for unit_id in EXPECTED_PROFILES:
+		var entry_text := _codex_entry_for_unit(codex_text, unit_id)
+		if entry_text.is_empty():
+			errors.append("%s entry" % unit_id)
+			continue
+		var normalized_entry := _normalize_whitespace(entry_text)
+		var actual: UnitType = load(PROFILE_DIR + unit_id + ".tres")
+		if not normalized_entry.contains(actual.unit_description):
+			errors.append("%s description" % unit_id)
+		for ability in actual.special_abilities:
+			if not normalized_entry.contains(ability):
+				errors.append("%s ability: %s" % [unit_id, ability])
+		var region := "(%d, %d, %d, %d)" % [
+			int(actual.artwork_region.position.x),
+			int(actual.artwork_region.position.y),
+			int(actual.artwork_region.size.x),
+			int(actual.artwork_region.size.y),
+		]
+		if not entry_text.contains(region):
+			errors.append("%s artwork region" % unit_id)
+	return errors
+
+
+func _codex_entry_for_unit(codex_text: String, unit_id: String) -> String:
+	var marker := "- **Unit ID:** `%s`" % unit_id
+	var marker_position := codex_text.find(marker)
+	if marker_position < 0:
+		return ""
+	var entry_start := codex_text.rfind("\n### ", marker_position)
+	if entry_start < 0:
+		return ""
+	entry_start += 1
+	var entry_end := codex_text.length()
+	for heading_marker in ["\n### ", "\n## "]:
+		var heading_position := codex_text.find(heading_marker, marker_position)
+		if heading_position >= 0:
+			entry_end = mini(entry_end, heading_position)
+	return codex_text.substr(entry_start, entry_end - entry_start)
