@@ -12,7 +12,8 @@ audio, names, balance values, or UX behavior.
 1. Create a focused feature branch from the current `dev` branch.
 2. Conduct the work and validate it on that branch.
 3. Open the pull request against `dev`, never directly against `main`.
-4. The creative director handles batching and merging `dev` into `main`.
+4. Always open the pull request as ready for review. Do not mark it as a draft.
+5. The creative director handles batching and merging `dev` into `main`.
 
 Use Conventional Commits. Link the owning issue and keep its checklist current,
 checking only work that is complete and verified.
