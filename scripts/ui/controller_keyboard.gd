@@ -11,6 +11,7 @@ var target_input: LineEdit = null
 var _preview: LineEdit = null
 var _letter_buttons: Dictionary = {}
 var _key_buttons: Array[Button] = []
+var _control_buttons: Array[Button] = []
 var _first_button: Button = null
 var _uppercase := true
 var _accept_armed := true
@@ -56,6 +57,7 @@ func _ready() -> void:
 		if control_key == "Space":
 			button.custom_minimum_size.x = 240.0
 		controls.add_child(button)
+		_control_buttons.append(button)
 
 
 func _create_key_button(label: String, key: String) -> Button:
@@ -113,7 +115,13 @@ func _move_focus(side: Side) -> void:
 	var focused := get_viewport().gui_get_focus_owner()
 	if focused == null:
 		return
-	var next := focused.find_valid_focus_neighbor(side)
+	var next: Control = null
+	if side == SIDE_BOTTOM and focused in _control_buttons:
+		next = get_ok_button()
+	elif side == SIDE_TOP and focused == get_ok_button() and not _control_buttons.is_empty():
+		next = _control_buttons[1]
+	else:
+		next = focused.find_valid_focus_neighbor(side)
 	if next != null and next != focused:
 		next.grab_focus()
 		get_viewport().set_input_as_handled()

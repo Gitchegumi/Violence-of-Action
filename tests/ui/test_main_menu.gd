@@ -89,6 +89,25 @@ func test_live_nonzero_device_primary_press_opens_keyboard_without_committing() 
 	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
 	await get_tree().process_frame
 	assert_eq(keyboard._preview.text, "2", "intentional A enters the navigated-to first character")
+	var space_button: Button = keyboard._key_buttons.filter(
+		func(button: Button): return button.text == "Space"
+	)[0]
+	space_button.grab_focus()
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_DPAD_DOWN, false, 1))
+	await get_tree().process_frame
+	assert_same(
+		keyboard.get_viewport().gui_get_focus_owner(),
+		keyboard.get_ok_button(),
+		"D-pad reaches Done from the onscreen keyboard controls"
+	)
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, true, 1))
+	await get_tree().process_frame
+	Input.parse_input_event(_joy_button(JOY_BUTTON_A, false, 1))
+	await get_tree().process_frame
+	assert_false(keyboard.visible, "Done closes the onscreen keyboard")
+	assert_eq(menu.player_name_inputs[0].text, "2", "Done commits the controller-entered name")
 
 
 func _assert_live_primary_press_opens_keyboard(device: int) -> void:
