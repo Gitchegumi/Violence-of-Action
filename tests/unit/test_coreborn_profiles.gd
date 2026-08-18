@@ -111,6 +111,9 @@ func test_every_tier_one_profile_matches_authoritative_expectations():
 func test_army_codex_profile_table_matches_live_resources() -> void:
 	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
 	assert_not_null(file, "Army Codex is readable")
+	var codex_text := file.get_as_text()
+	var normalized_codex := _normalize_whitespace(codex_text)
+	file.seek(0)
 	var rows: Dictionary = {}
 	var in_profile_table := false
 	while not file.eof_reached():
@@ -149,3 +152,70 @@ func test_army_codex_profile_table_matches_live_resources() -> void:
 			assert_eq(int(row[comparison[0]]), int(actual.stats_block[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
 		for comparison in [[11, "field"], [12, "forest"], [13, "mountain"], [14, "water"]]:
 			assert_eq(int(row[comparison[0]]), int(actual.terrain_type_matrix[comparison[1]]), "%s Codex %s" % [unit_id, comparison[1]])
+		assert_true(normalized_codex.contains(actual.unit_description), "%s Codex description" % unit_id)
+		for ability in actual.special_abilities:
+			assert_true(normalized_codex.contains(ability), "%s Codex ability: %s" % [unit_id, ability])
+		var region := "(%d, %d, %d, %d)" % [
+			int(actual.artwork_region.position.x),
+			int(actual.artwork_region.position.y),
+			int(actual.artwork_region.size.x),
+			int(actual.artwork_region.size.y),
+		]
+		assert_true(codex_text.contains(region), "%s Codex artwork region" % unit_id)
+
+
+func test_army_codex_uses_complete_extensible_unit_schema() -> void:
+	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
+	assert_not_null(file, "Army Codex is readable")
+	var codex_text := file.get_as_text()
+	var unit_entries_start := codex_text.find("### Battlefield Scavenger")
+	var unit_entries_end := codex_text.find("\n## Volka'ana", unit_entries_start)
+	var unit_entries := codex_text.substr(unit_entries_start, unit_entries_end - unit_entries_start)
+	for field in [
+		"**Unit ID:**",
+		"**Display name:**",
+		"**Army:**",
+		"**Role:**",
+		"**Tier:**",
+		"**Description/lore:**",
+		"**Cost model / current cost:**",
+		"**Stats:**",
+		"**Terrain movement:**",
+		"**Special abilities:**",
+		"**Artwork/source status:**",
+		"**Implementation status:**",
+		"**Upgrade eligibility:**",
+		"**Planned upgrade target(s):**",
+		"**Planned upgrade cost / requirements:**",
+		"**Planned upgrade effects / deltas:**",
+		"**Open design questions:**",
+	]:
+		assert_eq(unit_entries.count(field), EXPECTED_PROFILES.size(), "%s appears once per unit" % field)
+	assert_true(_normalize_whitespace(codex_text).contains("mechanical race of beings bent on removing biological life forms from the world"), "Codex records the approved Coreborn identity")
+	assert_true(codex_text.contains("**Playstyle: TBD.**"), "Codex keeps the Coreborn playstyle unresolved")
+	assert_true(codex_text.contains("three tiers"), "Codex records the approved tier count")
+	assert_true(codex_text.contains("issues/118"), "Codex links the focused upgrade-design issue")
+
+
+func test_army_codex_preserves_volkaana_coming_soon_boundary() -> void:
+	var file := FileAccess.open("res://docs/ARMY_CODEX.md", FileAccess.READ)
+	assert_not_null(file, "Army Codex is readable")
+	var codex_text := file.get_as_text()
+	var normalized_codex := _normalize_whitespace(codex_text)
+	assert_true(codex_text.contains("## Volka'ana"), "Codex includes the approved coming-soon army")
+	assert_true(normalized_codex.contains("wardens of nature: an elvine race of beings who desire to defend the natural order of the universe"), "Codex preserves the approved Volka'ana identity and intentional elvine term")
+	assert_true(codex_text.contains("**Implementation status:** **Designed, not implemented — Coming soon.**"), "Codex distinguishes Volka'ana design from shipped behavior")
+	for field in [
+		"**Playstyle:** **TBD.**",
+		"**Mechanical themes:** **TBD.**",
+		"**Essence and economy:** **TBD.**",
+		"**Roster and tiers:** **TBD.**",
+		"**Upgrade philosophy and tree:** **TBD.**",
+		"**Unit profiles:** **TBD.**",
+		"**Artwork/source status:** **TBD.**",
+	]:
+		assert_true(codex_text.contains(field), "Volka'ana keeps unresolved field explicit: %s" % field)
+
+
+func _normalize_whitespace(value: String) -> String:
+	return " ".join(value.replace("\n", " ").replace("\t", " ").split(" ", false))
