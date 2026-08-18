@@ -18,6 +18,8 @@ audio, names, balance values, or UX behavior.
 Use Conventional Commits. Link the owning issue and keep its checklist current,
 checking only work that is complete and verified.
 
+When resolving change requests, always reply to the reviewer with a comment describing what was changed and why. Do not mark the change request as resolved without a comment. If you disagree with a requested change, explain your reasoning and ask for a follow-up review. Do not resolve the change request without a comment.
+
 ## Engineering standards
 
 - Add or update GUT tests first for behavior changes. Run the complete import,
