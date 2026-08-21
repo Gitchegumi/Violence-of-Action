@@ -78,39 +78,64 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
-          lfs: true
+          lfs: false
+          persist-credentials: true
 
-      - name: Verify Git LFS checkout
+      - name: Fetch and verify Git LFS objects
         shell: bash
         run: |
           set -euo pipefail
-          git lfs fsck
-          git lfs ls-files
 
-          pointer_files="$(git grep -Il 'https://git-lfs.github.com/spec/v1' -- . ':!*.md' || true)"
+          git lfs install --local
+
+          server_url="${{ forgejo.server_url }}"
+          repository="${{ forgejo.repository }}"
+          general_key="http.${server_url}/.extraheader"
+          lfs_url="${server_url}/${repository}.git/info/lfs/objects/batch"
+          lfs_key="http.${lfs_url}.extraheader"
+
+          auth_header="$(git config --local --get "$general_key")"
+
+          # Prevent checkout's broad header and LFS authentication from being
+          # sent together as duplicate Authorization headers.
+          git config --local --unset-all "$general_key"
+          git config --local "$lfs_key" "$auth_header"
+
+          cleanup_auth() {
+            git config --local --unset-all "$lfs_key" 2>/dev/null || true
+          }
+          trap cleanup_auth EXIT
+
+          git lfs pull
+          git lfs fsck
+
+          pointer_files="$(git grep -Il \
+            'https://git-lfs.github.com/spec/v1' \
+            -- . ':!*.md' || true)"
+
           if [[ -n "$pointer_files" ]]; then
             echo "::error::Unresolved Git LFS pointer files remain:"
             echo "$pointer_files"
             exit 1
           fi
 
-      - name: Check repository hygiene
-        shell: bash
-        run: |
-          set -euo pipefail
+            - name: Check repository hygiene
+              shell: bash
+              run: |
+                set -euo pipefail
 
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            git diff --check HEAD^ HEAD
-          else
-            git diff --check
-          fi
+                if git rev-parse HEAD^ >/dev/null 2>&1; then
+                  git diff --check HEAD^ HEAD
+                else
+                  git diff --check
+                fi
 
-          tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
-          if [[ -n "$tracked_temp_files" ]]; then
-            echo "::error::Generated editor temp files are tracked:"
-            echo "$tracked_temp_files"
-            exit 1
-          fi
+                tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
+                if [[ -n "$tracked_temp_files" ]]; then
+                  echo "::error::Generated editor temp files are tracked:"
+                  echo "$tracked_temp_files"
+                  exit 1
+                fi
 
       - name: Install Gitleaks
         shell: bash
