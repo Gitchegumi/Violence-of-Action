@@ -7,6 +7,28 @@ from scripts.ci import release_tool
 
 
 class ReleaseToolTests(unittest.TestCase):
+    def test_latest_tag_prefers_stable_release_over_prereleases(self):
+        tags = ["v0.4.0-rc.10", "v0.4.0", "v0.4.0-rc.2", "v0.3.0"]
+
+        self.assertEqual(release_tool.latest_tag(tags), "v0.4.0")
+
+    def test_latest_tag_compares_numeric_prerelease_identifiers_numerically(self):
+        tags = ["v1.0.0-rc.2", "v1.0.0-rc.10", "v1.0.0-beta.11"]
+
+        self.assertEqual(release_tool.latest_tag(tags), "v1.0.0-rc.10")
+
+    def test_numeric_prerelease_identifier_has_lower_precedence_than_text(self):
+        numeric = release_tool.Version.parse("1.0.0-1")
+        text = release_tool.Version.parse("1.0.0-alpha")
+
+        self.assertLess(numeric, text)
+
+    def test_invalid_prerelease_identifiers_are_rejected(self):
+        for value in ("1.0.0-rc.01", "1.0.0-rc..1", "1.0.0-rc."):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "Invalid semantic version"):
+                    release_tool.Version.parse(value)
+
     def test_conventional_commits_choose_highest_required_bump(self):
         commits = [
             release_tool.Commit("a" * 40, "fix(ui): correct focus", ""),

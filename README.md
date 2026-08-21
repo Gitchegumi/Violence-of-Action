@@ -94,6 +94,3 @@ project.godot    Godot project configuration
 
 See [Contributing](CONTRIBUTIONS.md) for branch, test, and commit expectations.
 Release maintainers should use the [release runbook](docs/RELEASE_RUNBOOK.md).
-Canonical releases are built and verified in Forgejo, then the exact tested
-archives are published for players on the
-[GitHub Releases mirror](https://github.com/Gitchegumi/Violence-of-Action/releases).

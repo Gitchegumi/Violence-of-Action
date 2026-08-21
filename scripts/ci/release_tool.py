@@ -11,7 +11,6 @@ import re
 import subprocess
 import sys
 import urllib.error
-import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from functools import total_ordering
@@ -42,29 +41,51 @@ class Version:
         match = SEMVER_RE.fullmatch(value)
         if not match:
             raise ValueError(f"Invalid semantic version: {value}")
+        suffix = match.group("suffix") or ""
+        identifiers = suffix.removeprefix("-").split(".") if suffix else []
+        if any(
+            not identifier
+            or (
+                identifier.isdigit()
+                and len(identifier) > 1
+                and identifier.startswith("0")
+            )
+            for identifier in identifiers
+        ):
+            raise ValueError(f"Invalid semantic version: {value}")
         return cls(
             int(match.group("major")),
             int(match.group("minor")),
             int(match.group("patch")),
-            match.group("suffix") or "",
+            suffix,
         )
 
     def __str__(self) -> str:
         return f"{self.major}.{self.minor}.{self.patch}{self.suffix}"
 
-    def _precedence(self) -> tuple[int, int, int, int, str]:
-        return (
-            self.major,
-            self.minor,
-            self.patch,
-            1 if not self.suffix else 0,
-            self.suffix,
-        )
-
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Version):
             return NotImplemented
-        return self._precedence() < other._precedence()
+        core = (self.major, self.minor, self.patch)
+        other_core = (other.major, other.minor, other.patch)
+        if core != other_core:
+            return core < other_core
+        if not self.suffix or not other.suffix:
+            return bool(self.suffix) and not other.suffix
+
+        identifiers = self.suffix.removeprefix("-").split(".")
+        other_identifiers = other.suffix.removeprefix("-").split(".")
+        for identifier, other_identifier in zip(identifiers, other_identifiers):
+            if identifier == other_identifier:
+                continue
+            numeric = identifier.isdigit()
+            other_numeric = other_identifier.isdigit()
+            if numeric and other_numeric:
+                return int(identifier) < int(other_identifier)
+            if numeric != other_numeric:
+                return numeric
+            return identifier < other_identifier
+        return len(identifiers) < len(other_identifiers)
 
     def bump(self, level: str) -> "Version":
         if level == "major":
@@ -74,6 +95,20 @@ class Version:
         if level == "patch":
             return Version(self.major, self.minor, self.patch + 1)
         raise ValueError(f"Unknown version bump: {level}")
+
+
+def latest_tag(tags: Iterable[str]) -> str:
+    candidates = []
+    for tag in tags:
+        tag = tag.strip()
+        if not tag:
+            continue
+        if not tag.startswith("v"):
+            raise ValueError(f"Release tag must use v<semver>: {tag}")
+        candidates.append((Version.parse(tag[1:]), tag))
+    if not candidates:
+        raise ValueError("No root release tag exists")
+    return max(candidates)[1]
 
 
 @dataclass(frozen=True)
@@ -291,15 +326,14 @@ def _api_request(
     *,
     method: str = "GET",
     payload: object | None = None,
-    github: bool = False,
     content_type: str = "application/json",
 ) -> object | None:
     data = None
     if payload is not None:
         data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
     headers = {
-        "Accept": "application/vnd.github+json" if github else "application/json",
-        "Authorization": f"Bearer {token}" if github else f"token {token}",
+        "Accept": "application/json",
+        "Authorization": f"token {token}",
         "Content-Type": content_type,
         "User-Agent": "violence-of-action-release-workflow",
     }
@@ -348,90 +382,6 @@ def sync_forgejo_pr(args: argparse.Namespace) -> None:
     print(pull["html_url"])
 
 
-def mirror_github_release(args: argparse.Namespace) -> None:
-    token = os.environ.get("GITHUB_MIRROR_TOKEN")
-    if not token:
-        raise ValueError("GITHUB_MIRROR_TOKEN is required")
-    api = "https://api.github.com"
-    repo_api = f"{api}/repos/{args.repository}"
-    _api_request(f"{repo_api}/commits/{args.sha}", token, github=True)
-
-    try:
-        ref = _api_request(f"{repo_api}/git/ref/tags/{args.tag}", token, github=True)
-    except RuntimeError as error:
-        if "(404)" not in str(error):
-            raise
-        ref = _api_request(
-            f"{repo_api}/git/refs",
-            token,
-            method="POST",
-            payload={"ref": f"refs/tags/{args.tag}", "sha": args.sha},
-            github=True,
-        )
-    if ref["object"]["sha"] != args.sha:
-        raise ValueError("GitHub mirror tag does not resolve to the Forgejo tag commit")
-
-    notes = Path(args.notes_file).read_text(encoding="utf-8")
-    release_payload = {
-        "tag_name": args.tag,
-        "target_commitish": args.sha,
-        "name": f"Violence of Action {args.tag}",
-        "body": notes,
-        "draft": False,
-        "prerelease": "-" in args.tag,
-    }
-    try:
-        release = _api_request(f"{repo_api}/releases/tags/{args.tag}", token, github=True)
-        release = _api_request(
-            f"{repo_api}/releases/{release['id']}",
-            token,
-            method="PATCH",
-            payload=release_payload,
-            github=True,
-        )
-    except RuntimeError as error:
-        if "(404)" not in str(error):
-            raise
-        release = _api_request(
-            f"{repo_api}/releases",
-            token,
-            method="POST",
-            payload=release_payload,
-            github=True,
-        )
-
-    assets_dir = Path(args.assets_dir)
-    expected = {
-        f"violence-of-action-{args.tag}-windows-x86_64.zip",
-        f"violence-of-action-{args.tag}-linux-x86_64.zip",
-        "SHA256SUMS.txt",
-    }
-    actual = {path.name for path in assets_dir.iterdir() if path.is_file()}
-    if actual != expected:
-        raise ValueError(f"Mirror assets mismatch: expected {sorted(expected)}, got {sorted(actual)}")
-    existing_assets = {asset["name"]: asset for asset in release.get("assets", [])}
-    upload_base = release["upload_url"].split("{", 1)[0]
-    for name in sorted(expected):
-        if name in existing_assets:
-            if not args.replace:
-                raise ValueError(f"GitHub asset {name} already exists; recovery requires --replace")
-            _api_request(
-                f"{repo_api}/releases/assets/{existing_assets[name]['id']}",
-                token,
-                method="DELETE",
-                github=True,
-            )
-        path = assets_dir / name
-        _api_request(
-            f"{upload_base}?{urllib.parse.urlencode({'name': name})}",
-            token,
-            method="POST",
-            payload=path.read_bytes(),
-            github=True,
-            content_type="application/octet-stream",
-        )
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -455,6 +405,8 @@ def build_parser() -> argparse.ArgumentParser:
     assert_newer.add_argument("--previous", required=True)
     assert_newer.add_argument("--current", required=True)
 
+    subparsers.add_parser("latest-tag")
+
     sync_pr = subparsers.add_parser("sync-pr")
     sync_pr.add_argument("--api-url", required=True)
     sync_pr.add_argument("--repository", required=True)
@@ -463,13 +415,6 @@ def build_parser() -> argparse.ArgumentParser:
     sync_pr.add_argument("--title", required=True)
     sync_pr.add_argument("--body", required=True)
 
-    mirror = subparsers.add_parser("mirror-github")
-    mirror.add_argument("--repository", required=True)
-    mirror.add_argument("--tag", required=True)
-    mirror.add_argument("--sha", required=True)
-    mirror.add_argument("--assets-dir", required=True)
-    mirror.add_argument("--notes-file", required=True)
-    mirror.add_argument("--replace", action="store_true")
     return parser
 
 
@@ -514,10 +459,10 @@ def main() -> int:
         current = Version.parse(args.current)
         if current <= previous:
             raise ValueError(f"version {current} must be newer than {previous}")
+    elif args.command == "latest-tag":
+        print(latest_tag(sys.stdin))
     elif args.command == "sync-pr":
         sync_forgejo_pr(args)
-    elif args.command == "mirror-github":
-        mirror_github_release(args)
     return 0
 
 

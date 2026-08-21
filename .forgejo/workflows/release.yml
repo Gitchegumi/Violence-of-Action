@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       replace_assets:
-        description: Explicitly replace assets on both release hosts
+        description: Explicitly replace assets on the Forgejo release
         required: true
         default: false
         type: boolean
@@ -108,11 +108,8 @@ jobs:
             exit 0
           fi
 
-          latest_tag="$(git tag --merged HEAD --list 'v[0-9]*' --sort=-version:refname | head -n 1)"
-          if [[ -z "$latest_tag" ]]; then
-            echo "::error::No root release tag exists."
-            exit 1
-          fi
+          latest_tag="$(git tag --merged HEAD --list 'v[0-9]*' | \
+            python3 "$RELEASE_TEMP/release_tool.py" latest-tag)"
           current_version="$(python3 "$RELEASE_TEMP/release_tool.py" current-version --root .)"
           latest_version="${latest_tag#v}"
 
@@ -472,22 +469,3 @@ jobs:
           release-notes: ${{ steps.notes.outputs.release_notes }}
           override: ${{ forgejo.event_name == 'workflow_dispatch' && inputs.replace_assets }}
           prerelease: ${{ contains(needs.orchestrate.outputs.tag, '-') }}
-      - name: Mirror exact release to GitHub
-        shell: bash
-        env:
-          EVENT_NAME: ${{ forgejo.event_name }}
-          REPLACE_ASSETS: ${{ inputs.replace_assets }}
-          GITHUB_MIRROR_TOKEN: ${{ secrets.GITHUB_MIRROR_TOKEN }}
-        run: |
-          set -euo pipefail
-          replace=()
-          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$REPLACE_ASSETS" == "true" ]]; then
-            replace=(--replace)
-          fi
-          python3 "$RELEASE_TEMP/release_tool.py" mirror-github \
-            --repository Gitchegumi/Violence-of-Action \
-            --tag "${{ needs.orchestrate.outputs.tag }}" \
-            --sha "${{ needs.orchestrate.outputs.commit_sha }}" \
-            --assets-dir dist/release \
-            --notes-file release-notes.md \
-            "${replace[@]}"

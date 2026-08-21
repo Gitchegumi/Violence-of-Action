@@ -2,9 +2,7 @@
 
 Violence of Action uses one repository-wide Semantic Version and one immutable
 `v<version>` tag. The private Forgejo repository is the release control plane.
-GitHub is a public, player-facing mirror of the tag and already-tested release
-bytes; it does not calculate versions, create authoritative tags, or rebuild the
-game.
+GitHub mirror configuration and publication are outside this workflow's scope.
 
 The initial release targets are Windows x86_64 and Linux x86_64. Mobile
 distribution is intentionally deferred.
@@ -56,8 +54,6 @@ Configure these repository Actions secrets:
 
 - `FORGEJO_RELEASE_TOKEN`: a repository-scoped Forgejo token able to push the
   release branch/tag, create or update a pull request, and publish a release.
-- `GITHUB_MIRROR_TOKEN`: a fine-grained GitHub token restricted to
-  `Gitchegumi/Violence-of-Action` with Contents read/write permission.
 
 Default workflow permissions are read-only. The orchestration job alone receives
 contents and pull-request write permission, and the final publication job alone
@@ -65,7 +61,7 @@ receives contents write permission. Secrets are passed through environment or
 action inputs and are never placed in command-line URLs.
 
 Protect `main` normally while allowing the release identity to open its generated
-pull request. Do not grant either token organization-wide administration.
+pull request. Do not grant the token organization-wide administration.
 
 ## Normal release
 
@@ -81,9 +77,7 @@ pull request. Do not grant either token organization-wide administration.
    exact commit, authenticates Git LFS and Godot downloads, builds both archives,
    and smoke-tests the archives on their native operating systems.
 7. Only after both smoke jobs pass, the publication job generates and verifies
-   `SHA256SUMS.txt`, publishes the canonical Forgejo release, verifies the same
-   commit exists in GitHub, creates the matching GitHub tag, and uploads the same
-   bytes:
+   `SHA256SUMS.txt` and publishes the canonical Forgejo release with these files:
 
    - `violence-of-action-v<version>-windows-x86_64.zip`
    - `violence-of-action-v<version>-linux-x86_64.zip`
@@ -97,13 +91,12 @@ are extracted or executed on a cache miss.
 
 Before announcing a release:
 
-1. Confirm both archives and `SHA256SUMS.txt` are attached to the Forgejo release
-   and the GitHub mirror release.
+1. Confirm both archives and `SHA256SUMS.txt` are attached to the Forgejo release.
 2. Run `sha256sum -c SHA256SUMS.txt` on the downloaded files. On Windows, compare
    `Get-FileHash -Algorithm SHA256` output with the file.
-3. Confirm the Forgejo and GitHub tags resolve to the commit recorded in the
-   release workflow.
-4. Confirm the two host downloads have the SHA-256 values recorded by the
+3. Confirm the Forgejo tag resolves to the commit recorded in the release
+   workflow.
+4. Confirm the downloaded archives have the SHA-256 values recorded by the
    workflow.
 5. Review the Windows and Linux smoke-job logs. For a production sign-off, also
    extract each archive, confirm the main menu loads, and complete a short
@@ -123,7 +116,7 @@ has been created:
 3. The workflow checks out the existing tag, verifies that its target and all
    version files still agree, rebuilds both archives from that tag, repeats both
    native smoke tests, regenerates the checksums, and explicitly replaces assets
-   on Forgejo and GitHub.
+   on Forgejo.
 
 The dispatch never moves or recreates the tag. Leaving the replacement input
 disabled makes an existing-asset collision fail instead of silently overwriting
@@ -134,19 +127,16 @@ smoke test, or failed checksum stops publication.
 
 - Never move, delete, or reuse a published version tag to correct game code.
   Revert the faulty change and publish a new patch release.
-- To yank a dangerous binary, mark both host releases as drafts or remove their
-  assets through the host interfaces, record the reason in the owning issue, and
+- To yank a dangerous binary, mark the Forgejo release as a draft or remove its
+  assets through the Forgejo interface, record the reason in the owning issue, and
   immediately prepare a patch. Keep the immutable tags for auditability.
-- If only release notes are wrong, edit the notes on both hosts without replacing
-  verified artifacts.
-- If GitHub mirroring fails after Forgejo publication, leave Forgejo canonical,
-  repair the mirror problem, and run recovery for the same tag with replacement
-  enabled.
+- If only release notes are wrong, edit the Forgejo release notes without
+  replacing verified artifacts.
 
 ## Credential rotation
 
-Rotate either token immediately after suspected disclosure and on the regular
-maintainer schedule:
+Rotate the release token immediately after suspected disclosure and on the
+regular maintainer schedule:
 
 1. Create the replacement with the same narrow repository scope.
 2. Replace the corresponding Forgejo Actions secret.
