@@ -52,8 +52,10 @@ the `windows` label to a Linux container or Wine environment.
 
 Configure these repository Actions secrets:
 
-- `FORGEJO_RELEASE_TOKEN`: a repository-scoped Forgejo token able to push the
+- `VOA_RELEASE_TOKEN`: a repository-scoped Forgejo token able to push the
   release branch/tag, create or update a pull request, and publish a release.
+  This token is named to follow the Forgejo Actions convention of not starting
+  secrets with `FORGEJO_` to avoid accidental exposure in the workflow environment.
 
 Default workflow permissions are read-only. The orchestration job alone receives
 contents and pull-request write permission, and the final publication job alone
