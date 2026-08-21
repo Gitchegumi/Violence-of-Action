@@ -119,23 +119,23 @@ jobs:
             exit 1
           fi
 
-            - name: Check repository hygiene
-              shell: bash
-              run: |
-                set -euo pipefail
+      - name: Check repository hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
 
-                if git rev-parse HEAD^ >/dev/null 2>&1; then
-                  git diff --check HEAD^ HEAD
-                else
-                  git diff --check
-                fi
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            git diff --check HEAD^ HEAD
+          else
+            git diff --check
+          fi
 
-                tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
-                if [[ -n "$tracked_temp_files" ]]; then
-                  echo "::error::Generated editor temp files are tracked:"
-                  echo "$tracked_temp_files"
-                  exit 1
-                fi
+          tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
+          if [[ -n "$tracked_temp_files" ]]; then
+            echo "::error::Generated editor temp files are tracked:"
+            echo "$tracked_temp_files"
+            exit 1
+          fi
 
       - name: Install Gitleaks
         shell: bash
