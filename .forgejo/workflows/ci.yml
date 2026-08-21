@@ -239,11 +239,11 @@ jobs:
           set -euo pipefail
           "$GODOT_BIN" --headless --path . --import
 
-      - name: Test export-output validation
+      - name: Test CI and release helpers
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m unittest tests/ci/test_godot_export.py
+          python3 -m unittest discover -s tests/ci -p 'test_*.py'
 
       - name: Cold-cache Windows release export
         shell: bash
