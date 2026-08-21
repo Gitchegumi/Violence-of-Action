@@ -38,6 +38,15 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Enforce main promotion path
+        if: forgejo.event_name == 'pull_request' && forgejo.base_ref == 'main'
+        shell: bash
+        run: |
+          if [[ "${{ forgejo.head_ref }}" != "dev" ]]; then
+            echo "::error::Pull requests into main must originate from dev."
+            exit 1
+          fi
+
       - name: Install CI dependencies
         shell: bash
         run: |
@@ -64,15 +73,6 @@ jobs:
           rm -rf /var/lib/apt/lists/*
           git lfs install --system
           mkdir -p "$CI_TEMP"
-        
-      - name: Enforce main promotion path
-        if: forgejo.event_name == 'pull_request' && forgejo.base_ref == 'main'
-        shell: bash
-        run: |
-          if [[ "${{ forgejo.head_ref }}" != "dev" ]]; then
-            echo "::error::Pull requests into main must originate from dev."
-            exit 1
-          fi
 
       - name: Check out repository
         uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
