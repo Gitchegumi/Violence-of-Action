@@ -10,6 +10,21 @@ Army-specific profiles and upgrade status are in the
 [Army Codex](docs/ARMY_CODEX.md), and runtime ownership is documented in
 [Architecture](docs/ARCHITECTURE.md).
 
+## AI and asset disclosure
+
+This project uses AI-assisted tools to help with coding, research, and
+organization. AI-assisted work is reviewed and directed by GitcheGumi.
+
+Placeholder assets are used during development and are not intended for the
+official launch. Before launch, every placeholder will be replaced with an
+asset made by GitcheGumi or an appropriately licensed paid asset.
+
+| Asset | Status |
+| --- | --- |
+| Map tiles | paid |
+| Coreborn unit artwork | placeholder |
+| Music | placeholder |
+
 ## Requirements
 
 - Godot Engine 4.5, standard (non-.NET) build

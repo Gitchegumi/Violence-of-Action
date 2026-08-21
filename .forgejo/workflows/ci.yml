@@ -1,0 +1,275 @@
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ forgejo.workflow }}-${{ forgejo.event.pull_request.number || forgejo.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.5-stable
+  GODOT_DIR: /root/.cache/godot-editor/4.5-stable
+  GODOT_BIN: /root/.cache/godot-editor/4.5-stable/godot
+  GODOT_TEMPLATES_DIR: /root/.local/share/godot/export_templates/4.5.stable
+  CI_TEMP: /tmp/voa-ci
+
+  # Official SHA-512 values from the Godot build manifest.
+  GODOT_EDITOR_SHA512: b5bd5d8a4dd3f44de1d123361beabaafa4825dd05b5e20fd2bfa540f32594f81d82e7c4e86fae420f4faee77d9def573b570f8b156e9c84a4dc2d5123d09e852
+  GODOT_TEMPLATES_SHA512: 1643140ac56ba8e6d18be34eb27788ec6a216e4a3f45dbcc3e01caf2b28ae9c8229832061e30200e296a1be46cec61e2b54c6d9df190b921ea1d0ad5f3f25ed1
+
+  # v8.30.1 has a known detection regression, so remain on v8.30.0.
+  GITLEAKS_VERSION: 8.30.0
+  GITLEAKS_SHA256: 79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e
+
+jobs:
+  validate:
+    name: Security, import, export, test, and smoke
+    runs-on: docker
+    timeout-minutes: 30
+
+    steps:
+      - name: Enforce main promotion path
+        if: forgejo.event_name == 'pull_request' && forgejo.base_ref == 'main'
+        shell: bash
+        run: |
+          if [[ "${{ forgejo.head_ref }}" != "dev" ]]; then
+            echo "::error::Pull requests into main must originate from dev."
+            exit 1
+          fi
+
+      - name: Install CI dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          apt-get update
+          apt-get install --yes --no-install-recommends \
+            ca-certificates \
+            curl \
+            git \
+            git-lfs \
+            libasound2 \
+            libfontconfig1 \
+            libgl1 \
+            libxi6 \
+            libxcursor1 \
+            libxinerama1 \
+            libxrandr2 \
+            python3 \
+            tar \
+            unzip \
+            zstd
+
+          rm -rf /var/lib/apt/lists/*
+          git lfs install --system
+          mkdir -p "$CI_TEMP"
+
+      - name: Check out repository
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Fetch and verify Git LFS objects
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git lfs install --local
+
+          server_url="${{ forgejo.server_url }}"
+          repository="${{ forgejo.repository }}"
+          general_key="http.${server_url}/.extraheader"
+          lfs_url="${server_url}/${repository}.git/info/lfs/objects/batch"
+          lfs_key="http.${lfs_url}.extraheader"
+
+          auth_header="$(git config --local --get "$general_key")"
+
+          # Prevent checkout's broad header and LFS authentication from being
+          # sent together as duplicate Authorization headers.
+          git config --local --unset-all "$general_key"
+          git config --local "$lfs_key" "$auth_header"
+
+          cleanup_auth() {
+            git config --local --unset-all "$lfs_key" 2>/dev/null || true
+          }
+          trap cleanup_auth EXIT
+
+          git lfs pull
+          git lfs fsck
+
+          pointer_files="$(git lfs ls-files | awk '$2 == "-" {
+            sub(/^[^ ]+ - /, "")
+            print
+          }')"
+
+          if [[ -n "$pointer_files" ]]; then
+            echo "::error::Unresolved Git LFS pointer files remain:"
+            echo "$pointer_files"
+            exit 1
+          fi
+
+      - name: Check repository hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            git diff --check HEAD^ HEAD
+          else
+            git diff --check
+          fi
+
+          tracked_temp_files="$(git ls-files '*.tmp' '*.tscn~')"
+          if [[ -n "$tracked_temp_files" ]]; then
+            echo "::error::Generated editor temp files are tracked:"
+            echo "$tracked_temp_files"
+            exit 1
+          fi
+
+      - name: Install Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl --fail --location --retry 3 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            --output "$CI_TEMP/gitleaks.tar.gz"
+
+          echo "${GITLEAKS_SHA256}  ${CI_TEMP}/gitleaks.tar.gz" |
+            sha256sum --check -
+
+          tar -xzf "$CI_TEMP/gitleaks.tar.gz" \
+            -C /usr/local/bin \
+            gitleaks
+
+          chmod +x /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan complete Git history for secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          gitleaks git . \
+            --redact \
+            --no-banner \
+            --verbose
+
+      - name: Restore Godot editor cache
+        id: godot-cache
+        uses: https://data.forgejo.org/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.GODOT_DIR }}
+          key: godot-editor-${{ runner.os }}-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot 4.5
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_DIR"
+          rm -rf "$CI_TEMP/godot-editor"
+          mkdir -p "$CI_TEMP/godot-editor"
+
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.5-stable_linux.x86_64.zip" \
+            --output "$CI_TEMP/godot.zip"
+
+          echo "${GODOT_EDITOR_SHA512}  ${CI_TEMP}/godot.zip" |
+            sha512sum --check -
+
+          unzip -q "$CI_TEMP/godot.zip" \
+            -d "$CI_TEMP/godot-editor"
+
+          mv \
+            "$CI_TEMP/godot-editor/Godot_v4.5-stable_linux.x86_64" \
+            "$GODOT_BIN"
+
+          chmod +x "$GODOT_BIN"
+          "$GODOT_BIN" --version
+
+      - name: Restore Windows export-template cache
+        id: templates-cache
+        uses: https://data.forgejo.org/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.GODOT_TEMPLATES_DIR }}
+          key: godot-ci-windows-export-template-${{ env.GODOT_VERSION }}
+
+      - name: Install Windows export template
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_TEMPLATES_DIR"
+          rm -rf "$CI_TEMP/export-templates"
+          mkdir -p "$CI_TEMP/export-templates"
+
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.5-stable_export_templates.tpz" \
+            --output "$CI_TEMP/export-templates.tpz"
+
+          echo "${GODOT_TEMPLATES_SHA512}  ${CI_TEMP}/export-templates.tpz" |
+            sha512sum --check -
+
+          unzip -q "$CI_TEMP/export-templates.tpz" \
+            templates/version.txt \
+            templates/windows_release_x86_64.exe \
+            -d "$CI_TEMP/export-templates"
+
+          mv \
+            "$CI_TEMP/export-templates/templates/"* \
+            "$GODOT_TEMPLATES_DIR/"
+
+      - name: Import project
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --import
+
+      - name: Test export-output validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests/ci/test_godot_export.py
+
+      - name: Cold-cache Windows release export
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 scripts/ci/godot_export.py \
+            --godot "$GODOT_BIN" \
+            --preset "Windows x86_64" \
+            --output "build/windows/ViolenceOfAction.exe"
+
+          test -s build/windows/ViolenceOfAction.exe
+
+      - name: Run GUT test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          "$GODOT_BIN" \
+            --headless \
+            --path . \
+            -s res://addons/gut/gut_cmdln.gd \
+            -gexit
+
+      - name: Smoke-test main scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --quit-after 5

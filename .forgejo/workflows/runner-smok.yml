@@ -1,0 +1,21 @@
+name: Runner Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: docker
+
+    steps:
+      - name: Inspect environment
+        run: |
+          echo "Forgejo runner is operational"
+          uname -a
+          cat /etc/os-release
+          id
+          node --version
+          df -h
