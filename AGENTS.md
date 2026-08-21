@@ -20,6 +20,38 @@ checking only work that is complete and verified.
 
 When resolving change requests, always reply to the reviewer with a comment describing what was changed and why. Do not mark the change request as resolved without a comment. If you disagree with a requested change, explain your reasoning and ask for a follow-up review. Do not resolve the change request without a comment.
 
+CLI commands can be run using `tea`. Run `tea help` for a list of available commands.
+
+### Running `tea` from Codex on Windows
+
+Codex shells may retain a stale `PATH` when `tea` was installed after the Codex
+process started. Try `tea` normally first. If PowerShell cannot find it, read the
+registered user `PATH` and invoke the executable by its full installation path:
+
+```powershell
+[Environment]::GetEnvironmentVariable('Path', 'User')
+$teaExe = Join-Path $env:LOCALAPPDATA 'Programs\tea\tea.exe'
+& $teaExe --version
+& $teaExe login list
+```
+
+When invoking `tea` through Codex command execution, run it outside the sandbox
+and allocate a TTY. `tea` 0.14.2 may start without returning output when no TTY
+is attached.
+
+Create a normal branch-backed pull request by passing `--head` and `--base` and
+omitting `--agit`. The AGit option creates a separate hidden PR head, so later
+commits pushed to the feature branch will not appear in that pull request.
+
+```powershell
+& $teaExe pr create `
+  --repo gitchegumi/Violence-of-Action `
+  --head '<feature-branch>' `
+  --base dev `
+  --title '<conventional-commit title>' `
+  --description 'Refs #<issue>. <summary and validation results>'
+```
+
 ## Engineering standards
 
 - Add or update GUT tests first for behavior changes. Run the complete import,

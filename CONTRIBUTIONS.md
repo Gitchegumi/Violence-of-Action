@@ -66,8 +66,9 @@ standards.
 
 ## Releases
 
-Release Please derives versions and release notes from Conventional Commits.
-Maintainers should follow the [release runbook](docs/RELEASE_RUNBOOK.md).
+The Forgejo release workflow derives versions and release notes from Conventional
+Commits and maintains the root release pull request. Maintainers should follow
+the [release runbook](docs/RELEASE_RUNBOOK.md).
 
 ## Code of conduct
 

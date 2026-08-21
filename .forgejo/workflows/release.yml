@@ -1,0 +1,471 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing immutable v<semver> tag to rebuild
+        required: true
+        type: string
+      replace_assets:
+        description: Explicitly replace assets on the Forgejo release
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || forgejo.ref }}
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: 4.5-stable
+  GODOT_DIR: /root/.cache/godot-editor/4.5-stable
+  GODOT_BIN: /root/.cache/godot-editor/4.5-stable/godot
+  GODOT_TEMPLATES_DIR: /root/.local/share/godot/export_templates/4.5.stable
+  RELEASE_TEMP: /tmp/voa-release
+  GODOT_EDITOR_SHA512: b5bd5d8a4dd3f44de1d123361beabaafa4825dd05b5e20fd2bfa540f32594f81d82e7c4e86fae420f4faee77d9def573b570f8b156e9c84a4dc2d5123d09e852
+  GODOT_TEMPLATES_SHA512: 1643140ac56ba8e6d18be34eb27788ec6a216e4a3f45dbcc3e01caf2b28ae9c8229832061e30200e296a1be46cec61e2b54c6d9df190b921ea1d0ad5f3f25ed1
+
+jobs:
+  orchestrate:
+    name: Release PR or immutable tag
+    runs-on: docker
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      commit_sha: ${{ steps.release.outputs.commit_sha }}
+    steps:
+      - name: Install orchestration dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install --yes --no-install-recommends ca-certificates git python3
+          rm -rf /var/lib/apt/lists/*
+          mkdir -p "$RELEASE_TEMP"
+
+      - name: Preserve current release tooling
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ forgejo.sha }}
+          persist-credentials: false
+
+      - name: Copy release tooling outside the tag checkout
+        run: cp scripts/ci/release_tool.py "$RELEASE_TEMP/release_tool.py"
+
+      - name: Check out triggering commit
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ forgejo.event_name == 'workflow_dispatch' && inputs.tag || forgejo.sha }}
+          persist-credentials: true
+          token: ${{ secrets.FORGEJO_RELEASE_TOKEN }}
+
+      - name: Resolve release operation
+        id: release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ forgejo.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          FORGEJO_API_URL: ${{ forgejo.api_url }}
+          FORGEJO_REPOSITORY: ${{ forgejo.repository }}
+          FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
+          FORGEJO_RELEASE_TOKEN: ${{ secrets.FORGEJO_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Recovery tag must use v<semver>."
+              exit 1
+            fi
+            tag_sha="$(git rev-parse "refs/tags/$INPUT_TAG^{commit}")"
+            head_sha="$(git rev-parse HEAD)"
+            if [[ "$tag_sha" != "$head_sha" ]]; then
+              echo "::error::Checkout does not match immutable tag target."
+              exit 1
+            fi
+            version="$(python3 "$RELEASE_TEMP/release_tool.py" validate --root . --tag "$INPUT_TAG")"
+            {
+              echo "release_created=true"
+              echo "tag=$INPUT_TAG"
+              echo "version=$version"
+              echo "commit_sha=$tag_sha"
+            } >> "$FORGEJO_OUTPUT"
+            exit 0
+          fi
+
+          latest_tag="$(git tag --merged HEAD --list 'v[0-9]*' | \
+            python3 "$RELEASE_TEMP/release_tool.py" latest-tag)"
+          current_version="$(python3 "$RELEASE_TEMP/release_tool.py" current-version --root .)"
+          latest_version="${latest_tag#v}"
+
+          if [[ "$current_version" != "$latest_version" ]]; then
+            python3 "$RELEASE_TEMP/release_tool.py" assert-newer \
+              --previous "$latest_version" --current "$current_version"
+            tag="v$current_version"
+            python3 "$RELEASE_TEMP/release_tool.py" validate --root . --tag "$tag"
+            commit_sha="$(git rev-parse HEAD)"
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              tag_sha="$(git rev-parse "refs/tags/$tag^{commit}")"
+              if [[ "$tag_sha" != "$commit_sha" ]]; then
+                echo "::error::$tag already points to a different commit."
+                exit 1
+              fi
+            else
+              git config user.name "Violence of Action Release"
+              git config user.email "release-bot@gitchegumi.com"
+              git tag --annotate "$tag" --message "Violence of Action $tag" "$commit_sha"
+              git push origin "refs/tags/$tag"
+            fi
+            {
+              echo "release_created=true"
+              echo "tag=$tag"
+              echo "version=$current_version"
+              echo "commit_sha=$commit_sha"
+            } >> "$FORGEJO_OUTPUT"
+            exit 0
+          fi
+
+          python3 "$RELEASE_TEMP/release_tool.py" plan --root . \
+            --base-tag "$latest_tag" \
+            --repository-url "$FORGEJO_SERVER_URL/$FORGEJO_REPOSITORY" \
+            --output "$RELEASE_TEMP-plan.env"
+          source "$RELEASE_TEMP-plan.env"
+
+          if [[ "$action" == "prepare" ]]; then
+            git config user.name "Violence of Action Release"
+            git config user.email "release-bot@gitchegumi.com"
+            git switch --force-create "$branch"
+            git add CHANGELOG.md .release-please-manifest.json project.godot
+            git commit --message "chore(main): release $version"
+            remote_sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            if [[ -n "$remote_sha" ]]; then
+              git push --force-with-lease="refs/heads/$branch:$remote_sha" \
+                origin "HEAD:refs/heads/$branch"
+            else
+              git push origin "HEAD:refs/heads/$branch"
+            fi
+            python3 "$RELEASE_TEMP/release_tool.py" sync-pr \
+              --api-url "$FORGEJO_API_URL" \
+              --repository "$FORGEJO_REPOSITORY" \
+              --head "$branch" \
+              --base main \
+              --title "chore(main): release $version" \
+              --body "Forgejo-managed root release $tag."
+          fi
+
+          echo "release_created=false" >> "$FORGEJO_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: orchestrate
+    if: needs.orchestrate.outputs.release_created == 'true'
+    runs-on: docker
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x86_64
+            preset: Windows x86_64
+            directory: windows
+            output: ViolenceOfAction.exe
+            platform: windows-x86_64
+          - label: Linux x86_64
+            preset: Linux x86_64
+            directory: linux
+            output: ViolenceOfAction.x86_64
+            platform: linux-x86_64
+    steps:
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install --yes --no-install-recommends \
+            ca-certificates curl git git-lfs libasound2 libfontconfig1 libgl1 \
+            libxi6 libxcursor1 libxinerama1 libxrandr2 python3 unzip zip zstd
+          rm -rf /var/lib/apt/lists/*
+          git lfs install --system
+          mkdir -p "$RELEASE_TEMP"
+
+      - name: Preserve current release tooling
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          ref: ${{ forgejo.sha }}
+          persist-credentials: false
+
+      - name: Copy release tooling outside the tag checkout
+        run: |
+          cp scripts/ci/release_tool.py "$RELEASE_TEMP/release_tool.py"
+          cp scripts/ci/godot_export.py "$RELEASE_TEMP/godot_export.py"
+
+      - name: Check out immutable release tag
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+          ref: ${{ needs.orchestrate.outputs.tag }}
+
+      - name: Verify tag commit and release versions
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.orchestrate.outputs.commit_sha }}
+          TAG: ${{ needs.orchestrate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git rev-parse "refs/tags/$TAG^{commit}")" = "$EXPECTED_SHA"
+          python3 "$RELEASE_TEMP/release_tool.py" validate --root . --tag "$TAG"
+
+      - name: Fetch and verify Git LFS objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install --local
+          server_url="${{ forgejo.server_url }}"
+          repository="${{ forgejo.repository }}"
+          general_key="http.${server_url}/.extraheader"
+          lfs_url="${server_url}/${repository}.git/info/lfs/objects/batch"
+          lfs_key="http.${lfs_url}.extraheader"
+          auth_header="$(git config --local --get "$general_key")"
+          git config --local --unset-all "$general_key"
+          git config --local "$lfs_key" "$auth_header"
+          cleanup_auth() { git config --local --unset-all "$lfs_key" 2>/dev/null || true; }
+          trap cleanup_auth EXIT
+          git lfs pull
+          git lfs fsck
+          pointer_files="$(git lfs ls-files | awk '$2 == "-" { sub(/^[^ ]+ - /, ""); print }')"
+          if [[ -n "$pointer_files" ]]; then
+            echo "::error::Unresolved Git LFS pointers remain:"
+            echo "$pointer_files"
+            exit 1
+          fi
+
+      - name: Restore Godot editor cache
+        id: godot-cache
+        uses: https://data.forgejo.org/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.GODOT_DIR }}
+          key: godot-release-editor-${{ runner.os }}-${{ env.GODOT_VERSION }}
+
+      - name: Authenticate and install Godot 4.5
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GODOT_DIR" "$RELEASE_TEMP/godot-editor"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.5-stable_linux.x86_64.zip" \
+            --output "$RELEASE_TEMP/godot.zip"
+          echo "${GODOT_EDITOR_SHA512}  ${RELEASE_TEMP}/godot.zip" | sha512sum --check -
+          unzip -q "$RELEASE_TEMP/godot.zip" -d "$RELEASE_TEMP/godot-editor"
+          mv "$RELEASE_TEMP/godot-editor/Godot_v4.5-stable_linux.x86_64" "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+          "$GODOT_BIN" --version
+
+      - name: Restore export-template cache
+        id: templates-cache
+        uses: https://data.forgejo.org/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ env.GODOT_TEMPLATES_DIR }}
+          key: godot-release-templates-${{ env.GODOT_VERSION }}
+
+      - name: Authenticate and install export templates
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GODOT_TEMPLATES_DIR" "$RELEASE_TEMP/export-templates"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v4.5-stable_export_templates.tpz" \
+            --output "$RELEASE_TEMP/export-templates.tpz"
+          echo "${GODOT_TEMPLATES_SHA512}  ${RELEASE_TEMP}/export-templates.tpz" | sha512sum --check -
+          unzip -q "$RELEASE_TEMP/export-templates.tpz" \
+            templates/version.txt templates/windows_release_x86_64.exe \
+            templates/linux_release.x86_64 -d "$RELEASE_TEMP/export-templates"
+          mv "$RELEASE_TEMP/export-templates/templates/"* "$GODOT_TEMPLATES_DIR/"
+
+      - name: Import and export exact tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --import
+          python3 "$RELEASE_TEMP/godot_export.py" \
+            --godot "$GODOT_BIN" \
+            --preset "${{ matrix.preset }}" \
+            --output "build/${{ matrix.directory }}/${{ matrix.output }}"
+
+      - name: Package release archive
+        shell: bash
+        env:
+          TAG: ${{ needs.orchestrate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          archive="violence-of-action-${TAG}-${{ matrix.platform }}.zip"
+          cd "build/${{ matrix.directory }}"
+          zip -9 -r "../../dist/$archive" .
+          test -s "../../dist/$archive"
+
+      - name: Upload packaged export
+        uses: https://data.forgejo.org/actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 3
+
+  smoke_linux:
+    name: Smoke-test Linux x86_64
+    needs: [orchestrate, build]
+    runs-on: docker
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Install smoke dependencies
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install --yes --no-install-recommends libasound2 libfontconfig1 libgl1 libxi6 libxcursor1 libxinerama1 libxrandr2 unzip
+          rm -rf /var/lib/apt/lists/*
+      - name: Download Linux archive
+        uses: https://data.forgejo.org/actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: release-linux-x86_64
+          path: dist
+      - name: Run Linux export
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="dist/violence-of-action-${{ needs.orchestrate.outputs.tag }}-linux-x86_64.zip"
+          test -s "$archive"
+          unzip -q "$archive" -d smoke
+          chmod +x smoke/ViolenceOfAction.x86_64
+          smoke/ViolenceOfAction.x86_64 --headless --quit-after 5
+
+  smoke_windows:
+    name: Smoke-test Windows x86_64
+    needs: [orchestrate, build]
+    runs-on: windows
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Download Windows archive
+        uses: https://data.forgejo.org/actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: release-windows-x86_64
+          path: dist
+      - name: Run Windows export
+        shell: powershell
+        run: |
+          $archive = "dist\violence-of-action-${{ needs.orchestrate.outputs.tag }}-windows-x86_64.zip"
+          if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
+            throw "Windows release archive was not downloaded."
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath smoke
+          & '.\smoke\ViolenceOfAction.exe' --headless --quit-after 5
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+  publish:
+    name: Publish verified bytes
+    needs: [orchestrate, build, smoke_linux, smoke_windows]
+    runs-on: docker
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Install publication dependencies
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install --yes --no-install-recommends ca-certificates python3
+          rm -rf /var/lib/apt/lists/*
+          mkdir -p "$RELEASE_TEMP"
+      - name: Preserve current release tooling
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          ref: ${{ forgejo.sha }}
+          persist-credentials: false
+      - name: Copy release tooling outside the tag checkout
+        run: cp scripts/ci/release_tool.py "$RELEASE_TEMP/release_tool.py"
+      - name: Check out immutable release tag
+        uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.orchestrate.outputs.tag }}
+          persist-credentials: false
+      - name: Download Windows archive
+        uses: https://data.forgejo.org/actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: release-windows-x86_64
+          path: dist/release
+      - name: Download Linux archive
+        uses: https://data.forgejo.org/actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: release-linux-x86_64
+          path: dist/release
+      - name: Validate assets and checksums
+        id: notes
+        shell: bash
+        env:
+          TAG: ${{ needs.orchestrate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          expected_linux="violence-of-action-${TAG}-linux-x86_64.zip"
+          expected_windows="violence-of-action-${TAG}-windows-x86_64.zip"
+          mapfile -t archives < <(find dist/release -maxdepth 1 -type f -name '*.zip' -printf '%f\n' | sort)
+          expected=("$expected_linux" "$expected_windows")
+          if [[ "${archives[*]}" != "${expected[*]}" ]]; then
+            echo "::error::Release archive set is incomplete or contains unexpected files."
+            exit 1
+          fi
+          (
+            cd dist/release
+            sha256sum "$expected_linux" "$expected_windows" > SHA256SUMS.txt
+            sha256sum --check SHA256SUMS.txt
+          )
+          version="$(python3 "$RELEASE_TEMP/release_tool.py" validate --root . --tag "$TAG" --notes-file release-notes.md)"
+          {
+            echo 'release_notes<<VOA_RELEASE_NOTES'
+            cat release-notes.md
+            echo 'VOA_RELEASE_NOTES'
+            echo "version=$version"
+          } >> "$FORGEJO_OUTPUT"
+      - name: Publish canonical Forgejo release
+        uses: https://code.forgejo.org/actions/forgejo-release@7fdceaa4f8c5f82bd48ac6d252b6644df7fcbba1
+        with:
+          direction: upload
+          url: ${{ forgejo.server_url }}
+          repo: ${{ forgejo.repository }}
+          token: ${{ secrets.FORGEJO_RELEASE_TOKEN }}
+          tag: ${{ needs.orchestrate.outputs.tag }}
+          sha: ${{ needs.orchestrate.outputs.commit_sha }}
+          title: Violence of Action ${{ needs.orchestrate.outputs.tag }}
+          release-dir: dist/release
+          release-notes: ${{ steps.notes.outputs.release_notes }}
+          override: ${{ forgejo.event_name == 'workflow_dispatch' && inputs.replace_assets }}
+          prerelease: ${{ contains(needs.orchestrate.outputs.tag, '-') }}
