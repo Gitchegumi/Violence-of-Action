@@ -9,8 +9,8 @@ on:
       - main
   workflow_dispatch:
 
-  permissions:
-    contents: read
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ forgejo.workflow }}-${{ forgejo.event.pull_request.number || forgejo.ref }}
@@ -109,9 +109,10 @@ jobs:
           git lfs pull
           git lfs fsck
 
-          pointer_files="$(git grep -Il \
-            'https://git-lfs.github.com/spec/v1' \
-            -- . ':!*.md' || true)"
+          pointer_files="$(git lfs ls-files | awk '$2 == "-" {
+            sub(/^[^ ]+ - /, "")
+            print
+          }')"
 
           if [[ -n "$pointer_files" ]]; then
             echo "::error::Unresolved Git LFS pointer files remain:"
