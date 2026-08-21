@@ -10,8 +10,7 @@ on:
   workflow_dispatch:
 
   permissions:
-  contents: 
-    - read
+    contents: read
 
 concurrency:
   group: ci-${{ forgejo.workflow }}-${{ forgejo.event.pull_request.number || forgejo.ref }}
