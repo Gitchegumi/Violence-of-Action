@@ -139,7 +139,7 @@ The Objective tile represents a critical point of interest on the battlefield. C
   Once gained, the **occupation token remains** with the controlling player, even if they no longer have a unit on the Objective tile. The token only changes hands if:
   - An **opposing player ends their turn** with a unit on the Objective tile.
   - The **current controller cannot afford the upkeep cost** (see below).
-  - The controller's **last unit is destroyed while occupying the Objective tile**; the Objective immediately becomes uncontrolled.
+  - The controller's **occupying unit is destroyed on the Objective tile**; the Objective immediately becomes uncontrolled, even if that player has other units elsewhere.
 
 - **Essence Bonus:**  
   When a player **gains control** of the Objective tile, they immediately gain **6 essence**.

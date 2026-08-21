@@ -288,6 +288,28 @@ func test_p_shortcut_opens_purchase_flow_without_free_placement():
 	assert_eq(tile_map.troop_manager.get_units_for_player(0).size(), 0, "shortcut cannot place a free unit")
 
 
+func test_live_left_click_keeps_new_deployment_radial_open():
+	var tile_map = await _gameplay_tile_map()
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.center_camera_on_tile(origin)
+	await get_tree().process_frame
+	var click := InputEventMouseButton.new()
+	var world_position: Vector2 = tile_map.to_global(tile_map.map_to_local(origin))
+	var screen_position: Vector2 = tile_map.get_viewport().get_canvas_transform() * world_position
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = screen_position
+	click.global_position = screen_position
+	tile_map._unhandled_input(click)
+	await get_tree().process_frame
+	assert_eq(tile_map.selected_tile, origin)
+	assert_not_null(
+		tile_map.radial_menu_instance,
+		"the click that opens a release radial cannot immediately close it as an outside click",
+	)
+	assert_true(tile_map.radial_menu_instance.active)
+
+
 func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	var tile_map = await _gameplay_tile_map()
 	var origin := Vector2i(-999, -999)

@@ -148,6 +148,72 @@ func test_main_objective_control_wins_after_three_later_controller_turns():
 	assert_eq(main.get_node("ObjectiveLabel").text, "Objective: Player 1 (3/3)")
 
 
+func test_objective_control_persists_when_controller_moves_off_and_reoccupies():
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var troop_manager = tile_map.troop_manager
+	troop_manager.set_current_unit("shard_walker")
+	var first_destination := Vector2i(-999, -999)
+	var replacement_origin := Vector2i(-999, -999)
+	for neighbor: Vector2i in tile_map._get_neighbors(tile_map.objective_position):
+		var terrain: TerrainType = tile_map.terrain_data_map.get(neighbor)
+		if terrain == null or terrain.terrain_name.to_lower() not in ["field", "forest", "objective"]:
+			continue
+		if first_destination == Vector2i(-999, -999):
+			first_destination = neighbor
+		elif replacement_origin == Vector2i(-999, -999):
+			replacement_origin = neighbor
+			break
+	assert_ne(first_destination, Vector2i(-999, -999))
+	assert_ne(replacement_origin, Vector2i(-999, -999))
+	assert_true(troop_manager.place_unit(tile_map.objective_position, 0))
+	assert_true(troop_manager.place_unit(replacement_origin, 0))
+	assert_true(troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	GameState.start_playing_for_test(2)
+	main._on_turn_ended(0, 1)
+	var resource_manager: ResourceManager = main.get_node("ResourceManager")
+	assert_eq(resource_manager.objective_controller, 0)
+	GameState.current_phase = GameState.TurnPhase.MOVEMENT
+	troop_manager.start_turn(0)
+	var original_controller = troop_manager.get_unit_at_map_coord(tile_map.objective_position)
+	assert_true(troop_manager.move_unit(original_controller, first_destination).success)
+	assert_eq(resource_manager.objective_controller, 0, "moving away never drops the control token")
+	var replacement = troop_manager.get_unit_at_map_coord(replacement_origin)
+	assert_true(troop_manager.move_unit(replacement, tile_map.objective_position).success)
+	main._on_turn_ended(0, 2)
+	assert_eq(resource_manager.objective_controller, 0)
+	assert_eq(resource_manager.objective_control_turns, 1)
+
+
+func test_destroying_controller_unit_on_objective_removes_control_with_reserves_alive():
+	GameState.begin_match({"player_count": 2, "seed": 982451653})
+	var main = MainScene.instantiate()
+	add_child_autofree(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var troop_manager = tile_map.troop_manager
+	troop_manager.set_current_unit("shard_walker")
+	assert_true(troop_manager.place_unit(tile_map.objective_position, 0))
+	assert_true(troop_manager.place_unit(tile_map.deployment_zones_data[0][0], 0))
+	assert_true(troop_manager.place_unit(tile_map.deployment_zones_data[1][0], 1))
+	GameState.start_playing_for_test(2)
+	var resource_manager: ResourceManager = main.get_node("ResourceManager")
+	assert_true(resource_manager.capture_objective(0))
+	assert_true(troop_manager.destroy_unit(
+		troop_manager.get_unit_at_map_coord(tile_map.objective_position),
+		"destroyed_occupier",
+	))
+	assert_eq(troop_manager.get_units_for_player(0).size(), 1, "controller still has a reserve unit")
+	assert_eq(
+		resource_manager.objective_controller,
+		ResourceManager.NO_PLAYER,
+		"destroying the controlling occupier immediately removes control",
+	)
+
+
 func test_failed_upkeep_cannot_recapture_during_an_opponents_cleanup():
 	GameState.begin_match({"player_count": 2, "seed": 982451653})
 	var main = MainScene.instantiate()
