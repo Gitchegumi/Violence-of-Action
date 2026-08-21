@@ -42,8 +42,10 @@ jobs:
         if: forgejo.event_name == 'pull_request' && forgejo.base_ref == 'main'
         shell: bash
         run: |
-          if [[ "${{ forgejo.head_ref }}" != "dev" ]]; then
-            echo "::error::Pull requests into main must originate from dev."
+          head_ref="${{ forgejo.head_ref }}"
+          if [[ "$head_ref" != "dev" &&
+                 "$head_ref" != "release-please--branches--main--components--violence-of-action" ]]; then
+            echo "::error::Pull requests into main must originate from dev or the release pipeline."
             exit 1
           fi
 
