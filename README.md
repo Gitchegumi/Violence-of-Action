@@ -1,6 +1,6 @@
 # Violence of Action
 
-![Release Version](https://img.shields.io/github/v/tag/Gitchegumi/Violence-of-Action?sort=semver&label=GitHub%20release)
+![Release Version](https://img.shields.io/github/v/tag/Gitchegumi/Violence-of-Action?sort=semver&label=Current%20Version)
 [![CI](https://github.com/Gitchegumi/Violence-of-Action/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Gitchegumi/Violence-of-Action/actions/workflows/ci.yml)
 [![Code license: GPL-3.0-only](https://img.shields.io/badge/code%20license-GPL--3.0--only-blue)](LICENSE)
 ![Last Commit](https://img.shields.io/github/last-commit/Gitchegumi/Violence-of-Action)
