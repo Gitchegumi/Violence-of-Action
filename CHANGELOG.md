@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.3](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.2...v0.3.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* updated release workflow ([0b151b9](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/0b151b9117931820f700fc1d6bce009aaac47ade))
+* udpated README ([5fc46fa](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/5fc46fa3c315e322c17abc725f9cf8a56bf293f5))
+* updated README ([e7f5b41](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/e7f5b419fccd0c44ff8de43af00840e78f2575ab))
+* reverted to a single version number listing since it works. ([56e3b76](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/56e3b7696c8288f12dce8971c03413376a808160))
+
 ## [0.3.2](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.1...v0.3.2) (2026-08-22)
 
 
