@@ -1,0 +1,52 @@
+# Violence of Action — Licensing Notice
+
+Copyright © 2026 Mathew Lindholm. All rights reserved except as expressly provided below.
+
+## Source Code
+
+Unless otherwise noted, the source code in publicly released versions of **Violence of Action** that include this licensing notice is licensed under the [**GNU General Public License, Version 3.0 only (GPL-3.0-only)**](./COPYING).
+
+You may use, study, modify, and redistribute the GPL-covered source code under the terms of the GNU General Public License Version 3.
+
+The GPL applies only to versions of the source code that have been released under this license. Nothing in this notice requires the copyright holder to release future versions, updates, expansions, or other works under the GPL or under any other particular license.
+
+As the copyright holder of original project code, Mathew Lindholm may separately license that code, or future versions of that code, under different terms.
+
+A complete copy of the GNU General Public License Version 3 should be included with this project in the `COPYING` file.
+
+## Game Content and Assets
+
+Unless a file or directory specifically states otherwise, the GPL license above **does not apply** to original non-code creative content included with Violence of Action.
+
+This includes, but is not limited to:
+
+- Artwork, illustrations, textures, sprites, models, and animations
+- Music, sound effects, voice recordings, and other audio
+- Narrative text, dialogue, characters, setting, lore, and other written creative content
+- Logos, titles, branding, and promotional materials
+
+These materials remain:
+
+**Copyright © 2026 Mathew Lindholm. All rights reserved.**
+
+Their inclusion in this repository or in a publicly available build does not grant permission to copy, extract, modify, redistribute, sell, sublicense, or incorporate them into another project except where a separate license expressly permits it.
+
+This restriction does not limit any rights granted by the GPL with respect to GPL-covered source code.
+
+## Third-Party Materials
+
+Third-party libraries, tools, artwork, fonts, audio, or other materials included with this project remain subject to their respective licenses and copyright notices.
+
+Where third-party licensing terms conflict with this notice, the applicable third-party license governs that material.
+
+## Project Name and Branding
+
+The **Violence of Action** name, logos, and associated branding are not licensed under the GPL.
+
+Permission to use GPL-covered source code does not imply permission to represent a derivative project as an official release of Violence of Action or as being endorsed by the original project.
+
+## No Warranty
+
+GPL-covered software is provided subject to the warranty disclaimer and limitation of liability contained in the GNU General Public License Version 3.
+
+Other materials are provided "as is," without warranty of any kind, to the maximum extent permitted by applicable law.

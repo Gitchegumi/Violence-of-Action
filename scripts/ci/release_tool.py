@@ -26,6 +26,12 @@ CONVENTIONAL_RE = re.compile(
     r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<breaking>!)?: "
     r"(?P<description>.+)$"
 )
+README_BADGE_RE = re.compile(
+    r"^(!\[Forgejo release\]\(https://img\.shields\.io/badge/"
+    r"Forgejo%20release-v)((?:[0-9A-Za-z.]|--)+)(-blue\) "
+    r"<!-- x-release-please-version -->)\r?$",
+    re.MULTILINE,
+)
 
 
 @total_ordering
@@ -171,12 +177,23 @@ def _project_version(root: Path) -> Version:
     return Version.parse(matches[0])
 
 
+def _readme_badge_version(root: Path) -> Version:
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    matches = README_BADGE_RE.findall(readme)
+    if len(matches) != 1:
+        raise ValueError(
+            "README.md must contain exactly one marked Forgejo release badge"
+        )
+    return Version.parse(matches[0][1].replace("--", "-"))
+
+
 def validate_release_files(root: Path, tag: str) -> Version:
     if not tag.startswith("v"):
         raise ValueError("Release tag must use v<semver>")
     tag_version = Version.parse(tag[1:])
     manifest_version = _manifest_version(root)
     project_version = _project_version(root)
+    readme_version = _readme_badge_version(root)
     if manifest_version != tag_version:
         raise ValueError(
             f"manifest version {manifest_version} does not match tag {tag_version}"
@@ -184,6 +201,10 @@ def validate_release_files(root: Path, tag: str) -> Version:
     if project_version != tag_version:
         raise ValueError(
             f"project.godot version {project_version} does not match tag {tag_version}"
+        )
+    if readme_version != tag_version:
+        raise ValueError(
+            f"README.md badge version {readme_version} does not match tag {tag_version}"
         )
     release_notes((root / "CHANGELOG.md").read_text(encoding="utf-8"), tag_version)
     return tag_version
@@ -265,6 +286,17 @@ def prepare_release(
     if count != 1:
         raise ValueError("Could not update the single release version in project.godot")
     project_path.write_text(updated, encoding="utf-8")
+
+    readme_path = root / "README.md"
+    readme = readme_path.read_text(encoding="utf-8")
+    badge_version = str(version).replace("-", "--")
+    updated, count = README_BADGE_RE.subn(
+        lambda match: f"{match.group(1)}{badge_version}{match.group(3)}",
+        readme,
+    )
+    if count != 1:
+        raise ValueError("Could not update the single Forgejo release badge in README.md")
+    readme_path.write_text(updated, encoding="utf-8")
 
     groups = _release_entries(commits, repository_url)
     sections = []
