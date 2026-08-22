@@ -7,7 +7,7 @@
 
 > Development has moved to [GitcheGit](https://git.gitchegumi.com), powered by
 > Forgejo. The release badge shows the current canonical release. While the
-> release binaries will remain frozen at v0.3.0.
+> GitHub release binaries will remain frozen at v0.3.0.
 > To request a copy of the latest development
 > version for testing, please
 > [reach out](mailto:admin@gitchegumi.com).
