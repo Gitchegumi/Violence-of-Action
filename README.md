@@ -1,5 +1,17 @@
 # Violence of Action
 
+![Forgejo release](https://img.shields.io/badge/Forgejo%20release-v0.3.2-blue) <!-- x-release-please-version -->
+![GitHub release](https://img.shields.io/github/v/tag/Gitchegumi/Violence-of-Action?sort=semver&label=GitHub%20release)
+[![GitHub mirror CI](https://github.com/Gitchegumi/Violence-of-Action/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Gitchegumi/Violence-of-Action/actions/workflows/ci.yml)
+[![Code license: GPL-3.0-only](https://img.shields.io/badge/code%20license-GPL--3.0--only-blue)](LICENSE)
+![Last Commit](https://img.shields.io/github/last-commit/Gitchegumi/Violence-of-Action)
+
+> Development has moved to [GitcheGit](https://git.gitchegumi.com), powered by
+> Forgejo. The Forgejo badge shows the current canonical release, while GitHub
+> Releases remain frozen at v0.3.0. To request a copy of the latest development
+> version for testing, please
+> [reach out](mailto:admin@gitchegumi.com).
+
 Violence of Action is a local hot-seat, turn-based tactical battle game built with
 Godot Engine 4.5.
 

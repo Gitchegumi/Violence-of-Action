@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.2](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.1...v0.3.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **gameplay:** restore radial and objective control ([67ebad0](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/67ebad09f6a3966358a4c9a0a094cb75acf70d3a))
+
+## [0.3.1](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.0...v0.3.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** Adding permission to allow PRs from release pipeline to main ([deae396](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/deae396d88f02ebb18abf1e3be3c8940a235dc15))
+* **docs:** updated RELEASE_RUNBOOK.md regarding repository secret configuration. ([45de0b1](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/45de0b1006f70047c1a58b2f0ad0f2ec1e5029a9))
+* **ci:** exporting FORGEJO_RELEASE_TOKEN from VOA_RELEASE_TOKEN for .py scripts ([6de5b79](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/6de5b79ef69535e1aea9bb9d43c43ffb5f39752b))
+* **ci:** updated token name to adhere to Forgejo naming convention ([e0d2df6](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/e0d2df64afd4af4d16527e7c375f21e869e0480f))
+* **release:** correct tag selection and publication scope ([13f2bd0](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/13f2bd038bc4f4790863ab444926ba1304347975))
+* **ci:** restrict runner smoke token permissions ([41c171b](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/41c171b4f59b23b4bc7ea71394582cc7e810393f))
+* **ci:** detect unresolved Git LFS pointers correctly ([9a86b76](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/9a86b76974930f0c1c0df2a09b1467136ef1e1fa))
+
 ## [0.3.0](https://github.com/Gitchegumi/Violence-of-Action/compare/v0.2.0...v0.3.0) (2026-08-18)
 
 
