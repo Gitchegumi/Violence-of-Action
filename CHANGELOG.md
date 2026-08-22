@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.1...v0.3.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **gameplay:** restore radial and objective control ([67ebad0](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/67ebad09f6a3966358a4c9a0a094cb75acf70d3a))
+
 ## [0.3.1](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.0...v0.3.1) (2026-08-21)
 
 
