@@ -655,8 +655,8 @@ func _unhandled_input(event):
 	# Handle left-click for tile selection and unit selection
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
 		is_dragging = false
-		
-		var map_pos = local_to_map(get_local_mouse_position())
+		var local_event := make_input_local(event) as InputEventMouseButton
+		var map_pos := local_to_map(local_event.position)
 
 		_deploy_log("Left click tile %s" % str(map_pos))
 
@@ -665,6 +665,11 @@ func _unhandled_input(event):
 			_activate_selected_tile()
 		else:
 			emit_signal("unit_selected", null)
+		# Opening a radial adds another unhandled-input listener during this
+		# dispatch. Consume the originating click so an optimized export cannot
+		# deliver it to the new radial as an outside click and close it immediately.
+		get_viewport().set_input_as_handled()
+		return
 	
 	# Press P to open the normal purchase flow on the selected tile.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
