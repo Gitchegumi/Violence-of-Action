@@ -6,10 +6,9 @@
 ![Last Commit](https://img.shields.io/github/last-commit/Gitchegumi/Violence-of-Action)
 
 > Development has moved to [GitcheGit](https://git.gitchegumi.com), powered by
-> Forgejo. The release badge shows the current canonical release. While the
-> GitHub release binaries will remain frozen at v0.3.0.
-> To request a copy of the latest development
-> version for testing, please
+> Forgejo. The version badge tracks the latest canonical source tag mirrored to
+> GitHub. GitHub Release binaries remain frozen at v0.3.0. To request a copy of
+> the latest development version for testing, please
 > [reach out](mailto:admin@gitchegumi.com).
 
 Violence of Action is a local hot-seat, turn-based tactical battle game built with

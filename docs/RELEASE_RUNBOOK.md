@@ -15,16 +15,14 @@ Please action while preserving the existing manifest release model:
 - Conventional Commits since the latest root tag determine the next version.
 - A breaking change bumps the major version, `feat` bumps minor, and `fix` or
   `perf` bumps patch.
-- The helper updates `CHANGELOG.md`, `.release-please-manifest.json`, the marked
-  `config/version` entry in `project.godot`, and the marked static Forgejo
-  release badge in `README.md` together.
+- The helper updates `CHANGELOG.md`, `.release-please-manifest.json`, and the
+  marked `config/version` entry in `project.godot` together.
 - Forgejo Actions pushes the generated
   `release-please--branches--main--components--violence-of-action` branch and
   creates or updates one release pull request against `main` through Forgejo's
   API.
-- After that pull request is merged, the workflow validates the manifest,
-  project version, README badge, and tag together, then creates the single root
-  tag at the exact merge commit.
+- After that pull request is merged, the workflow validates the three version
+  sources and creates the single root tag at the exact merge commit.
 
 Release Please's CLI accepts alternate REST and GraphQL URLs, but its provider
 still expects GitHub API behavior. Forgejo 15.0.7 is not a compatible GitHub API
@@ -74,7 +72,7 @@ pull request. Do not grant the token organization-wide administration.
 2. The Forgejo **Release** workflow evaluates commits since the latest tag. If no
    `feat`, `fix`, `perf`, or breaking commit exists, it exits without a release.
 3. The workflow creates or updates the release pull request containing the
-   changelog, manifest, Godot project version, and public Forgejo release badge.
+   changelog, manifest, and Godot project version.
 4. Review the generated notes, matching versions, and normal Forgejo CI result.
 5. Merge the release pull request into `main`.
 6. The next Release workflow run creates the immutable tag, checks it out by
