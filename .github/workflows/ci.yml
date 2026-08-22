@@ -1,7 +1,7 @@
 name: Godot CI
 
 on:
-  pull_request:
+  push:
   workflow_dispatch:
 
 permissions:
