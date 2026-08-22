@@ -160,8 +160,7 @@ func _on_unit_destroyed(unit: Node, player_id: int, destruction_id: String) -> v
 	$ResourceManager.record_unit_destroyed(destruction_id)
 	if unit != null \
 			and unit.map_pos == $TileMapLayer.objective_position \
-			and $ResourceManager.objective_controller == player_id \
-			and $TileMapLayer.troop_manager.get_units_for_player(player_id).is_empty():
+			and $ResourceManager.objective_controller == player_id:
 		$ResourceManager.clear_objective_control()
 	_evaluate_elimination_victory()
 

@@ -7,6 +7,7 @@ var TroopManagerScript = preload("res://scripts/troop_manager.gd")
 var TileMapScript = preload("res://scripts/tile_map.gd")
 var MockUnit = preload("res://tests/unit/mock_unit.gd")
 var MainScene = preload("res://scenes/main.tscn")
+var UnhandledMouseProbe = preload("res://tests/helpers/unhandled_mouse_probe.gd")
 
 const EXPECTED_ARTWORK_REGIONS := {
 	"battlefield_scavenger": Rect2(35, 545, 210, 285),
@@ -286,6 +287,42 @@ func test_p_shortcut_opens_purchase_flow_without_free_placement():
 	assert_not_null(tile_map.radial_menu_instance, "shortcut opens the purchase radial")
 	assert_eq(tile_map.get_player_essence(), starting_essence, "opening purchase flow spends nothing")
 	assert_eq(tile_map.troop_manager.get_units_for_player(0).size(), 0, "shortcut cannot place a free unit")
+
+
+func test_live_left_click_keeps_new_deployment_radial_open():
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1152, 648)
+	viewport.handle_input_locally = true
+	add_child_autofree(viewport)
+	var downstream_probe = UnhandledMouseProbe.new()
+	viewport.add_child(downstream_probe)
+	var main = MainScene.instantiate()
+	viewport.add_child(main)
+	await get_tree().process_frame
+	var tile_map = main.get_node("TileMapLayer")
+	var origin: Vector2i = tile_map.deployment_zones_data[0][0]
+	tile_map.center_camera_on_tile(origin)
+	await get_tree().process_frame
+	var click := InputEventMouseButton.new()
+	var world_position: Vector2 = tile_map.to_global(tile_map.map_to_local(origin))
+	var screen_position: Vector2 = tile_map.get_viewport().get_canvas_transform() * world_position
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = screen_position
+	click.global_position = screen_position
+	tile_map.get_viewport().push_input(click)
+	await get_tree().process_frame
+	assert_eq(tile_map.selected_tile, origin)
+	assert_not_null(
+		tile_map.radial_menu_instance,
+		"the click that opens a release radial cannot immediately close it as an outside click",
+	)
+	assert_true(tile_map.radial_menu_instance.active)
+	assert_eq(
+		downstream_probe.left_click_count,
+		0,
+		"the opening click is consumed before a later unhandled-input listener receives it",
+	)
 
 
 func test_live_move_target_flow_relocates_unit_and_spends_speed():
