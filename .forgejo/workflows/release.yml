@@ -150,7 +150,7 @@ jobs:
             git config user.name "Violence of Action Release"
             git config user.email "release-bot@gitchegumi.com"
             git switch --force-create "$branch"
-            git add CHANGELOG.md .release-please-manifest.json project.godot
+            git add CHANGELOG.md .release-please-manifest.json project.godot README.md
             git commit --message "chore(main): release $version"
             remote_sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
             if [[ -n "$remote_sha" ]]; then
