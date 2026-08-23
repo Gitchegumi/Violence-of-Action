@@ -172,9 +172,9 @@ func test_hover_panel_uses_the_live_roster_quote():
 	tile_map.current_radial_units = tile_map._get_deployable_units()
 	var main: Node = tile_map.get_parent()
 	main._on_deploy_unit_hovered("battlefield_scavenger")
-	var panel: Control = main.get_node("UnitInfoPanel")
+	var panel: Control = main.get_node("HUDCanvasLayer/LowerThirdPanel")
 	assert_true(panel.visible)
-	assert_eq(panel.get_node("Panel/UnitCostLabel").text, "Cost: 2")
+	assert_eq(panel.unit_cost_label.text, "Cost: 2")
 
 func test_occupied_tile_actions_are_attack_move_upgrade_inspect():
 	var tm = TileMapScript.new()  # not added to tree: avoids scene-only @onready
@@ -355,7 +355,7 @@ func test_live_move_target_flow_relocates_unit_and_spends_speed():
 	assert_same(tile_map.troop_manager.get_unit_at_map_coord(destination), unit)
 	assert_null(tile_map.troop_manager.get_unit_at_map_coord(origin))
 	assert_lt(unit.movement_remaining, starting_movement)
-	var movement_label: Label = tile_map.get_parent().get_node("UnitInfoPanel/Panel/MovementLabel")
+	var movement_label: Label = tile_map.get_parent().lower_third.movement_label
 	assert_true(movement_label.visible)
 	assert_eq(movement_label.text, "Movement: %d/%d" % [unit.movement_remaining, starting_movement])
 	assert_true(tile_map.pending_action.is_empty())
@@ -393,11 +393,11 @@ func test_visible_cancel_button_clears_move_targeting():
 	GameState.current_phase = GameState.TurnPhase.MOVEMENT
 	tile_map.troop_manager.start_turn(0)
 	tile_map._begin_pending_action("move", tile_map.troop_manager.get_unit_at_map_coord(origin), origin)
-	assert_true(main.get_node("CancelActionButton").visible)
-	assert_eq(main.get_node("CancelActionButton").text, "Cancel Move")
-	main.get_node("CancelActionButton").pressed.emit()
+	assert_true(main.lower_third.cancel_action_button.visible)
+	assert_eq(main.lower_third.cancel_action_button.text, "Cancel Move")
+	main.lower_third.cancel_action_button.pressed.emit()
 	assert_true(tile_map.pending_action.is_empty())
-	assert_false(main.get_node("CancelActionButton").visible)
+	assert_false(main.lower_third.cancel_action_button.visible)
 
 
 func test_phase_advance_automatically_clears_pending_action_for_next_player():
@@ -414,7 +414,7 @@ func test_phase_advance_automatically_clears_pending_action_for_next_player():
 	assert_false(tile_map.pending_action.is_empty())
 	assert_true(GameState.advance_phase())
 	assert_true(tile_map.pending_action.is_empty(), "phase boundary cannot leak targeting state")
-	assert_false(main.get_node("CancelActionButton").visible)
+	assert_false(main.lower_third.cancel_action_button.visible)
 
 
 func test_live_attack_target_flow_uses_seeded_combat_resolution():
@@ -449,10 +449,10 @@ func test_live_attack_target_flow_uses_seeded_combat_resolution():
 	var expected_defense := 8 + expected_terrain_bonus + 2
 	assert_eq(observed_results[0].defense_target, expected_defense)
 	assert_true(attacker.attacked_this_turn)
-	assert_true(tile_map.get_parent().get_node("CombatResultLabel").visible)
+	assert_true(tile_map.get_parent().lower_third.combat_result_label.visible)
 	assert_eq(
-		tile_map.get_parent().get_node("CombatResultLabel").text,
-		"Attack: %d + %d + ATK 1 = %d\nDefense: DEF 8 + Terrain %d + Armor 2 = %d - %s (%d HP)" % [
+		tile_map.get_parent().lower_third.combat_result_label.text,
+		"Latest result: Attack: %d + %d + ATK 1 = %d\nDefense: DEF 8 + Terrain %d + Armor 2 = %d - %s (%d HP)" % [
 			expected_dice[0],
 			expected_dice[1],
 			expected_dice[0] + expected_dice[1] + 1,

@@ -1,20 +1,26 @@
 extends Node
 
 const MAIN_MENU_SCENE := "res://scenes/ui/main_menu.tscn"
+const LowerThirdPanelScript = preload("res://scripts/ui/lower_third_panel.gd")
+
+var lower_third: LowerThirdPanel
+var latest_income_by_player: Dictionary = {}
 
 func _ready():
 	var tile_map := $TileMapLayer
+	_install_lower_third()
 	$ResourceManager.essence_changed.connect(_on_essence_changed)
 	$ResourceManager.objective_control_changed.connect(_on_objective_control_changed)
 	$ResourceManager.objective_control_turns_changed.connect(_on_objective_control_turns_changed)
 	_on_essence_changed(0, $ResourceManager.get_essence(0), 0, "initial")
-	# Clicking a placed unit (or the Inspect action) shows its info.
-	tile_map.unit_selected.connect($UnitInfoPanel.show_unit)
+	tile_map.tile_focus_changed.connect(_on_tile_focus_changed)
+	tile_map.unit_selected.connect(_on_unit_selected)
 	# Deploy radial: preview the hovered unit in the same panel, and clear it
 	# when the deploy radial closes (so it shows only while choosing).
 	tile_map.deploy_unit_hovered.connect(_on_deploy_unit_hovered)
-	tile_map.deploy_preview_ended.connect($UnitInfoPanel.hide_panel)
+	tile_map.deploy_preview_ended.connect(_on_deploy_preview_ended)
 	tile_map.pending_action_changed.connect(_on_pending_action_changed)
+	tile_map.unit_moved.connect(_on_unit_state_changed)
 	tile_map.unit_attack_resolved.connect(_on_unit_attack_resolved)
 	tile_map.special_action_resolved.connect(_on_special_action_resolved)
 	tile_map.troop_manager.unit_destroyed.connect(_on_unit_destroyed)
@@ -29,6 +35,29 @@ func _ready():
 	_refresh_objective_ui()
 
 
+func _install_lower_third() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.name = "HUDCanvasLayer"
+	canvas.layer = 10
+	add_child(canvas)
+	lower_third = LowerThirdPanelScript.new()
+	canvas.add_child(lower_third)
+	lower_third.advance_phase_button.pressed.connect(_on_advance_phase_pressed)
+	lower_third.cancel_action_button.pressed.connect($TileMapLayer.cancel_pending_action)
+	lower_third.return_to_menu_button.pressed.connect(_return_to_main_menu)
+	for superseded_name in [
+		"EssenceLabel",
+		"TurnLabel",
+		"ObjectiveLabel",
+		"CombatResultLabel",
+		"AdvancePhaseButton",
+		"CancelActionButton",
+		"ReturnToMenuButton",
+		"UnitInfoPanel",
+	]:
+		get_node(superseded_name).visible = false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("gamepad_advance_phase"):
 		return
@@ -38,12 +67,52 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_deploy_unit_hovered(unit_id: String) -> void:
 	var preview: Dictionary = $TileMapLayer.get_deployable_unit_preview(unit_id)
 	if not preview.is_empty():
-		$UnitInfoPanel.show_unit_type(preview, $TileMapLayer.get_unit_artwork(unit_id))
+		lower_third.show_unit_type(preview, $TileMapLayer.get_unit_artwork(unit_id))
+
+
+func _on_deploy_preview_ended() -> void:
+	_refresh_focused_context()
+
+
+func _on_tile_focus_changed(_coordinate: Vector2i) -> void:
+	_refresh_focused_context()
+
+
+func _on_unit_selected(unit: Node) -> void:
+	if unit != null:
+		lower_third.show_unit(unit)
+	else:
+		_refresh_focused_context()
+
+
+func _on_unit_state_changed(_unit: Node, _path: Array, _cost: int, _remaining: int) -> void:
+	_refresh_focused_context()
+
+
+func _refresh_focused_context() -> void:
+	var tile_map := $TileMapLayer
+	var coordinate: Vector2i = tile_map.focused_tile
+	if not tile_map.terrain_data_map.has(coordinate):
+		lower_third.show_terrain(Vector2i(-1, -1), null)
+		lower_third.show_empty_unit()
+		return
+	lower_third.show_terrain(coordinate, tile_map.terrain_data_map.get(coordinate))
+	var unit: Node = tile_map.troop_manager.get_unit_at_map_coord(coordinate)
+	if unit == null:
+		lower_third.show_empty_unit()
+	else:
+		lower_third.show_unit(unit)
 
 
 func _on_essence_changed(player_id: int, total: int, _delta: int, _reason: String) -> void:
+	if _reason == "start_turn_income" and _delta > 0:
+		latest_income_by_player[player_id] = _delta
 	if player_id == GameState.active_player_id:
 		$EssenceLabel.text = "%s Essence: %d" % [_player_name(player_id), total]
+		lower_third.essence_label.text = $EssenceLabel.text
+		lower_third.income_label.text = "Latest income: +%d Essence" % int(
+			latest_income_by_player.get(player_id, 0)
+		) if latest_income_by_player.has(player_id) else "Latest income: —"
 
 
 func _on_objective_control_changed(_previous_player_id: int, _player_id: int) -> void:
@@ -57,12 +126,14 @@ func _on_objective_control_turns_changed(_player_id: int, _turns: int) -> void:
 func _refresh_objective_ui() -> void:
 	if $ResourceManager.objective_controller == ResourceManager.NO_PLAYER:
 		$ObjectiveLabel.text = "Objective: Uncontrolled"
+		lower_third.objective_label.text = $ObjectiveLabel.text
 		return
 	$ObjectiveLabel.text = "Objective: %s (%d/%d)" % [
 		_player_name($ResourceManager.objective_controller),
 		$ResourceManager.objective_control_turns,
 		ResourceManager.OBJECTIVE_TURNS_TO_WIN,
 	]
+	lower_third.objective_label.text = $ObjectiveLabel.text
 
 
 func _on_advance_phase_pressed() -> void:
@@ -95,12 +166,13 @@ func _on_phase_changed(_previous, _current, _player_id: int, _round_number: int)
 
 
 func _on_pending_action_changed(active: bool, action_type: String) -> void:
-	$CancelActionButton.visible = active
+	$CancelActionButton.visible = false
 	$CancelActionButton.text = "Cancel %s" % action_type.capitalize() if active else "Cancel Action"
+	lower_third.cancel_action_button.visible = active
+	lower_third.cancel_action_button.text = $CancelActionButton.text
 
 
 func _on_unit_attack_resolved(_attacker: Node, _defender: Node, result: Dictionary) -> void:
-	$CombatResultLabel.visible = true
 	$CombatResultLabel.text = (
 		"Attack: %d + %d + ATK %d = %d\n"
 		+ "Defense: DEF %d + Terrain %d + Armor %d = %d - %s (%d HP)"
@@ -119,10 +191,11 @@ func _on_unit_attack_resolved(_attacker: Node, _defender: Node, result: Dictiona
 	var splash_results: Array = result.get("splash_results", [])
 	if not splash_results.is_empty():
 		$CombatResultLabel.text += " - Splash: %d target(s)" % splash_results.size()
+	lower_third.set_combat_result($CombatResultLabel.text)
+	_refresh_focused_context.call_deferred()
 
 
 func _on_special_action_resolved(action_type: String, result: Dictionary) -> void:
-	$CombatResultLabel.visible = true
 	match action_type:
 		"heal":
 			$CombatResultLabel.text = "Heal: restored 1 HP (%d HP)" % int(result.get("remaining_hp", 0))
@@ -138,12 +211,14 @@ func _on_special_action_resolved(action_type: String, result: Dictionary) -> voi
 			$CombatResultLabel.text = "Barrier attack: %s" % ("Hit" if result.get("hit", false) else "Miss")
 		"dismantle_barrier":
 			$CombatResultLabel.text = "Barrier dismantled"
+	lower_third.set_combat_result($CombatResultLabel.text)
+	_refresh_focused_context.call_deferred()
 
 
 func _on_turn_started(player_id: int, _round_number: int) -> void:
 	$TileMapLayer.troop_manager.start_turn(player_id)
 	$ResourceManager.start_turn(player_id, $TileMapLayer.troop_manager.get_units_for_player(player_id))
-	$UnitInfoPanel.refresh_current_unit()
+	_refresh_focused_context()
 
 
 func _on_turn_ended(player_id: int, _round_number: int) -> void:
@@ -162,6 +237,7 @@ func _on_unit_destroyed(unit: Node, player_id: int, destruction_id: String) -> v
 			and unit.map_pos == $TileMapLayer.objective_position \
 			and $ResourceManager.objective_controller == player_id:
 		$ResourceManager.clear_objective_control()
+	_refresh_focused_context.call_deferred()
 	_evaluate_elimination_victory()
 
 
@@ -186,11 +262,15 @@ func _return_to_main_menu(perform_transition: bool = true) -> void:
 
 func _refresh_turn_ui() -> void:
 	$PauseOverlay.visible = GameState.current_state == GameState.State.PAUSED
-	$ReturnToMenuButton.visible = GameState.current_state == GameState.State.GAME_OVER
+	$ReturnToMenuButton.visible = false
 	$EssenceLabel.text = "%s Essence: %d" % [
 		_player_name(GameState.active_player_id),
 		$ResourceManager.get_essence(GameState.active_player_id),
 	]
+	lower_third.essence_label.text = $EssenceLabel.text
+	lower_third.income_label.text = "Latest income: +%d Essence" % int(
+		latest_income_by_player.get(GameState.active_player_id, 0)
+	) if latest_income_by_player.has(GameState.active_player_id) else "Latest income: —"
 	match GameState.current_state:
 		GameState.State.INITIAL_DEPLOYMENT:
 			$TurnLabel.text = "Initial Deployment - %s" % _player_name(GameState.active_player_id)
@@ -213,6 +293,11 @@ func _refresh_turn_ui() -> void:
 		GameState.State.INITIAL_DEPLOYMENT,
 		GameState.State.PLAYING,
 	]
+	lower_third.turn_label.text = $TurnLabel.text
+	lower_third.advance_phase_button.text = $AdvancePhaseButton.text
+	lower_third.advance_phase_button.disabled = $AdvancePhaseButton.disabled
+	lower_third.return_to_menu_button.visible = GameState.current_state == GameState.State.GAME_OVER
+	_refresh_focused_context()
 
 
 func _player_name(player_id: int) -> String:
