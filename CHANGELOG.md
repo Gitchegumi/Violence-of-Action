@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.3...v0.4.0) (2026-08-23)
+
+
+### Features
+
+* **ui:** add fixed lower-third gameplay panel ([e294876](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/commit/e294876cf794641af1c094e02f5e2f59d060b4b1))
+
 ## [0.3.3](https://git.gitchegumi.com/gitchegumi/Violence-of-Action/compare/v0.3.2...v0.3.3) (2026-08-22)
 
 
