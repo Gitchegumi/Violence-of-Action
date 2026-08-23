@@ -2,6 +2,7 @@ extends TileMapLayer
 
 ## Emitted when a tile is clicked and a unit is found or not found.
 signal unit_selected(unit: Node)
+signal tile_focus_changed(position: Vector2i)
 
 signal deploy_tile_clicked(position: Vector2i)
 signal deploy_radial_opened(origin: Vector2i)
@@ -595,6 +596,7 @@ func center_camera_on_tile(tile: Vector2i) -> void:
 @onready var selection_layer = get_node("SelectionLayer")
 @onready var action_highlight_layer: TileMapLayer = get_node("ActionHighlightLayer")
 var selected_tile: Vector2i = Vector2i(-1, -1) # Off-map coordinate by default
+var focused_tile: Vector2i = Vector2i(-1, -1)
 var is_dragging = false
 var _controller_stick_directions: Dictionary = {}
 var _controller_stick_engaged: Dictionary = {}
@@ -651,6 +653,11 @@ func _unhandled_input(event):
 	if event is InputEventMouseMotion and is_dragging:
 		_move_camera(-event.relative / camera.zoom.x)
 		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		var local_event := make_input_local(event) as InputEventMouseMotion
+		var hovered_map_pos := local_to_map(local_event.position)
+		if terrain_data_map.has(hovered_map_pos):
+			set_focused_tile(hovered_map_pos)
 
 	# Handle left-click for tile selection and unit selection
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
@@ -842,10 +849,18 @@ func set_selected_tile(map_pos: Vector2i, recenter := false) -> void:
 	if not terrain_data_map.has(map_pos):
 		return
 	selected_tile = map_pos
+	set_focused_tile(map_pos)
 	selection_layer.clear()
 	selection_layer.set_cell(selected_tile, 0, objective_type.atlas_coord)
 	if recenter:
 		center_camera_on_tile(selected_tile)
+
+
+func set_focused_tile(map_pos: Vector2i) -> void:
+	if not terrain_data_map.has(map_pos) or focused_tile == map_pos:
+		return
+	focused_tile = map_pos
+	tile_focus_changed.emit(focused_tile)
 
 
 func _activate_selected_tile() -> void:

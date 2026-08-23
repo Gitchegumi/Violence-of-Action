@@ -61,7 +61,11 @@ Every player must place at least one unit before declaring Ready. After all play
 
 ## Take a Turn
 
-The top status line shows the round, active player, and current phase. Select **Complete Phase** to advance through the turn.
+The fixed panel along the bottom shows terrain and unit details for the focused
+hex, the latest combat result, and the current round, player, phase, Objective,
+Essence, and income status. Moving the controller board cursor or hovering a hex
+updates its terrain and unit details without requiring a selection click. Select
+**Complete Phase** in this panel to advance through the turn.
 
 1. **Start Turn:** The game resets per-turn unit actions and awards essence automatically.
 2. **Marshal Troops:** Purchase units by left-clicking an empty hex in your deployment zone. New units cannot be placed outside that zone.

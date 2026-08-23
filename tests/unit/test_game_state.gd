@@ -109,15 +109,15 @@ func test_game_over_exposes_return_to_menu_and_clears_finished_session():
 	var main = MainScene.instantiate()
 	add_child_autofree(main)
 	await get_tree().process_frame
-	assert_false(main.get_node("ReturnToMenuButton").visible)
+	assert_false(main.lower_third.return_to_menu_button.visible)
 	GameState.start_playing_for_test(2)
 	assert_true(GameState.declare_game_over(0, "elimination"))
-	assert_true(main.get_node("ReturnToMenuButton").visible)
+	assert_true(main.lower_third.return_to_menu_button.visible)
 	assert_true(ResourceLoader.exists(main.MAIN_MENU_SCENE))
 	main._return_to_main_menu(false)
 	assert_eq(GameState.current_state, GameState.State.MENU)
 	assert_false(GameSession.has_match_config())
-	assert_false(main.get_node("ReturnToMenuButton").visible)
+	assert_false(main.lower_third.return_to_menu_button.visible)
 
 
 func test_main_objective_control_wins_after_three_later_controller_turns():
